@@ -1,0 +1,15 @@
+__pycache__/
+.claude/autoharness/
+.claude/memory/
+.claude/skills-ledger*
+.DS_Store
+.env
+.env.*
+.venv/
+data/
+data/*_parts/
+data/mapterhorn/
+dist/
+logs/
+node_modules/
+results/*_partial.json

@@ -27,7 +27,8 @@ k and the AEF block weight are tuned inside each training fold (3 inner folds by
 held-out sites. A gradient boosting model with and without AEF is the check that the answer is not
 kNN's alone. The AEF difference gets a 95% interval from resampling site groups.
 
-    uv run scripts/fit_knn.py [--aef w5] [--partial]   # --partial: read the *_parts dirs while pulls run
+    uv run scripts/fit_knn.py [--emb aef|tessera|olmo] [--aef w5] [--partial]   # --partial: read the *_parts dirs while pulls run
+--emb swaps the embedding block (AlphaEarth 64, TESSERA 128, OlmoEarth 128); the block keeps the name "aef" inside.
 """
 import argparse
 import json
@@ -62,7 +63,7 @@ def fosberg_features(h):
     return h.rename(columns={"day": "date"})[["site_id", "date", "ffwi_max_7d", "ffwi_max_30d", "ffwi_max_90d", "ffwi_mean_30d"]]
 
 
-def build(aef_col, partial):
+def build(aef_col, partial, emb="aef"):
     smp = pd.read_parquet(D / "samples.parquet")
     smp = smp[~smp.new_growth & (smp.date >= "2020-02-01")].copy()
     hls = load("hls", partial).dropna(subset=["nir"])
@@ -73,19 +74,20 @@ def build(aef_col, partial):
         h = pd.read_parquet(D / "hrrr_daily.parquet")
     wx = fosberg_features(h)
     ter = pd.read_parquet(D / "terrain.parquet")
-    aef = pd.read_parquet(D / "aef.parquet")
+    aef = pd.read_parquet(D / f"{emb}.parquet")
     aef = aef[~aef.nodata]
-    emb = np.stack([np.frombuffer(b, np.int8 if aef_col == "pix" else np.float32) for b in aef[aef_col]])
-    if aef_col == "pix":
-        f = emb.astype(np.float32) / 127.5
-        emb = np.sign(f) * f * f
-    A = pd.DataFrame(emb, columns=[f"a{i:02d}" for i in range(64)])
+    pix_int8 = emb == "aef" and aef_col == "pix"
+    vec = np.stack([np.frombuffer(b, np.int8 if pix_int8 else np.float32) for b in aef[aef_col]])
+    if pix_int8:
+        f = vec.astype(np.float32) / 127.5
+        vec = np.sign(f) * f * f
+    A = pd.DataFrame(vec, columns=[f"a{i:03d}" for i in range(vec.shape[1])])
     A["site_id"], A["year"] = aef.site_id.values, aef.year.values + 1  # the embedding of the year before
     df = (smp.assign(year=smp.date.dt.year)
           .merge(hls, on=["site_id", "date"]).merge(s1, on=["site_id", "date"]).merge(wx, on=["site_id", "date"])
           .merge(ter, on="site_id").merge(A, on=["site_id", "year"]))
-    df = df.dropna(subset=["ffwi_max_90d", "ffwi_mean_30d", "a00"])
-    doy = df.date.dt.dayofyear / 365.25 * 2 * np.pi
+    df = df.dropna(subset=["ffwi_max_90d", "ffwi_mean_30d", "a000"])
+    doy = df.date.dt.day_of_year / 365.25 * 2 * np.pi
     df["doy_sin"], df["doy_cos"] = np.sin(doy), np.cos(doy)
     df["ndvi"] = (df.nir - df.red) / (df.nir + df.red)
     df["ndmi"] = (df.nir - df.swir1) / (df.nir + df.swir1)
@@ -105,7 +107,7 @@ def blocks(df):
         "fosberg": df[["ffwi_max_7d", "ffwi_max_30d", "ffwi_max_90d", "ffwi_mean_30d"]],
         "hls": df[["blue", "green", "red", "nir", "swir1", "swir2", "ndvi", "ndmi", "nbr"]],
         "s1": df[["vv_db", "vh_db", "cross_db", "asc"]],
-        "aef": df[[f"a{i:02d}" for i in range(64)]],
+        "aef": df[[c for c in df.columns if c.startswith("a") and c[1:].isdigit()]],
         "species": sp,
     }
 
@@ -209,8 +211,18 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--aef", default="w5", choices=["pix", "w5", "w15"])
     ap.add_argument("--partial", action="store_true")
+    ap.add_argument("--emb", default="aef", choices=["aef", "tessera", "olmo"])
+    ap.add_argument("--common", action="store_true", help="only site-years that AEF, TESSERA and OlmoEarth all cover")
     a = ap.parse_args()
-    df = build(a.aef, a.partial)
+    df = build(a.aef, a.partial, a.emb)
+    df = df.dropna(subset=[c for c in df.columns if c.startswith("a") and c[1:].isdigit()])
+    if a.common:
+        ok = None
+        for e in ["aef", "tessera", "olmo"]:
+            t = pd.read_parquet(D / f"{e}.parquet", columns=["site_id", "year", "nodata"])
+            t = set(zip(t.site_id[~t.nodata], t.year[~t.nodata] + 1))
+            ok = t if ok is None else ok & t
+        df = df[[k in ok for k in zip(df.site_id, df.year)]].reset_index(drop=True)
     print(f"{len(df)} samples at {df.site_id.nunique()} sites in {df.group.nunique()} groups, "
           f"{(df.redding_km < 150).sum()} within 150 km of Redding; {df.date.min():%Y-%m-%d} to {df.date.max():%Y-%m-%d}", flush=True)
     allres = {}
@@ -233,9 +245,9 @@ def main():
                 out = df[["sample_id", "site_id", "group", "date", "species", "value", "redding_km"]].copy()
                 for k, p in preds.items():
                     out[f"pred {k}"] = p
-                out.to_parquet(D / f"predictions_{a.aef}.parquet", index=False)
+                out.to_parquet(D / f"predictions_{a.emb}_{a.aef}{'_common' if a.common else ''}.parquet", index=False)
     (ROOT / "results").mkdir(exist_ok=True)
-    json.dump(allres, open(ROOT / "results" / f"knn_aef_{a.aef}{'_partial' if a.partial else ''}.json", "w"), indent=1)
+    json.dump(allres, open(ROOT / "results" / f"knn_{a.emb}_{a.aef}{'_common' if a.common else ''}{'_partial' if a.partial else ''}.json", "w"), indent=1)
 
 
 if __name__ == "__main__":

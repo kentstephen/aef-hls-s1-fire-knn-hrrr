@@ -1,0 +1,146 @@
+{
+ "logistic: AEF": {
+  "balanced_accuracy": 0.864,
+  "nonfuel_recall": 0.811,
+  "nonfuel_precision": 0.557,
+  "roads_called_nonfuel": 0.772,
+  "urban and roads called non-fuel": 0.858,
+  "farmland called non-fuel": 0.341,
+  "water called non-fuel": 0.894,
+  "bare called non-fuel": 0.411,
+  "burnable called non-fuel": 0.084
+ },
+ "logistic: TESSERA": {
+  "balanced_accuracy": 0.844,
+  "nonfuel_recall": 0.781,
+  "nonfuel_precision": 0.523,
+  "roads_called_nonfuel": 0.74,
+  "urban and roads called non-fuel": 0.823,
+  "farmland called non-fuel": 0.264,
+  "water called non-fuel": 0.828,
+  "bare called non-fuel": 0.463,
+  "burnable called non-fuel": 0.093
+ },
+ "logistic: OlmoEarth": {
+  "balanced_accuracy": 0.879,
+  "nonfuel_recall": 0.832,
+  "nonfuel_precision": 0.595,
+  "roads_called_nonfuel": 0.823,
+  "urban and roads called non-fuel": 0.883,
+  "farmland called non-fuel": 0.124,
+  "water called non-fuel": 0.933,
+  "bare called non-fuel": 0.409,
+  "burnable called non-fuel": 0.074
+ },
+ "logistic: S2 3 seasons": {
+  "balanced_accuracy": 0.781,
+  "nonfuel_recall": 0.703,
+  "nonfuel_precision": 0.395,
+  "roads_called_nonfuel": 0.648,
+  "urban and roads called non-fuel": 0.709,
+  "farmland called non-fuel": 0.705,
+  "water called non-fuel": 0.799,
+  "bare called non-fuel": 0.563,
+  "burnable called non-fuel": 0.141
+ },
+ "logistic: AEF + S2 3 seasons": {
+  "balanced_accuracy": 0.863,
+  "nonfuel_recall": 0.811,
+  "nonfuel_precision": 0.553,
+  "roads_called_nonfuel": 0.776,
+  "urban and roads called non-fuel": 0.86,
+  "farmland called non-fuel": 0.287,
+  "water called non-fuel": 0.886,
+  "bare called non-fuel": 0.405,
+  "burnable called non-fuel": 0.086
+ },
+ "kNN: AEF": {
+  "balanced_accuracy": 0.807,
+  "nonfuel_recall": 0.634,
+  "nonfuel_precision": 0.806,
+  "roads_called_nonfuel": 0.594,
+  "urban and roads called non-fuel": 0.689,
+  "farmland called non-fuel": 0.093,
+  "water called non-fuel": 0.686,
+  "bare called non-fuel": 0.205,
+  "burnable called non-fuel": 0.02
+ },
+ "kNN: TESSERA": {
+  "balanced_accuracy": 0.804,
+  "nonfuel_recall": 0.626,
+  "nonfuel_precision": 0.822,
+  "roads_called_nonfuel": 0.583,
+  "urban and roads called non-fuel": 0.672,
+  "farmland called non-fuel": 0.039,
+  "water called non-fuel": 0.713,
+  "bare called non-fuel": 0.242,
+  "burnable called non-fuel": 0.018
+ },
+ "kNN: OlmoEarth": {
+  "balanced_accuracy": 0.829,
+  "nonfuel_recall": 0.674,
+  "nonfuel_precision": 0.849,
+  "roads_called_nonfuel": 0.645,
+  "urban and roads called non-fuel": 0.73,
+  "farmland called non-fuel": 0.132,
+  "water called non-fuel": 0.724,
+  "bare called non-fuel": 0.23,
+  "burnable called non-fuel": 0.016
+ },
+ "kNN: S2 3 seasons": {
+  "balanced_accuracy": 0.693,
+  "nonfuel_recall": 0.403,
+  "nonfuel_precision": 0.747,
+  "roads_called_nonfuel": 0.343,
+  "urban and roads called non-fuel": 0.399,
+  "farmland called non-fuel": 0.124,
+  "water called non-fuel": 0.646,
+  "bare called non-fuel": 0.264,
+  "burnable called non-fuel": 0.018
+ },
+ "kNN: AEF + S2 3 seasons": {
+  "balanced_accuracy": 0.81,
+  "nonfuel_recall": 0.635,
+  "nonfuel_precision": 0.838,
+  "roads_called_nonfuel": 0.592,
+  "urban and roads called non-fuel": 0.69,
+  "farmland called non-fuel": 0.016,
+  "water called non-fuel": 0.707,
+  "bare called non-fuel": 0.199,
+  "burnable called non-fuel": 0.016
+ },
+ "intervals (balanced accuracy b - a, 95%, by window)": {
+  "logistic: AEF vs S2 3 seasons": [
+   0.06,
+   0.106
+  ],
+  "logistic: AEF + S2 3 seasons vs S2 3 seasons": [
+   0.059,
+   0.106
+  ],
+  "logistic: TESSERA vs AEF": [
+   -0.034,
+   -0.007
+  ],
+  "logistic: OlmoEarth vs AEF": [
+   0.007,
+   0.028
+  ],
+  "kNN: AEF vs S2 3 seasons": [
+   0.066,
+   0.157
+  ],
+  "kNN: AEF + S2 3 seasons vs S2 3 seasons": [
+   0.067,
+   0.16
+  ],
+  "kNN: TESSERA vs AEF": [
+   -0.017,
+   0.011
+  ],
+  "kNN: OlmoEarth vs AEF": [
+   0.013,
+   0.032
+  ]
+ }
+}

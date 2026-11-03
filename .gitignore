@@ -13,3 +13,4 @@ dist/
 logs/
 node_modules/
 results/*_partial.json
+results/fuel_lab/*.oof.npy

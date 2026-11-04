@@ -89,7 +89,8 @@ export function Slider(props: {
 export function Check(props: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <label className="check">
-      <input type="checkbox" checked={props.checked} onChange={(e) => props.onChange(e.target.checked)} />
+      {/* a click hands the keyboard back to the map: Space would otherwise tick the box again */}
+      <input type="checkbox" checked={props.checked} onChange={(e) => { props.onChange(e.target.checked); e.currentTarget.blur(); }} />
       {props.label}
     </label>
   );

@@ -30,9 +30,13 @@ export type SeasonStarts = {
   /** 0 unknown, 1 natural, 2 human. */
   cause: Uint8Array;
   name: string[];
+  /** NIFC OBJECTID, to fetch the full record (fireRecord). */
+  oid: Int32Array;
 };
 
 export type SeasonPerimeter = {
+  /** NIFC OBJECTID, to fetch the full record (fireRecord). */
+  oid: number;
   name: string;
   day: number;
   acres: number;
@@ -74,7 +78,7 @@ export async function loadSeasonStarts(year = SEASON_YEAR, signal?: AbortSignal)
     Array.from({ length: Math.ceil(count / PAGE) }, (_, k) =>
       getJson(STARTS_URL, {
         where,
-        outFields: "IncidentName,FireDiscoveryDateTime,FireCause,InitialLatitude,InitialLongitude,IncidentSize,DiscoveryAcres,FinalAcres",
+        outFields: "OBJECTID,IncidentName,FireDiscoveryDateTime,FireCause,InitialLatitude,InitialLongitude,IncidentSize,DiscoveryAcres,FinalAcres",
         // the record's own point (kept up to date) rather than the initial reported one, which can sit km away
         returnGeometry: "true",
         outSR: "4326",
@@ -85,7 +89,7 @@ export async function loadSeasonStarts(year = SEASON_YEAR, signal?: AbortSignal)
       }, signal),
     ),
   );
-  type A = { IncidentName: string; FireDiscoveryDateTime: number; FireCause: string | null; InitialLatitude: number; InitialLongitude: number;
+  type A = { OBJECTID: number; IncidentName: string; FireDiscoveryDateTime: number; FireCause: string | null; InitialLatitude: number; InitialLongitude: number;
     IncidentSize: number | null; DiscoveryAcres: number | null; FinalAcres: number | null };
   const rows = pages.flatMap((p) => p.features as { attributes: A; geometry?: { x: number; y: number } | null }[])
     .map((f) => {
@@ -96,7 +100,7 @@ export async function loadSeasonStarts(year = SEASON_YEAR, signal?: AbortSignal)
     .filter(({ lon, lat, day }) => day >= 0 && day < daysIn(year) && Number.isFinite(lat) && Number.isFinite(lon))
     .sort((p, q) => p.day - q.day);
   const n = rows.length;
-  const out: SeasonStarts = { n, lon: new Float64Array(n), lat: new Float64Array(n), day: new Int16Array(n), acres: new Float32Array(n), cause: new Uint8Array(n), name: [] };
+  const out: SeasonStarts = { n, lon: new Float64Array(n), lat: new Float64Array(n), day: new Int16Array(n), acres: new Float32Array(n), cause: new Uint8Array(n), name: [], oid: new Int32Array(n) };
   rows.forEach(({ a, lon, lat, day }, i) => {
     out.lon[i] = lon;
     out.lat[i] = lat;
@@ -104,6 +108,7 @@ export async function loadSeasonStarts(year = SEASON_YEAR, signal?: AbortSignal)
     out.acres[i] = Math.max(a.FinalAcres ?? 0, a.IncidentSize ?? 0, a.DiscoveryAcres ?? 0);
     out.cause[i] = a.FireCause === "Natural" ? 1 : a.FireCause === "Human" ? 2 : 0;
     out.name.push(a.IncidentName ?? "");
+    out.oid[i] = a.OBJECTID;
   });
   return out;
 }
@@ -115,7 +120,7 @@ export async function loadSeasonPerimeters(year = SEASON_YEAR, signal?: AbortSig
   for (let off = 0; ; off += PAGE) {
     const j = await getJson(PERIMS_URL, {
       where,
-      outFields: "poly_IncidentName,attr_FireDiscoveryDateTime,attr_IncidentSize,poly_GISAcres",
+      outFields: "OBJECTID,poly_IncidentName,attr_FireDiscoveryDateTime,attr_IncidentSize,poly_GISAcres",
       outSR: "4326",
       maxAllowableOffset: "0.00005",
       geometryPrecision: "6",
@@ -123,7 +128,7 @@ export async function loadSeasonPerimeters(year = SEASON_YEAR, signal?: AbortSig
       resultRecordCount: String(PAGE),
       f: "geojson",
     }, signal);
-    type F = { geometry: { type: string; coordinates: unknown } | null; properties: Record<string, unknown> };
+    type F = { id?: number; geometry: { type: string; coordinates: unknown } | null; properties: Record<string, unknown> };
     for (const f of j.features as F[]) {
       if (!f.geometry) continue;
       const p = f.properties;
@@ -137,12 +142,34 @@ export async function loadSeasonPerimeters(year = SEASON_YEAR, signal?: AbortSig
           if (y < s) s = y;
           if (y > n) n = y;
         }
-        out.push({ name: String(p.poly_IncidentName ?? ""), day, acres: Number(p.attr_IncidentSize ?? p.poly_GISAcres ?? 0), polygon, bbox: [w, s, e, n] });
+        out.push({ oid: Number(p.OBJECTID ?? f.id), name: String(p.poly_IncidentName ?? ""), day, acres: Number(p.attr_IncidentSize ?? p.poly_GISAcres ?? 0), polygon, bbox: [w, s, e, n] });
       }
     }
     if ((j.features as unknown[]).length < PAGE) break;
   }
   return out.sort((a, b) => a.day - b.day);
+}
+
+/** Which of NIFC's two services a picked fire came from. */
+export type FirePick = { kind: "start" | "burn"; oid: number };
+
+/** One fire's whole record from NIFC (every field, the perimeter's attr_ / poly_ prefixes dropped). */
+export async function fireRecord(pick: FirePick, signal?: AbortSignal): Promise<Record<string, unknown>> {
+  const url = pick.kind === "start" ? STARTS_URL : PERIMS_URL;
+  const j = await getJson(url, { objectIds: String(pick.oid), outFields: "*", returnGeometry: "false", f: "json" }, signal);
+  const a = (j.features?.[0]?.attributes ?? {}) as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(a)) {
+    const key = k.replace(/^(attr|poly)_/, "");
+    // the perimeter's own acres and map date keep their prefix (they describe the outline, not the incident)
+    out[k.startsWith("poly_") && key in out ? k : key] = v;
+  }
+  if (pick.kind === "burn") {
+    out.GISAcres = a.poly_GISAcres;
+    out.PolygonDateTime = a.poly_PolygonDateTime;
+    out.MapMethod = a.poly_MapMethod;
+  }
+  return out;
 }
 
 /**
@@ -234,6 +261,9 @@ export type SeasonLayerOpts = {
   pHide: number;
   beforeId?: string;
   onHover: (i: number, x: number, y: number) => void;
+  onClick?: (pick: FirePick) => void;
+  /** A distinct id prefix, for the pair's second map. */
+  prefix?: string;
 };
 
 export function seasonLayers(o: SeasonLayerOpts) {
@@ -249,10 +279,14 @@ export function seasonLayers(o: SeasonLayerOpts) {
   const fresh = shown.filter((d) => day - st.day[d.i]! <= 2);
   return [
     new PolygonLayer<SeasonPerimeter>({
-      id: "season-perimeters",
+      id: `${o.prefix ?? ""}season-perimeters`,
       data: o.perims,
       getPolygon: (d: SeasonPerimeter) => d.polygon,
-      filled: false,
+      // a fill too faint to see, so a click inside the burn picks it
+      filled: true,
+      getFillColor: [255, 255, 255, 1],
+      pickable: !!o.onClick,
+      onClick: (info: { object?: SeasonPerimeter }) => { if (info.object && o.onClick) o.onClick({ kind: "burn", oid: info.object.oid }); },
       stroked: true,
       getLineColor: [...PERIM, 210],
       lineWidthUnits: "pixels",
@@ -260,7 +294,7 @@ export function seasonLayers(o: SeasonLayerOpts) {
       beforeId: o.beforeId,
     } as never),
     new ScatterplotLayer<D>({
-      id: "season-starts",
+      id: `${o.prefix ?? ""}season-starts`,
       data: shown,
       getPosition: (d: D) => [st.lon[d.i]!, st.lat[d.i]!],
       radiusUnits: "meters",
@@ -274,11 +308,12 @@ export function seasonLayers(o: SeasonLayerOpts) {
       getFillColor: (d: D) => [...color(d.k), Number.isNaN(o.fuel[d.k]!) || o.fuel[d.k]! < pHide ? 0 : 60],
       pickable: true,
       onHover: (info: { index: number; x: number; y: number; object?: D }) => o.onHover(info.object ? info.object.i : -1, info.x, info.y),
+      onClick: (info: { object?: D }) => { if (info.object && o.onClick) o.onClick({ kind: "start", oid: st.oid[info.object.i]! }); },
       updateTriggers: { getLineColor: trig, getFillColor: trig, getRadius: [o.reachM] },
       beforeId: o.beforeId,
     } as never),
     new ScatterplotLayer<D>({
-      id: "season-fresh",
+      id: `${o.prefix ?? ""}season-fresh`,
       data: fresh,
       getPosition: (d: D) => [st.lon[d.i]!, st.lat[d.i]!],
       radiusUnits: "pixels",

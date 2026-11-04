@@ -51,17 +51,23 @@ with modest skill overall (R2 0.2 to 0.5). `results/knn_aef_*.json`.
 ### The web map (`web/`)
 
 React, MapLibre and deck.gl. Nothing is precomputed but the model weights and small file indexes; the embeddings,
-the fire records and the satellite fire pixels are read from their public stores when the view opens.
+the fire records and the Sentinel-2 imagery are read from their public stores when the view opens.
 
-- **The ground**: P(fuel) from the 10 m AlphaEarth Zarr mosaic, from zoom 11 in.
+- **The ground**: P(fuel) from the 10 m AlphaEarth Zarr mosaic, from zoom 11 in. The panel picks the embeddings
+  year (2019 to 2025); the fuel model reads that year and the two before it.
+- **Sentinel-2** (`web/src/s2.ts`): Earth Genome's yearly mosaics, 2022 to 2025, found with Earth Genome's STAC
+  search and read from each footprint's TCI COG on Source Cooperative, decoded in workers. Drawn bare, over the
+  basemap's streets and labels: hold Space to see it in place of the fuel, `[` and `]` (or the wheel while Space
+  is held) to step its year, P for imagery and fuel side by side, moving together.
 - **Buildings** (zoom 14 in): Overture footprints read with DuckDB-WASM, each outline colored by the most burnable
   ground within a reach of it.
 - **The 2025 season**: every California wildfire start and burn perimeter of 2025 (NIFC WFIGS services), day by
   day, over the fuel of 2024. A start whose circle (30 m by default) holds fuel lights the fuel inside it; burns light
-  the fuel inside them; the rest stays dim.
-- **One fire from orbit**: the Green Fire (19,022 acres, lightning, July 2025, northeast of Redding) as GOES-West's
-  fire product saw it, hour by hour, over the 2024 fuel. The fuel inside the final burn outline lights up where the
-  satellite has already seen fire.
+  the fuel inside them; the rest stays dim. Clicking a start or a burn reads that fire's whole NIFC record (dates,
+  size, cause, place, land, agency, NIFC's fuel notes, personnel, cost) into the panel.
+- **One fire from orbit** (off in the panel, code kept): the Green Fire (19,022 acres, lightning, July 2025) as
+  GOES-West's fire product saw it, hour by hour. GOES pixels are 2 to 4 km across, so over a 10 m fuel map they
+  cover the whole burn and say little about the ground.
 
 ```bash
 npm --prefix web install

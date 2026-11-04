@@ -5,3 +5,14 @@ body,
   width: 100vw;
   height: 100vh;
 }
+
+/* the pair's labels: which picture each map holds */
+.pair-tag {
+  z-index: 900;
+  pointer-events: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(20, 20, 24, 0.85);
+  color: #e6e9ec;
+  font: 12px/1.4 "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+}

@@ -21,10 +21,12 @@ import { ignitionRate, rateLabel } from "./aef/calibration.js";
 // import { loadPerimeters, type Perimeter, perimeterLayer, perimetersInRun } from "./perimeters.js";
 import { HEADS, NO_CLASS, type Teacher } from "./aef/head.js";
 import { AefLayers } from "./aef/layers.js";
-import { AEF_YEAR, type AefArray, MOSAIC_MIN_ZOOM, openAefMosaic } from "./aef/mosaic.js";
+import { AEF_YEAR, type AefArray, MOSAIC_MIN_ZOOM, openAefMosaic, YEARS } from "./aef/mosaic.js";
 import {
-  daysIn, fuelNear, goesMask, loadSeasonPerimeters, loadSeasonStarts, SEASON_YEAR, seasonLayers, seasonMask, type SeasonPerimeter, type SeasonStarts,
+  daysIn, type FirePick, fireRecord, fuelNear, goesMask, loadSeasonPerimeters, loadSeasonStarts, SEASON_YEAR, seasonLayers, seasonMask,
+  type SeasonPerimeter, type SeasonStarts,
 } from "./season.js";
+import { S2_YEARS, S2Imagery } from "./s2.js";
 import { byHour, type FirePixel, type GoesDoc, goesLayers, loadGoesDoc, loadGoesPerimeter, readGoesFire } from "./goes.js";
 
 /** The one fire GOES-West is shown for (web/public/goes/<slug>.json from scripts/goes_fire_refs.py). */
@@ -138,6 +140,15 @@ async function loadMapStyle(): Promise<StyleSpecification | string> {
 
 export default function App() {
   const mapRef = useRef<MapRef>(null);
+  /** The pair's left map (P): the imagery beside the fuel, moving together. */
+  const leftRef = useRef<MapRef>(null);
+  const [pair, setPair] = useState(false);
+  /** Space held: the imagery in place of the fuel. */
+  const [holding, setHolding] = useState(false);
+  const holdingRef = useRef(false);
+  holdingRef.current = holding;
+  const stepImgYearRef = useRef<(d: number) => void>(() => {});
+  const stepImgYear = (d: number) => stepImgYearRef.current(d);
   const [mapStyle, setMapStyle] = useState<StyleSpecification | string | null>(null);
   useEffect(() => {
     void loadMapStyle().then(setMapStyle);
@@ -276,19 +287,30 @@ export default function App() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const space = e.code === "Space" || e.key === " ";
+      const pairKey = e.key === "p" || e.key === "P";
+      const yearKey = e.key === "[" ? -1 : e.key === "]" ? 1 : 0;
       const full = e.key === "f" || e.key === "F";
       const labels = e.key === "l" || e.key === "L";
       const pick = e.key === "q" || e.key === "Q";
       const ground = e.key === "g" || e.key === "G";
-      if (!space && !full && !labels && !pick && !ground) return;
+      if (!space && !pairKey && !yearKey && !full && !labels && !pick && !ground) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement | null;
       const tag = el?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "BUTTON" || tag === "SELECT" || el?.isContentEditable) return;
+      // typing goes to text fields and open dropdowns; a button, box or slider last clicked gives the key to the map
+      const typing = tag === "TEXTAREA" || tag === "SELECT" || el?.isContentEditable ||
+        (tag === "INPUT" && !["checkbox", "range", "radio", "button"].includes((el as HTMLInputElement).type));
+      if (typing) return;
+      if (tag === "BUTTON" || tag === "INPUT") el?.blur();
       e.preventDefault();
-      if (space && goesOnRef.current) toggleGoesPlayRef.current();
-      else if (space && seasonOnRef.current) toggleSeasonPlayRef.current();
-      else if (space) setIsPlaying((p) => !p);
+      // Space held: the imagery in place of the fuel (the season's and the weather's play keep their buttons)
+      // if (space && goesOnRef.current) toggleGoesPlayRef.current();
+      // else if (space && seasonOnRef.current) toggleSeasonPlayRef.current();
+      // else if (space) setIsPlaying((p) => !p);
+      if (space) { if (!e.repeat) setHolding(true); }
+      else if (pairKey) { if (!e.repeat) setPair((v) => !v); }
+      // [ and ]: the imagery a year back or forward
+      else if (yearKey) stepImgYear(yearKey);
       // G switched the old ignition head between pixels and counties: both off for now
       else if (ground) return;
       else if (pick) {
@@ -308,12 +330,35 @@ export default function App() {
       } else if (document.fullscreenElement) void document.exitFullscreen();
       else void document.documentElement.requestFullscreen();
     };
-    // the browser's real full screen (F): the map takes the new size
-    const onFull = () => mapRef.current?.getMap().resize();
+    // letting go of Space (or leaving the window while holding it) brings the fuel back
+    const onUp = (e: KeyboardEvent) => { if (e.code === "Space" || e.key === " ") setHolding(false); };
+    const onBlur = () => setHolding(false);
+    // while Space is held the wheel steps the imagery year instead of zooming (caught before the map sees it)
+    let wheelAcc = 0, lastStep = 0;
+    const onWheel = (e: WheelEvent) => {
+      if (!holdingRef.current) return;
+      e.preventDefault();
+      e.stopPropagation();
+      wheelAcc += e.deltaY;
+      const now = performance.now();
+      if (Math.abs(wheelAcc) >= 40 && now - lastStep > 140) {
+        stepImgYear(wheelAcc > 0 ? 1 : -1);
+        wheelAcc = 0;
+        lastStep = now;
+      }
+    };
+    // the browser's real full screen (F): the maps take the new size
+    const onFull = () => { mapRef.current?.getMap().resize(); leftRef.current?.getMap().resize(); };
     window.addEventListener("keydown", onKey, { capture: true });
+    window.addEventListener("keyup", onUp, { capture: true });
+    window.addEventListener("blur", onBlur);
+    window.addEventListener("wheel", onWheel, { capture: true, passive: false });
     document.addEventListener("fullscreenchange", onFull);
     return () => {
       window.removeEventListener("keydown", onKey, { capture: true });
+      window.removeEventListener("keyup", onUp, { capture: true });
+      window.removeEventListener("blur", onBlur);
+      window.removeEventListener("wheel", onWheel, { capture: true });
       document.removeEventListener("fullscreenchange", onFull);
     };
   }, []);
@@ -814,10 +859,45 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aefLayers, aefVersion, goesOn, goesSeen, goesPerim, view]);
 
-  // either view reads the fuel of the year before its fires
+  // ---- the years on screen: the embeddings the fuel is read from (the newest of the fuel model's three years) and
+  // the Sentinel-2 mosaic's. The season view puts the embeddings on the year before its fires; the imagery follows
+  // the embeddings' year until it is picked itself
+  const [embYear, setEmbYear] = useState(AEF_YEAR);
   useEffect(() => {
-    aefLayers?.setFuelYear(seasonOn || goesOn ? SEASON_YEAR - 1 : AEF_YEAR);
-  }, [aefLayers, seasonOn, goesOn]);
+    setEmbYear(seasonOn || goesOn ? SEASON_YEAR - 1 : AEF_YEAR);
+  }, [seasonOn, goesOn]);
+  useEffect(() => {
+    aefLayers?.setFuelYear(embYear);
+  }, [aefLayers, embYear]);
+  const [imgYear, setImgYear] = useState(Math.min(Math.max(AEF_YEAR, S2_YEARS[0]!), S2_YEARS[S2_YEARS.length - 1]!));
+  // [ ] and the wheel while holding: a year back or forward, stopping at the ends
+  stepImgYearRef.current = (d: number) =>
+    setImgYear((y) => S2_YEARS[Math.max(0, Math.min(S2_YEARS.length - 1, S2_YEARS.indexOf(y) + d))]!);
+  useEffect(() => {
+    setImgYear(Math.min(Math.max(embYear, S2_YEARS[0]!), S2_YEARS[S2_YEARS.length - 1]!));
+  }, [embYear]);
+  /** The imagery kept on in place of the fuel (the panel's box), as holding Space does for a moment. */
+  const [imgOn, setImgOn] = useState(false);
+  const showImg = holding || imgOn;
+  const [s2Version, setS2Version] = useState(0);
+  const s2 = useMemo(() => new S2Imagery(() => setS2Version((v) => v + 1)), []);
+  // the year's footprints under the view, looked for as the view settles
+  useEffect(() => {
+    if (view) s2.discover(imgYear, view, zoom);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s2, view, imgYear]);
+  // ---- a clicked fire: its whole NIFC record for the panel
+  const [firePick, setFirePick] = useState<FirePick | null>(null);
+  const [fireRec, setFireRec] = useState<Record<string, unknown> | null>(null);
+  useEffect(() => {
+    setFireRec(null);
+    if (!firePick) return;
+    const ac = new AbortController();
+    fireRecord(firePick, ac.signal)
+      .then(setFireRec)
+      .catch((e) => { if ((e as Error).name !== "AbortError") setError(`fire record: ${String(e)}`); });
+    return () => ac.abort();
+  }, [firePick]);
   // play: a day every 140 ms (the year in about 50 s); from the last day it starts over at Jan 1
   const toggleSeasonPlay = useCallback(() => {
     if (!seasonPlaying && seasonDay >= seasonDays - 1) setSeasonDay(0);
@@ -917,6 +997,8 @@ export default function App() {
 
   const buildLayers = useCallback((hourFrac: number) => {
     const out: unknown[] = [];
+    // the imagery bare: over the basemap's streets and labels (no beforeId puts it on top), nothing drawn over it
+    if (view) out.push(...s2.layers({ year: imgYear, view, visible: showImg, prefix: "" }));
     if (showRaster && source && getTileData && colormapTexture) {
       out.push(
         new ZarrLayer<zarr.Readable, "float32", FfwiTileData>({
@@ -959,13 +1041,13 @@ export default function App() {
           light,
           opacity: fuelOpacity,
           ramp: groundRamp,
-          visible: fuel !== "off" && fuel !== "counties",
+          visible: fuel !== "off" && fuel !== "counties" && !showImg,
           seasonDim: (seasonOn && seasonData) || goesOn ? 0.18 : 0,
           beforeId: BEFORE_ID,
         }),
       );
     }
-    if (buildingsApi && bTable && zoom >= BUILDINGS_MIN_ZOOM) {
+    if (buildingsApi && bTable && zoom >= BUILDINGS_MIN_ZOOM && !showImg) {
       const cs = bColors && bColors.colors.length === bTable.batches.length ? bColors : null;
       out.push(
         ...buildingsApi.layer({
@@ -976,7 +1058,7 @@ export default function App() {
         }),
       );
     }
-    if (seasonOn && seasonData && seasonJoin) {
+    if (seasonOn && seasonData && seasonJoin && !showImg) {
       out.push(
         ...seasonLayers({
           starts: seasonData.starts,
@@ -988,10 +1070,11 @@ export default function App() {
           pHide,
           beforeId: BEFORE_ID,
           onHover: (i, x, y) => setSeasonHover(i < 0 || !pickRef.current ? null : { i, x, y }),
+          onClick: setFirePick,
         }),
       );
     }
-    if (goesOn && goesDoc) {
+    if (goesOn && goesDoc && !showImg) {
       out.push(...goesLayers({ now: goesNow, seen: goesSeen, perimeter: goesPerim, beforeId: BEFORE_ID, trigger: [goesHour, goesRead] }));
     }
     if (fuel === "counties" && countyTable && counties) {
@@ -1041,10 +1124,35 @@ export default function App() {
     glowHours, grain, light, contourLines, pHide, pMax, ignScale, zLo, zHi, rankRamp, useWeather, standingAlpha, wxGate, fieldAlpha,
     timeIdx, weatherSrc, weatherKey, timeMode, countyTable, counties, countyVersion, cacheVersion, weekVersion, timeDepth, zHideCounty, wxGate,
     buildingsApi, bTable, bColors, seasonOn, seasonData, seasonJoin, seasonPerims, seasonDay, seasonReach,
+    s2, s2Version, imgYear, showImg, view,
     goesOn, goesDoc, goesNow, goesSeen, goesPerim, goesHour, goesRead,
   ]);
   buildLayersRef.current = buildLayers;
   const deckLayers = useMemo(() => buildLayers(hourFracRef.current), [buildLayers]);
+  // the pair's left map: the imagery bare, over the basemap's streets and labels, nothing drawn over it
+  // (the fires over the imagery: not for now; seasonLayers takes a prefix for this map when they come back)
+  const leftLayers = useMemo(() => {
+    if (!pair || !view) return [];
+    return s2.layers({ year: imgYear, view, visible: true, prefix: "L-" });
+  }, [pair, view, s2, s2Version, imgYear]);
+  // the two maps move together: each one's move set on the other (the flag keeps the echo from bouncing back)
+  const syncing = useRef(false);
+  const follow = (from: import("maplibre-gl").Map, to: MapRef | null) => {
+    if (!pair || syncing.current || !to) return;
+    syncing.current = true;
+    to.getMap().jumpTo({ center: from.getCenter(), zoom: from.getZoom() });
+    syncing.current = false;
+  };
+  // a new size for both maps when the pair opens or closes
+  useEffect(() => {
+    const r = requestAnimationFrame(() => {
+      mapRef.current?.getMap().resize();
+      const l = leftRef.current?.getMap();
+      const m = mapRef.current?.getMap();
+      if (l && m) l.jumpTo({ center: m.getCenter(), zoom: m.getZoom() });
+    });
+    return () => cancelAnimationFrame(r);
+  }, [pair]);
 
   const status: Status = {
     backend: source?.backend ?? null,
@@ -1064,9 +1172,11 @@ export default function App() {
 
   /** The model score in words: low below the hide line, elevated from there, high in the top band. */
   const riskWord = (p: number, hide: number) => (!Number.isFinite(p) ? "unknown" : p < hide ? "low" : p < 0.8 ? "elevated" : "high");
+  // x, y come from the main map (its own corner), which sits on the right half while the pair is open
+  const mapLeft = pair ? (mapRef.current?.getContainer().getBoundingClientRect().left ?? 0) : 0;
   const tooltipStyle = (x: number, y: number): React.CSSProperties => ({
     position: "absolute",
-    left: x + 14,
+    left: x + mapLeft + 14,
     top: y + 14,
     pointerEvents: "none",
     background: "rgba(20,20,24,0.92)",
@@ -1085,9 +1195,31 @@ export default function App() {
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
+      {pair && mapStyle ? (
+        <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: "50%", borderRight: "1px solid rgba(255,255,255,0.25)" }}>
+          <MaplibreMap
+            ref={leftRef}
+            initialViewState={mapRef.current ? { longitude: mapRef.current.getCenter().lng, latitude: mapRef.current.getCenter().lat, zoom: mapRef.current.getZoom() } : START_VIEW}
+            mapStyle={mapStyle}
+            attributionControl={false}
+            maxPitch={0}
+            dragRotate={false}
+            pitchWithRotate={false}
+            touchPitch={false}
+            style={{ width: "100%", height: "100%" }}
+            onLoad={(e) => hideBasemapBuildings(e.target)}
+            onMove={(e) => follow(e.target, mapRef.current)}
+          >
+            <DeckGlOverlay layers={leftLayers as never} interleaved />
+          </MaplibreMap>
+          <div className="pair-tag" style={{ position: "absolute", top: 12, right: 12 }}>Sentinel-2 {imgYear}</div>
+        </div>
+      ) : null}
       {mapStyle ? (
+      <div style={{ position: "absolute", top: 0, bottom: 0, right: 0, left: pair ? "50%" : 0 }}>
       <MaplibreMap
         ref={mapRef}
+        style={{ width: "100%", height: "100%" }}
         initialViewState={START_VIEW}
         hash
         mapStyle={mapStyle}
@@ -1103,13 +1235,19 @@ export default function App() {
           addHillshade(e.target, relief);
           readView(e.target);
         }}
-        onMove={(e) => setZoom(e.viewState.zoom)}
+        onMove={(e) => { setZoom(e.viewState.zoom); follow(e.target, leftRef.current); }}
         onMoveEnd={(e) => readView(e.target)}
         onMouseMove={(e) => { if (pickRef.current) setHover({ lon: e.lngLat.lng, lat: e.lngLat.lat, x: e.point.x, y: e.point.y }); }}
         onMouseOut={() => setHover(null)}
       >
         <DeckGlOverlay layers={deckLayers as never} interleaved onDeviceInitialized={setDevice} overlayRef={overlayRef} />
       </MaplibreMap>
+      {pair || showImg ? (
+        <div className="pair-tag" style={{ position: "absolute", top: 12, right: 12 }}>
+          {showImg ? `Sentinel-2 ${imgYear}` : `Fuel from the ${embYear} embeddings`}
+        </div>
+      ) : null}
+      </div>
       ) : null}
       {fuel === "lit" && !WEATHER_ON && zoom < MOSAIC_MIN_ZOOM ? (
         // the fuel head runs on the 10 m mosaic only; the coarse tiles below MOSAIC_MIN_ZOOM carry no fuel plane
@@ -1258,6 +1396,20 @@ export default function App() {
         weatherOn={WEATHER_ON}
         buildingReach={buildingReach}
         onBuildingReachChange={setBuildingReach}
+        years={{
+          emb: embYear,
+          embOptions: YEARS.filter((y) => y - 2 >= YEARS[0]!),
+          onEmbChange: setEmbYear,
+          img: imgYear,
+          imgOptions: S2_YEARS,
+          onImgChange: setImgYear,
+          imgOn,
+          onImgOnChange: setImgOn,
+          holding,
+          pair,
+          onPairChange: setPair,
+        }}
+        fire={{ pick: firePick, record: fireRec, onClear: () => setFirePick(null) }}
         season={{
           year: SEASON_YEAR,
           on: seasonOn,
@@ -1317,7 +1469,7 @@ export default function App() {
           </div>
         </div>
       ) : null}
-      {seasonOn && seasonData && seasonHover ? (
+      {showImg ? null : seasonOn && seasonData && seasonHover ? (
         <div style={tooltipStyle(seasonHover.x, seasonHover.y)}>
           <div style={{ fontWeight: 600 }}>{seasonData.starts.name[seasonHover.i] || "unnamed start"}</div>
           <div>

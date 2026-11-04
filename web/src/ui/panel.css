@@ -151,3 +151,14 @@
 .pn .rank td { padding: 2px 4px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); cursor: pointer; }
 .pn .rank th:not(:first-child), .pn .rank td:not(:first-child) { text-align: right; white-space: nowrap; }
 .pn .rank tr:hover td { background: rgba(255, 255, 255, 0.06); }
+
+/* the years on screen: embeddings and imagery */
+.pn .years { margin: 10px 0 4px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; display: grid; gap: 6px; }
+.pn .years .row { align-items: center; gap: 8px; }
+.pn .yr { display: inline-flex; align-items: center; gap: 6px; min-width: 150px; }
+.pn .yr span { min-width: 76px; }
+.pn .yr select { background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line); border-radius: 6px; padding: 1px 4px; }
+/* a fire's NIFC record */
+.pn table.rec { width: 100%; border-collapse: collapse; margin-top: 6px; }
+.pn table.rec th { text-align: left; font-weight: 400; color: var(--muted); padding: 2px 8px 2px 0; vertical-align: top; white-space: nowrap; }
+.pn table.rec td { padding: 2px 0; }

@@ -2,10 +2,11 @@
 // import { COLORMAP_INDEX } from "@developmentseed/deck.gl-raster/gpu-modules";
 // import colormapsPngUrl from "@developmentseed/deck.gl-raster/gpu-modules/colormaps.png";
 import { useState } from "react";
-import { HEADS, type Teacher } from "../aef/head.js";
-import { HOLD } from "../aef/fuel.js";
+// HEADS and HOLD: the afterglow help, commented out with the weather
+// import { HEADS } from "../aef/head.js";
+// import { HOLD } from "../aef/fuel.js";
+import { type Teacher } from "../aef/head.js";
 import { MOSAIC_MIN_ZOOM } from "../aef/mosaic.js";
-import { AEF_YEAR } from "../aef/mosaic.js";
 import { GROUND_RAMPS, rampGradient, rampStops, type GroundRamp } from "../aef/ramp.js";
 import type { WindMode } from "../ffwi/compute.js";
 import {
@@ -199,7 +200,65 @@ export type ControlPanelProps = {
   onBuildingReachChange: (m: number) => void;
   season: SeasonPanel;
   goes: GoesPanel;
+  years: YearsPanel;
+  fire: FirePanel;
 };
+
+/** The years on screen: the embeddings the fuel is read from, and the Sentinel-2 mosaic's. */
+export type YearsPanel = {
+  emb: number;
+  embOptions: number[];
+  onEmbChange: (y: number) => void;
+  img: number;
+  imgOptions: number[];
+  onImgChange: (y: number) => void;
+  imgOn: boolean;
+  onImgOnChange: (on: boolean) => void;
+  holding: boolean;
+  pair: boolean;
+  onPairChange: (on: boolean) => void;
+};
+
+/** A clicked fire: which one, and its NIFC record once fetched. */
+export type FirePanel = {
+  pick: { kind: "start" | "burn"; oid: number } | null;
+  record: Record<string, unknown> | null;
+  onClear: () => void;
+};
+
+const pacificDay = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" });
+
+/** The record's fields worth reading, in order, each with its label and how to show it. */
+function fireRows(r: Record<string, unknown>): [string, string][] {
+  const str = (k: string) => (r[k] == null || r[k] === "" ? null : String(r[k]));
+  const num = (k: string) => (typeof r[k] === "number" && Number.isFinite(r[k]) ? (r[k] as number) : null);
+  const when = (k: string) => (num(k) != null ? pacificDay.format(new Date(num(k)!)) : null);
+  const acres = num("GISAcres") ?? num("FinalAcres") ?? num("IncidentSize") ?? num("CalculatedAcres");
+  const cause = [str("FireCause"), str("FireCauseGeneral"), str("FireCauseSpecific")].filter((v, i, a) => v && a.indexOf(v) === i).join(", ");
+  const place = [str("POOCity"), str("POOCounty") ? `${str("POOCounty")} County` : null].filter(Boolean).join(", ");
+  const land = [str("POOLandownerKind"), str("POOLandownerCategory")].filter((v, i, a) => v && a.indexOf(v) === i).join(", ");
+  const fuel = [str("PredominantFuelGroup"), str("PrimaryFuelModel"), str("SecondaryFuelModel")].filter(Boolean).join(" · ");
+  const cost = num("EstimatedCostToDate") ?? num("EstimatedFinalCost");
+  const rows: [string, string | null][] = [
+    ["Discovered", when("FireDiscoveryDateTime")],
+    ["Contained", when("ContainmentDateTime")],
+    ["Out", when("FireOutDateTime")],
+    ["Size", acres != null ? `${Math.round(acres).toLocaleString()} acres${num("GISAcres") != null ? " (mapped outline)" : ""}` : null],
+    ["Cause", cause || null],
+    ["Where", place || null],
+    ["Land", land || null],
+    ["Protecting agency", str("POOProtectingAgency")],
+    ["Fuel (NIFC record)", fuel || null],
+    ["Fire behavior", str("FireBehaviorGeneral")],
+    ["Personnel", num("TotalIncidentPersonnel") != null ? num("TotalIncidentPersonnel")!.toLocaleString() : null],
+    ["Cost to date", cost != null ? `$${Math.round(cost).toLocaleString()}` : null],
+    ["Outline mapped", when("PolygonDateTime")],
+    ["Map method", str("MapMethod")],
+    ["Description", str("IncidentShortDescription")],
+    ["Fire ID", str("UniqueFireIdentifier")],
+  ];
+  return rows.filter((x): x is [string, string] => x[1] != null);
+}
 
 /** One fire as GOES-West saw it (App.tsx, goes.ts). */
 export type GoesPanel = {
@@ -224,7 +283,9 @@ export type GoesPanel = {
   seen: number;
 };
 
-const pacific = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", month: "short", day: "numeric", hour: "numeric", timeZoneName: "short" });
+// the GOES fold's clock, with the fold commented out
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const pacific = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", month: "short", day: "numeric", hour: "numeric", timeZoneName: "short" });
 
 /** The fire season view (App.tsx, season.ts). */
 export type SeasonPanel = {
@@ -310,12 +371,13 @@ export function ControlPanel(p: ControlPanelProps) {
   return (
     <div className={`pn${min ? " min" : ""}`}>
       <div className="pn-title">
-        <h1>Where fires start</h1>
+        <h1>Fuel from the embeddings</h1>
         <button type="button" className="pn-min" aria-label={min ? "Expand panel" : "Collapse panel"} onClick={() => setMin((v) => !v)}>
           {min ? "▸" : "▾"}
         </button>
       </div>
       {min && p.weatherOn ? <p className="pn-stamp">{timeTag}</p> : null}
+      {min ? <p className="pn-stamp">Embeddings {p.years.emb} · Sentinel-2 {p.years.img}{p.years.holding || p.years.imgOn ? " (shown)" : ""}</p> : null}
       {min && (p.fuel === "ignition" || p.fuel === "counties" || (p.fuel === "lit" && !p.weatherOn)) ? (
         <div className="pn-legend">
           <div className="ramp" role="img" aria-label={`${p.groundRamp} ramp`} style={{ backgroundImage: rampGradient(rampStops(p.groundRamp)) }} />
@@ -327,6 +389,7 @@ export function ControlPanel(p: ControlPanelProps) {
         </div>
       ) : null}
 
+      {/* the ignition-and-weather intro, while the weather is off:
       <p>
         Every pixel's <b>AlphaEarth embedding</b> goes through a small head fit on 22,000 real wildfire ignitions (WFIGS, 2019
         to 2026) against points 20 to 30 km away at other hours, together with the hour's weather from NOAA's HRRR
@@ -334,17 +397,54 @@ export function ControlPanel(p: ControlPanelProps) {
         hour by hour over a window of up to a week of daily forecasts: the ground in gray all the time, in color where
         the weather lifts it. This is a risk outlook, not a detection: nothing here shows an actual fire, and the colors
         mean a higher or lower chance of a start, never that one has happened.
-        
       </p>
+      */}
+      <p>
+        Each 10 m pixel's <b>AlphaEarth embeddings</b> go through a small model fit on fuel and non-fuel ground across
+        California, giving the chance the ground is burnable fuel. Fires are NIFC's records: where each one started and
+        the outline it burned. <b>Sentinel-2</b> shows what the ground looked like.
+      </p>
+
+      <div className="years">
+        <div className="row">
+          <label className="yr">
+            <span>Embeddings</span>
+            <select value={p.years.emb} onChange={(e) => { p.years.onEmbChange(Number(e.target.value)); e.currentTarget.blur(); }} aria-label="Embeddings year">
+              {p.years.embOptions.map((y) => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </label>
+          <span className="muted small">the fuel model reads {p.years.emb - 2} to {p.years.emb}</span>
+        </div>
+        <div className="row">
+          <label className="yr">
+            <span>Sentinel-2</span>
+            <select value={p.years.img} onChange={(e) => { p.years.onImgChange(Number(e.target.value)); e.currentTarget.blur(); }} aria-label="Imagery year">
+              {p.years.imgOptions.map((y) => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </label>
+          <span className="muted small">Earth Genome yearly mosaic</span>
+        </div>
+        <div className="row">
+          <Check checked={p.years.imgOn} onChange={p.years.onImgOnChange} label="Imagery in place of the fuel" />
+          <Check checked={p.years.pair} onChange={p.years.onPairChange} label="Side by side" />
+        </div>
+        <p className="muted small">
+          Hold <b>Space</b> to see the imagery (the wheel steps its year while held), <b>[</b> <b>]</b> a year back or
+          forward, <b>P</b> for the two side by side. Imagery from zoom 9 in, fuel from zoom {MOSAIC_MIN_ZOOM} in.
+        </p>
+      </div>
       <p className="muted small" style={{ marginTop: 6 }}>
-        Data: <A href="https://source.coop/tge-labs/aef">AlphaEarth Foundations {AEF_YEAR}</A> (tge-labs on Source Cooperative) ·{" "}
+        Data: <A href="https://source.coop/tge-labs/aef">AlphaEarth Foundations</A> (tge-labs on Source Cooperative) ·{" "}
+        <A href="https://www.earthgenome.org/">Earth Genome</A> Sentinel-2 mosaics (CC BY 4.0) ·{" "}
+        <A href="https://data-nifc.opendata.arcgis.com/">NIFC WFIGS</A> fire starts and outlines · Overture Maps buildings ·{" "}
+        {/* the weather sources, while the weather is off:
         <A href="https://dynamical.org/catalog/noaa-hrrr-forecast-48-hour/">NOAA HRRR 48 h</A> via{" "}
         <A href="https://dynamical.org">dynamical.org</A> ({s.backend === "icechunk" ? "Icechunk" : s.backend === "zarr-v3" ? "Zarr v3" : "opening"}) ·{" "}
-        <A href="https://www.frames.gov/catalog/27085">Fosberg 1978</A> · <A href="https://data-nifc.opendata.arcgis.com/">NIFC WFIGS</A> ignitions and perimeters ·{" "}
+        <A href="https://www.frames.gov/catalog/27085">Fosberg 1978</A> ·{" "} */}
         <A href="https://github.com/kentstephen/aef-hls-s1-fire-knn-hrrr">code on GitHub</A>
       </p>
       <p className="muted small" style={{ marginTop: 4 }}>
-        Keys: <b>Space</b> plays and pauses · <b>F</b> full screen ·{" "}
+        Keys: <b>Space</b> (hold) imagery · <b>[</b> <b>]</b> imagery year · <b>P</b> side by side · <b>F</b> full screen ·{" "}
         <b>L</b> map labels off and on · <b>Q</b> tooltip off and on.
       </p>
 
@@ -567,6 +667,7 @@ export function ControlPanel(p: ControlPanelProps) {
         <Field label={`Opacity ${Math.round(p.fuelOpacity * 100)}%`}>
           <Slider min={0.05} max={1} step={0.05} value={p.fuelOpacity} onChange={p.onFuelOpacityChange} label="Ground opacity" onReset={() => p.onFuelOpacityChange(0.9)} />
         </Field>
+        {/* the afterglow (the past hours' weather held on the ground), while the weather is off
         <Field
           label={
             <span className="row">
@@ -585,6 +686,7 @@ export function ControlPanel(p: ControlPanelProps) {
         >
           <Slider min={0} max={48} step={1} value={p.glowHours} onChange={p.onGlowHoursChange} label="Afterglow hours" onReset={() => p.onGlowHoursChange(0)} />
         </Field>
+        */}
         {/* grain (the fill broken into cells): off, not offered
         <Field label={p.grain === 0 ? "Grain: off (flat fill)" : `Grain: ${p.grain} cells across a tile`}>
           <Slider min={0} max={128} step={8} value={p.grain} onChange={p.onGrainChange} label="Grain" onReset={() => p.onGrainChange(0)} />
@@ -608,6 +710,30 @@ export function ControlPanel(p: ControlPanelProps) {
         */}
       </Fold>
 
+      <Fold k="fire" label="The fire" defaultOpen tag={p.fire.record ? String(p.fire.record.IncidentName ?? "") : p.fire.pick ? "reading" : "none picked"}>
+        {!p.fire.pick ? (
+          <p className="muted small">Click a fire start or inside a burn outline (the season view, below) for NIFC's record of it.</p>
+        ) : !p.fire.record ? (
+          <p className="muted small">Reading the record from NIFC...</p>
+        ) : (
+          <>
+            <div className="row">
+              <b>{String(p.fire.record.IncidentName ?? "Unnamed")} Fire</b>
+              <span className="muted small">{p.fire.pick.kind === "burn" ? "burn outline" : "start"}</span>
+              <button type="button" className="small" onClick={p.fire.onClear} aria-label="Clear the fire">Clear</button>
+            </div>
+            <table className="rec">
+              <tbody>
+                {fireRows(p.fire.record).map(([k, v]) => (
+                  <tr key={k}><th>{k}</th><td>{v}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
+      </Fold>
+
+      {/* the GOES-West one-fire view: off (2 to 4 km pixels cover a whole burn; goes.ts and its state stay)
       <Fold k="goes" label="One fire from orbit" defaultOpen tag={p.goes.on ? pacific.format(new Date(p.goes.t0 + p.goes.hour * 3600e3)) : "off"}>
         <div className="row">
           <Seg value={p.goes.on ? "on" : "off"} options={[{ id: "on", label: "Show" }, { id: "off", label: "Off" }]} onChange={(v) => p.goes.onChange(v === "on")} />
@@ -641,6 +767,7 @@ export function ControlPanel(p: ControlPanelProps) {
           </>
         ) : null}
       </Fold>
+      */}
 
       <Fold k="season" label={`The ${p.season.year} season`} defaultOpen tag={p.season.on ? dayLabel(p.season.year, p.season.day) : "off"}>
         <div className="row">
@@ -656,7 +783,7 @@ export function ControlPanel(p: ControlPanelProps) {
         {p.season.on ? (
           <>
             <div className="row">
-              <button type="button" className="play" aria-label={p.season.playing ? "Pause" : "Play"} title={p.season.playing ? "Pause (Space)" : "Play (Space)"}
+              <button type="button" className="play" aria-label={p.season.playing ? "Pause" : "Play"} title={p.season.playing ? "Pause" : "Play"}
                 onClick={(e) => { p.season.onPlayToggle(); e.currentTarget.blur(); }}>
                 {p.season.playing ? "❚❚" : "▶"}
               </button>

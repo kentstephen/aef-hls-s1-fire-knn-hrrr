@@ -64,6 +64,17 @@ type LayerOpts = {
 const PALE: RGBA = [236, 232, 214, 230];
 const abortError = () => Object.assign(new Error("aborted"), { name: "AbortError" });
 
+/** Wait for p, but reject with an AbortError as soon as the signal fires (p itself keeps running). */
+function untilAborted<T>(p: Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (!signal) return p;
+  if (signal.aborted) return Promise.reject(abortError());
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(abortError());
+    signal.addEventListener("abort", onAbort, { once: true });
+    p.then(resolve, reject).finally(() => signal.removeEventListener("abort", onAbort));
+  });
+}
+
 // tiles in Web Mercator at TILE_Z
 const N = 2 ** TILE_Z;
 const lonToX = (lon: number) => ((lon + 180) / 360) * N;
@@ -232,11 +243,13 @@ export async function createBuildings(opts: { spatial?: boolean } = {}) {
       const mx0 = Math.min(...missing.map((t) => t.x)), mx1 = Math.max(...missing.map((t) => t.x));
       const my0 = Math.min(...missing.map((t) => t.y)), my1 = Math.max(...missing.map((t) => t.y));
       const want = new Set(missing.map(key));
-      const job = fetchRect(mx0, mx1, my0, my1, want, signal);
+      // the read is shared: a later view waits on the same tiles, so one view's abort must not cancel it (a
+      // cancelled first read, ~25 s, left every later view waiting on a failed job and no outlines at all)
+      const job = fetchRect(mx0, mx1, my0, my1, want);
       for (const k of want) pending.set(k, job);
       job.finally(() => want.forEach((k) => pending.get(k) === job && pending.delete(k))).catch(() => {});
     }
-    await Promise.all(chosen.map((t) => pending.get(key(t))).filter(Boolean));
+    await untilAborted(Promise.all(chosen.map((t) => pending.get(key(t))).filter(Boolean)), signal);
     if (signal?.aborted) throw abortError();
 
     const out: BuildingTile[] = [];

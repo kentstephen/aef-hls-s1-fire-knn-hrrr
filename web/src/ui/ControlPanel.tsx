@@ -52,6 +52,8 @@ export const MAX_WEEK_DAYS = 7;
 
 export type Status = {
   backend: "icechunk" | "zarr-v3" | null;
+  /** False: the HRRR store is not opened at all (App.tsx WEATHER_ON). */
+  weatherOn: boolean;
   tilesLoaded: number;
   tilesTotal: number;
   aefIndexReady: boolean;
@@ -71,7 +73,7 @@ export function loadingSummary(s: Status): { fraction: number; label: string } |
   const parts: string[] = [];
   let done = 0;
   let total = 0;
-  if (!s.backend) {
+  if (s.weatherOn && !s.backend) {
     parts.push("opening the HRRR store");
     total += 1;
   }
@@ -190,6 +192,11 @@ export type ControlPanelProps = {
   onTauHoursChange: (v: number) => void;
 
   status: Status;
+  /** False: no weather; the ground is the fuel head's P(fuel) alone and the Time panel is off. */
+  weatherOn: boolean;
+  /** Buildings: how far out (m) the burnable ground counts. */
+  buildingReach: number;
+  onBuildingReachChange: (m: number) => void;
 };
 
 // const FIELD_OPTIONS = [
@@ -219,7 +226,9 @@ export function ControlPanel(p: ControlPanelProps) {
   const onLatestDay = latestDay !== null && weekEnd.getTime() === latestDay.getTime();
   /** The ramp's two ends and what they are, for the collapsed card's legend. */
   const legendEnds: [string, string, string] =
-    p.fuel === "counties"
+    p.fuel === "lit" && !p.weatherOn
+      ? [`${Math.round(p.pHide * 100)}%`, `${Math.round(p.pMax * 100)}%`, p.ignScale === "logit" ? "chance of fuel (log-odds)" : "chance of fuel"]
+      : p.fuel === "counties"
       ? ["0%", "100%", "ignition risk by county"]
       : p.ignScale === "probability"
       ? [`${Math.round(p.pHide * 100)}%`, `${(p.pMax * 100).toFixed(p.pMax >= 0.99 ? 1 : 0)}%`, "ignition risk"]
@@ -251,8 +260,8 @@ export function ControlPanel(p: ControlPanelProps) {
           {min ? "▸" : "▾"}
         </button>
       </div>
-      {min ? <p className="pn-stamp">{timeTag}</p> : null}
-      {min && (p.fuel === "ignition" || p.fuel === "counties") ? (
+      {min && p.weatherOn ? <p className="pn-stamp">{timeTag}</p> : null}
+      {min && (p.fuel === "ignition" || p.fuel === "counties" || (p.fuel === "lit" && !p.weatherOn)) ? (
         <div className="pn-legend">
           <div className="ramp" role="img" aria-label={`${p.groundRamp} ramp`} style={{ backgroundImage: rampGradient(rampStops(p.groundRamp)) }} />
           <div className="pn-legend-ends">
@@ -280,7 +289,7 @@ export function ControlPanel(p: ControlPanelProps) {
         <A href="https://github.com/kentstephen/aef-hls-s1-fire-knn">code on GitHub</A>
       </p>
       <p className="muted small" style={{ marginTop: 4 }}>
-        Keys: <b>Space</b> plays and pauses · <b>G</b> switches the ground between pixels and counties · <b>F</b> full screen ·{" "}
+        Keys: <b>Space</b> plays and pauses · <b>F</b> full screen ·{" "}
         <b>L</b> map labels off and on · <b>Q</b> tooltip off and on.
       </p>
 
@@ -291,15 +300,16 @@ export function ControlPanel(p: ControlPanelProps) {
         </div>
       ) : null}
 
-      <Fold k="fuel" label="The ground" defaultOpen tag={p.fuel === "ignition" ? "ignition risk" : p.fuel === "counties" ? "counties" : p.fuel === "lit" ? "lit by FFWI" : p.fuel === "cover" ? "land cover" : "off"}>
+      <Fold k="fuel" label="The ground" defaultOpen tag={p.fuel === "ignition" ? "ignition risk" : p.fuel === "counties" ? "counties" : p.fuel === "lit" ? (p.weatherOn ? "lit by FFWI" : "P(fuel)") : p.fuel === "cover" ? "land cover" : "off"}>
         <div className="row">
           <Seg
             value={p.fuel}
             options={[
               // lit: the fuel head's P(fuel) x the hour's FFWI (the fuel head in place of the land cover weights)
-              { id: "lit", label: "Lit by FFWI" },
-              { id: "ignition", label: "Risk" },
-              { id: "counties", label: "Counties" },
+              { id: "lit", label: p.weatherOn ? "Lit by FFWI" : "Fuel" },
+              // the old ignition head (Risk) and its county sums: not offered; a risk model from the fuel head is to come
+              // { id: "ignition", label: "Risk" },
+              // { id: "counties", label: "Counties" },
               // the classes themselves and off: not offered; G toggles them
               // { id: "cover", label: "Land cover" },
               // { id: "off", label: "Off" },
@@ -307,13 +317,44 @@ export function ControlPanel(p: ControlPanelProps) {
             onChange={p.onFuelChange}
           />
           <Help label="The ground">
-            G switches between the pixels and the counties. Every pixel's 64-band AlphaEarth embedding goes through a linear head (fit offline against the 2024 land cover maps,
-            held-out accuracy 0.87 to 0.92 for Esri, 0.64 to 0.92 for NLCD) to a class. Lit: the hour's FFWI times the class's
-            fuel weight, hidden below the hide line, viridis from there to the ramp top. Zoomed out the embeddings come from
-            the COG overviews (each overview pixel is the centroid of its children; one byte range per file and
-            level, from an index built once), zoomed in from the 10 m mosaic.
+            Every pixel's AlphaEarth embeddings (2023, 2024 and 2025) go through the fuel head, a small network fit on
+            fuel and non-fuel ground across California, to a chance that the ground is burnable fuel. Drawn from the 10 m
+            mosaic, zoom {MOSAIC_MIN_ZOOM} in; nothing draws zoomed out yet.
           </Help>
         </div>
+        {p.fuel === "lit" && !p.weatherOn ? (
+          <>
+            <div className="row">
+              <Seg value={p.groundRamp} options={GROUND_RAMPS.map((r) => ({ id: r.id, label: r.label }))} onChange={p.onGroundRampChange} />
+            </div>
+            <div className="row">
+              <Seg
+                value={p.ignScale === "logit" ? "logit" : "probability"}
+                options={[{ id: "probability", label: "Straight" }, { id: "logit", label: "Log-odds" }]}
+                onChange={(v) => p.onIgnScaleChange(v as IgnScale)}
+              />
+              <Help label="Scale">
+                Straight: the ramp runs evenly from the hide line to the ramp top, so 90% and 99% both sit near the top.
+                Log-odds: each step of the ramp is the same change in odds, so the top end (90%, 96%, 99%) spreads out.
+              </Help>
+            </div>
+            <div className="ramp" role="img" aria-label={`${p.groundRamp} ramp`} style={{ backgroundImage: rampGradient(rampStops(p.groundRamp)) }} />
+            <p className="muted small">The fuel head's chance the ground is burnable fuel, {Math.round(p.pHide * 100)}% (invisible) to {Math.round(p.pMax * 100)}% (ramp top). No weather.</p>
+            <Field label={`Hide below ${Math.round(p.pHide * 100)}%`}>
+              <Slider min={0} max={0.99} step={0.01} value={p.pHide} onChange={p.onPHideChange} label="Hide below" onReset={() => p.onPHideChange(0.5)} />
+            </Field>
+            <Field label={`Ramp top ${Math.round(p.pMax * 100)}%`}>
+              <Slider min={0.05} max={1} step={0.01} value={p.pMax} onChange={p.onPMaxChange} label="Ramp top" onReset={() => p.onPMaxChange(1)} />
+            </Field>
+            <p className="muted small">
+              Buildings (zoom 14 in): each outline takes the color of the most burnable ground within {p.buildingReach} m of it.
+              Dark gray: nothing above the hide line that close.
+            </p>
+            <Field label={`Building reach ${p.buildingReach} m${p.buildingReach === 30 ? " (about 100 ft, CAL FIRE defensible space)" : ""}`}>
+              <Slider min={0} max={150} step={5} value={p.buildingReach} onChange={p.onBuildingReachChange} label="Building reach" onReset={() => p.onBuildingReachChange(30)} />
+            </Field>
+          </>
+        ) : null}
         <p className="muted small">Reading: {reader}{s.aefReading > 0 ? ` · ${s.aefReading} tiles in flight` : ""}</p>
         {p.fuel === "counties" ? (
           <div className="counties">
@@ -512,6 +553,8 @@ export function ControlPanel(p: ControlPanelProps) {
         */}
       </Fold>
 
+      {/* the time controls only with the weather on (App.tsx WEATHER_ON) */}
+      {p.weatherOn ? (
       <Fold k="time" label="Time" defaultOpen tag={timeTag}>
         <div className="row">
           {/* the single 48 h run mode is not offered; the code path stays (timeMode "run") */}
@@ -652,6 +695,7 @@ export function ControlPanel(p: ControlPanelProps) {
           </>
         )}
       </Fold>
+      ) : null}
 
       {/* the 3 km weather field drawn itself (FFWI contours, the field, its ramp, the hide line, the fuel lag, the wind
           mode): not shown for now; the picture is the ground. The state behind it is still in App.tsx.

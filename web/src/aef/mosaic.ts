@@ -17,7 +17,7 @@ export const YEARS = [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
 export const AEF_YEAR = 2025;
 export const YEAR_IDX = YEARS.indexOf(AEF_YEAR);
 /** Below this the mosaic would read too much (every zoom step out is four times the chunks). */
-export const MOSAIC_MIN_ZOOM = 12;
+export const MOSAIC_MIN_ZOOM = 11;
 /** The grid: EPSG:4326, pixel registered. */
 export const RES = 8.983111749910169e-5;
 export const X0 = -180;

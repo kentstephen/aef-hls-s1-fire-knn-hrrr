@@ -42,8 +42,15 @@ import { CountyTable, countyLayer, loadCounties, unitsGrid, type CountyFeature }
 import { DeckGlOverlay } from "./lib/deckgl-overlay.js";
 import type * as arrow from "apache-arrow";
 import { BUILDINGS_MIN_ZOOM, createBuildings } from "./buildings.js";
+import { buildingExposure, exposureColors } from "./building-exposure.js";
+import { rampStops, rampStripe } from "./aef/ramp.js";
 import { ControlPanel, loadingSummary, type ColormapChoiceId, type FuelChoice, type IgnScale, type Status, type TimeMode } from "./ui/ControlPanel.js";
 
+/**
+ * The HRRR weather off for now: no forecast is read, nothing plays, and the ground is the fuel head's P(fuel) alone.
+ * True brings back FFWI x P(fuel) hour by hour and the Time panel.
+ */
+const WEATHER_ON = false;
 const MAP_STYLE_URL = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
 /** First basemap layer above water in CARTO styles; data goes under roads/labels. */
 const BEFORE_ID = "aeroway-runway";
@@ -57,7 +64,7 @@ const INITIAL_FRAME_MS = 200; // 72 hours in about 14 s
  * frames and the afterglow carries it into the 2nd. (March 14, 2025 12Z is another: the Southern Plains
  * outbreak, extreme wind and single-digit humidity from Texas into the Mid-South.)
  */
-// Redding, California: the ground draws from the 10 m mosaic only (zoom 12 in), where the fuel head runs
+// Redding, California: the ground draws from the 10 m mosaic only (zoom MOSAIC_MIN_ZOOM in), where the fuel head runs
 const START_VIEW = { longitude: -122.3917, latitude: 40.5865, zoom: 12.5 };
 const START_INIT = new Date("2026-08-10T12:00:00Z");
 const START_LEAD = 0;
@@ -74,6 +81,15 @@ const START_DAYS = 3;
 /** Terrain under the ground: AWS Terrain Tiles (Mapzen Terrarium), public, 256 px, to zoom 15. */
 const DEM_TILES = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png";
 const HILLSHADE_ID = "aef-hillshade";
+/** A building with no burnable ground near it. */
+const BUILDING_GRAY: [number, number, number] = [69, 69, 77];
+
+/** CARTO's own building footprints off: the buildings drawn are Overture's (buildings.ts). */
+function hideBasemapBuildings(map: import("maplibre-gl").Map) {
+  for (const l of map.getStyle().layers) {
+    if ("source-layer" in l && l["source-layer"] === "buildings") map.setLayoutProperty(l.id, "visibility", "none");
+  }
+}
 
 /** Relief under everything: a hillshade layer from the terrain tiles, below the first data layer. */
 function addHillshade(map: import("maplibre-gl").Map, on: boolean) {
@@ -121,6 +137,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [initTimeIdx, setInitTimeIdx] = useState(0);
   useEffect(() => {
+    if (!WEATHER_ON) return;
     let cancelled = false;
     openHrrr()
       .then((s) => {
@@ -190,7 +207,7 @@ export default function App() {
   const nextHourRef = useRef<(h: number) => number>((h) => (h + 1) % depthRef.current);
   const depthRef = useRef(START_DAYS * HOURS_PER_DAY);
   const [leadTimeIdx, setLeadTimeIdx] = useState(START_LEAD);
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(WEATHER_ON);
   const [frameDurationMs, setFrameDurationMs] = useState(INITIAL_FRAME_MS);
   /**
    * How far into the hour the playhead is, 0..1 in 24 steps, so the ground glides between hours while playing.
@@ -242,7 +259,8 @@ export default function App() {
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "BUTTON" || tag === "SELECT" || el?.isContentEditable) return;
       e.preventDefault();
       if (space) setIsPlaying((p) => !p);
-      else if (ground) setFuelState((f) => (f === "counties" ? "ignition" : "counties"));
+      // G switched the old ignition head between pixels and counties: both off for now
+      else if (ground) return;
       else if (pick) {
         // the tooltip under the cursor on or off (off for a clean recording)
         pickRef.current = !pickRef.current;
@@ -293,7 +311,7 @@ export default function App() {
   const [fuel, setFuelState] = useState<FuelChoice>("lit");
   /** Ignition mode: hidden below this probability, ramp top at pMax. */
   const [pHide, setPHide] = useState(0.5);
-  const [pMax, setPMax] = useState(0.95);
+  const [pMax, setPMax] = useState(WEATHER_ON ? 0.95 : 1);
   /** How the ignition logit meets the ramp: probability, logit, or rank among the pixels in view this hour. */
   const [ignScale, setIgnScale] = useState<IgnScale>("probability");
   const [zLo, setZLo] = useState(0);
@@ -632,6 +650,24 @@ export default function App() {
     return () => ac.abort();
   }, [view, zoom]);
 
+  // ---- each building's outline from the burnable ground near it (building-exposure.ts): the highest P(fuel)
+  // within the reach, nearer ground counting more; dark gray under the hide line. Recomputed a moment after the
+  // buildings, the ground tiles, the reach or the ramp change.
+  const [buildingReach, setBuildingReach] = useState(30);
+  const [bColors, setBColors] = useState<{ colors: Uint8Array[]; key: number } | null>(null);
+  useEffect(() => {
+    if (!bTable || !buildingsApi || !aefLayers) return;
+    const t = window.setTimeout(() => {
+      const tiles = [...aefLayers.live.values()];
+      const stripe = rampStripe(rampStops(groundRamp));
+      const colors = bTable.batches.map((b) =>
+        exposureColors(buildingExposure(buildingsApi.ringsOf(b), tiles, buildingReach), pHide, pMax, stripe, BUILDING_GRAY, ignScale === "logit"),
+      );
+      setBColors((c) => ({ colors, key: (c?.key ?? 0) + 1 }));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [bTable, buildingsApi, aefLayers, aefVersion, buildingReach, pHide, pMax, groundRamp, ignScale]);
+
   const buildLayers = useCallback((hourFrac: number) => {
     const out: unknown[] = [];
     if (showRaster && source && getTileData && colormapTexture) {
@@ -667,7 +703,7 @@ export default function App() {
           scale: ignScale === "probability" ? "probability" : "logit",
           zLo: ignScale === "rank" ? (rankRamp ? rankRamp[0] : 99) : zLo,
           zHi: ignScale === "rank" ? (rankRamp ? rankRamp[1] : 100) : zHi,
-          useWeather,
+          useWeather: WEATHER_ON && useWeather,
           standingAlpha,
           wxGate,
           fieldAlpha,
@@ -682,7 +718,15 @@ export default function App() {
       );
     }
     if (buildingsApi && bTable && zoom >= BUILDINGS_MIN_ZOOM) {
-      out.push(...buildingsApi.layer({ table: bTable, getLineColor: [69, 69, 77, 255], beforeId: BEFORE_ID }));
+      const cs = bColors && bColors.colors.length === bTable.batches.length ? bColors : null;
+      out.push(
+        ...buildingsApi.layer({
+          table: bTable,
+          getLineColor: cs ? (_b, bi) => cs.colors[bi]! : [...BUILDING_GRAY, 255],
+          colorKey: cs?.key ?? 0,
+          beforeId: BEFORE_ID,
+        }),
+      );
     }
     if (fuel === "counties" && countyTable && counties) {
       const h0 = Math.floor(timeIdx);
@@ -730,13 +774,14 @@ export default function App() {
     leadTimeIdx, colormapIndex, hideBelow, rescaleMax, tauHours, aefLayers, aefVersion, fuel, teacher, fuelOpacity, groundRamp, zoom,
     glowHours, grain, light, contourLines, pHide, pMax, ignScale, zLo, zHi, rankRamp, useWeather, standingAlpha, wxGate, fieldAlpha,
     timeIdx, weatherSrc, weatherKey, timeMode, countyTable, counties, countyVersion, cacheVersion, weekVersion, timeDepth, zHideCounty, wxGate,
-    buildingsApi, bTable,
+    buildingsApi, bTable, bColors,
   ]);
   buildLayersRef.current = buildLayers;
   const deckLayers = useMemo(() => buildLayers(hourFracRef.current), [buildLayers]);
 
   const status: Status = {
     backend: source?.backend ?? null,
+    weatherOn: WEATHER_ON,
     tilesLoaded: cacheRef.current.size,
     tilesTotal: Math.max(cacheRef.current.size, showRaster ? 24 : 0),
     aefIndexReady: aefIndex !== null && mosaic !== null,
@@ -786,6 +831,7 @@ export default function App() {
         touchPitch={false}
         onLoad={(e) => {
           setZoom(e.target.getZoom());
+          hideBasemapBuildings(e.target);
           addHillshade(e.target, relief);
           readView(e.target);
         }}
@@ -796,6 +842,29 @@ export default function App() {
       >
         <DeckGlOverlay layers={deckLayers as never} interleaved onDeviceInitialized={setDevice} overlayRef={overlayRef} />
       </MaplibreMap>
+      {fuel === "lit" && !WEATHER_ON && zoom < MOSAIC_MIN_ZOOM ? (
+        // the fuel head runs on the 10 m mosaic only; the coarse tiles below MOSAIC_MIN_ZOOM carry no fuel plane
+        <div
+          style={{
+            position: "absolute",
+            bottom: 28,
+            left: "50%",
+            transform: "translateX(-50%)",
+            pointerEvents: "none",
+            background: "rgba(20,20,24,0.88)",
+            color: "#eee",
+            fontSize: 13,
+            padding: "8px 14px",
+            borderRadius: 8,
+            zIndex: 1500,
+            textAlign: "center",
+          }}
+        >
+          Zoom in past {MOSAIC_MIN_ZOOM} to see the fuel (now {zoom.toFixed(1)}).
+          <br />
+          <span style={{ color: "#aaa", fontSize: 12 }}>The zoomed-out view is not built yet.</span>
+        </div>
+      ) : null}
       {loading ? (
         <div
           style={{
@@ -917,6 +986,9 @@ export default function App() {
         tauHours={tauHours}
         onTauHoursChange={setTauHours}
         status={status}
+        weatherOn={WEATHER_ON}
+        buildingReach={buildingReach}
+        onBuildingReachChange={setBuildingReach}
       />
       {fuel === "counties" && countyHover && countyInfo ? (
         <div style={tooltipStyle(countyHover.x, countyHover.y)}>
@@ -940,7 +1012,19 @@ export default function App() {
           </div>
         </div>
       ) : null}
-      {fuel !== "counties" && hover && hoverInfo && (hoverInfo.className || Number.isFinite(hoverInfo.wx0)) ? (
+      {fuel === "lit" && !WEATHER_ON && hover && hoverInfo ? (
+        // the weather off: the fuel head's reading alone
+        <div style={tooltipStyle(hover.x, hover.y)}>
+          <div style={{ fontWeight: 600 }}>
+            {hoverInfo.ground && Number.isFinite(hoverInfo.ground.fuel)
+              ? `chance of fuel ${Math.round(hoverInfo.ground.fuel * 100)}%`
+              : "no fuel reading here (zoom in past " + MOSAIC_MIN_ZOOM + ")"}
+          </div>
+          <div style={{ color: "#aaa" }}>
+            {hover.lat.toFixed(3)}, {hover.lon.toFixed(3)}
+          </div>
+        </div>
+      ) : fuel !== "counties" && hover && hoverInfo && (hoverInfo.className || Number.isFinite(hoverInfo.wx0)) ? (
         <div style={tooltipStyle(hover.x, hover.y)}>
           <div style={{ fontWeight: 600 }}>
             {hoverInfo.ground

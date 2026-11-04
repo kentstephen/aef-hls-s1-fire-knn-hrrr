@@ -476,7 +476,7 @@ export class AefLayers {
   }
 
   /** The classes under a lon/lat from the tiles on hand (the finer reader first), or null. */
-  at(lon: number, lat: number): { tile: AefTile; nlcd: number; esri: number; cover: number; ign: number } | null {
+  at(lon: number, lat: number): { tile: AefTile; nlcd: number; esri: number; cover: number; ign: number; fuel: number } | null {
     let best: { tile: AefTile; i: number } | null = null;
     for (const t of this.live.values()) {
       const [w, s, e, n] = t.bbox;
@@ -487,6 +487,6 @@ export class AefLayers {
     }
     if (!best) return null;
     const { tile, i } = best;
-    return { tile, nlcd: tile.classes.nlcd[i]!, esri: tile.classes.esri[i]!, cover: tile.classes.cover[i]! / 255, ign: ignLogit(tile.classes.ign[i]!) };
+    return { tile, nlcd: tile.classes.nlcd[i]!, esri: tile.classes.esri[i]!, cover: tile.classes.cover[i]! / 255, ign: ignLogit(tile.classes.ign[i]!), fuel: tile.classes.fuel[i]! > 0 ? (tile.classes.fuel[i]! - 1) / 254 : NaN };
   }
 }

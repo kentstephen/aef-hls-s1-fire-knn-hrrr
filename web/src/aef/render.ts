@@ -248,6 +248,23 @@ float fuelHash(vec2 p) {
         float fb = texture(fuelTex, geometry.uv).r * 255.0;
         if (fb < 0.5) discard;
         float fw = (fb - 1.0) / 254.0;
+        if (${MODULE_NAME}.useWeather < 0.5) {
+          // the weather left out: P(fuel) alone, hidden below pHide, ramped from there to pMax, straight or on the
+          // log-odds (scale 1), which gives the crowded top (90, 96, 99 %) room on the ramp
+          if (fw < ${MODULE_NAME}.pHide) discard;
+          float tp;
+          if (${MODULE_NAME}.scale > 0.5) {
+            float lo = log(clamp(${MODULE_NAME}.pHide, 0.002, 0.996) / (1.0 - clamp(${MODULE_NAME}.pHide, 0.002, 0.996)));
+            float pm = clamp(${MODULE_NAME}.pMax, 0.002, 0.996);
+            float hi = log(pm / (1.0 - pm));
+            float pf = clamp(fw, 0.002, 0.996);
+            tp = clamp((log(pf / (1.0 - pf)) - lo) / max(hi - lo, 0.01), 0.0, 1.0);
+          } else {
+            tp = clamp((fw - ${MODULE_NAME}.pHide) / max(${MODULE_NAME}.pMax - ${MODULE_NAME}.pHide, 0.0001), 0.0, 1.0);
+          }
+          color = vec4(texture(rampTex, vec2(tp, 0.5)).rgb, min(1.0, 0.35 + tp));
+          return;
+        }
         float f = wxAt(geometry.uv, ${MODULE_NAME}.layerIndex);
         float v = isnan(f) ? -1.0 : f * fw;
         float hold = texelFetch(lutTex, ivec2(int(ci + 0.5), 1), 0).r * 255.0 / ${HOLD_SCALE}.0;

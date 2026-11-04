@@ -23,8 +23,12 @@ import { HEADS, NO_CLASS, type Teacher } from "./aef/head.js";
 import { AefLayers } from "./aef/layers.js";
 import { AEF_YEAR, type AefArray, MOSAIC_MIN_ZOOM, openAefMosaic } from "./aef/mosaic.js";
 import {
-  daysIn, fuelNear, loadSeasonPerimeters, loadSeasonStarts, SEASON_YEAR, seasonLayers, seasonMask, type SeasonPerimeter, type SeasonStarts,
+  daysIn, fuelNear, goesMask, loadSeasonPerimeters, loadSeasonStarts, SEASON_YEAR, seasonLayers, seasonMask, type SeasonPerimeter, type SeasonStarts,
 } from "./season.js";
+import { byHour, type FirePixel, type GoesDoc, goesLayers, loadGoesDoc, loadGoesPerimeter, readGoesFire } from "./goes.js";
+
+/** The one fire GOES-West is shown for (web/public/goes/<slug>.json from scripts/goes_fire_refs.py). */
+const GOES_FIRE = "green-2025";
 import { AefPool } from "./aef/pool.js";
 import { CoarsePool } from "./aef/coarse.js";
 import { type AefIndex, loadAefIndex } from "./aef/index.js";
@@ -230,6 +234,8 @@ export default function App() {
   /** The season view is on: Space plays its days instead of the forecast hours. */
   const seasonOnRef = useRef(false);
   const toggleSeasonPlayRef = useRef<() => void>(() => {});
+  const goesOnRef = useRef(false);
+  const toggleGoesPlayRef = useRef<() => void>(() => {});
   const [frameDurationMs, setFrameDurationMs] = useState(INITIAL_FRAME_MS);
   /**
    * How far into the hour the playhead is, 0..1 in 24 steps, so the ground glides between hours while playing.
@@ -280,7 +286,8 @@ export default function App() {
       const tag = el?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "BUTTON" || tag === "SELECT" || el?.isContentEditable) return;
       e.preventDefault();
-      if (space && seasonOnRef.current) toggleSeasonPlayRef.current();
+      if (space && goesOnRef.current) toggleGoesPlayRef.current();
+      else if (space && seasonOnRef.current) toggleSeasonPlayRef.current();
       else if (space) setIsPlaying((p) => !p);
       // G switched the old ignition head between pixels and counties: both off for now
       else if (ground) return;
@@ -720,9 +727,97 @@ export default function App() {
     return () => ac.abort();
   }, [seasonOn, seasonData]);
   // the season's fuel is the year before it; otherwise the newest year
+  // ---- one fire from orbit (goes.ts): GOES-West's fire pixels over the fire, hour by hour, read from NOAA's bucket
+  const [goesOn, setGoesOn] = useState(false);
+  const [goesDoc, setGoesDoc] = useState<GoesDoc | null>(null);
+  const [goesPerim, setGoesPerim] = useState<[number, number][][][]>([]);
+  const goesPixelsRef = useRef<FirePixel[]>([]);
+  const [goesRead, setGoesRead] = useState(0);
+  const [goesHour, setGoesHour] = useState(0);
+  const [goesPlaying, setGoesPlaying] = useState(false);
   useEffect(() => {
-    aefLayers?.setFuelYear(seasonOn ? SEASON_YEAR - 1 : AEF_YEAR);
-  }, [aefLayers, seasonOn]);
+    goesOnRef.current = goesOn;
+    if (!goesOn) setGoesPlaying(false);
+    if (goesOn) setSeasonOn(false);
+  }, [goesOn]);
+  useEffect(() => {
+    if (seasonOn) setGoesOn(false);
+  }, [seasonOn]);
+  // the reference file once, then the perimeter and the scans (read once per session; turning the view off and on
+  // again keeps what was read)
+  useEffect(() => {
+    if (!goesOn || goesDoc) return;
+    let gone = false;
+    loadGoesDoc(`${import.meta.env.BASE_URL}goes/${GOES_FIRE}.json`)
+      .then((d) => { if (!gone) setGoesDoc(d); })
+      .catch((e) => setError(`GOES: ${String(e)}`));
+    return () => { gone = true; };
+  }, [goesOn, goesDoc]);
+  useEffect(() => {
+    if (!goesOn || !goesDoc) return;
+    const [w, s, e, n] = goesDoc.fire.bbox;
+    mapRef.current?.getMap().fitBounds([[w, s], [e, n]], { padding: 60, duration: 900 });
+  }, [goesOn, goesDoc]);
+  const goesStarted = useRef(false);
+  useEffect(() => {
+    if (!goesDoc || goesStarted.current) return;
+    goesStarted.current = true;
+    loadGoesPerimeter(goesDoc.fire.objectid).then(setGoesPerim).catch((e) => console.warn("GOES perimeter:", e));
+    // the scans stream in; the counter re-renders at most every 300 ms
+    let timer = 0;
+    let read = 0;
+    readGoesFire(goesDoc, (_i, px) => {
+      read++;
+      if (px.length) goesPixelsRef.current.push(...px);
+      if (!timer) timer = window.setTimeout(() => { timer = 0; setGoesRead(read); }, 300);
+    })
+      .then(() => setGoesRead(read))
+      .catch((e) => setError(`GOES: ${String(e)}`));
+  }, [goesDoc]);
+  const goesT0 = goesDoc ? Math.floor(goesDoc.scans[0]!.t / 3600e3) * 3600e3 : 0;
+  const goesHours = goesDoc ? Math.floor((goesDoc.scans[goesDoc.scans.length - 1]!.t - goesT0) / 3600e3) + 1 : 1;
+  const goesBins = useMemo(() => byHour(goesPixelsRef.current, goesT0), [goesRead, goesT0]); // eslint-disable-line react-hooks/exhaustive-deps
+  const goesNow = goesBins.get(goesHour) ?? [];
+  const goesSeen = useMemo(() => {
+    const m = new Map<string, FirePixel>();
+    for (const [h, px] of goesBins) if (h <= goesHour) for (const p of px) m.set(p.key, p);
+    return [...m.values()];
+  }, [goesBins, goesHour]);
+  const toggleGoesPlay = useCallback(() => {
+    if (!goesPlaying && goesHour >= goesHours - 1) setGoesHour(0);
+    setGoesPlaying(!goesPlaying);
+  }, [goesPlaying, goesHour, goesHours]);
+  toggleGoesPlayRef.current = toggleGoesPlay;
+  useEffect(() => {
+    if (!goesPlaying) return;
+    const t = window.setInterval(() => setGoesHour((h) => Math.min(h + 1, goesHours - 1)), 150);
+    return () => clearInterval(t);
+  }, [goesPlaying, goesHours]);
+  useEffect(() => {
+    if (goesPlaying && goesHour >= goesHours - 1) setGoesPlaying(false);
+  }, [goesPlaying, goesHour, goesHours]);
+  // the ground inside the final perimeter that GOES has seen burning by this hour lights up
+  useEffect(() => {
+    if (!aefLayers || !goesOn || !view) return;
+    const seenKey = goesSeen.map((p) => p.key).sort().join(",");
+    let changed = false;
+    for (const t of aefLayers.fineTiles()) {
+      const [w, s, e, n] = t.bbox;
+      if (e < view[0] || w > view[2] || n < view[1] || s > view[3]) continue;
+      const fp = goesSeen.filter((p) => p.polygon.some(([x, y]) => x >= w - 0.05 && x <= e + 0.05 && y >= s - 0.05 && y <= n + 0.05));
+      const key = `goes|${goesPerim.length}|${fp.length ? seenKey : ""}`;
+      if (t.seasonKey === key) continue;
+      changed = aefLayers.setSeasonMask(t, key, goesMask(t, fp.map((p) => p.polygon), goesPerim)) || changed;
+    }
+    if (changed) aefLayers.seasonChanged();
+    // aefVersion: new tiles need their mask
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aefLayers, aefVersion, goesOn, goesSeen, goesPerim, view]);
+
+  // either view reads the fuel of the year before its fires
+  useEffect(() => {
+    aefLayers?.setFuelYear(seasonOn || goesOn ? SEASON_YEAR - 1 : AEF_YEAR);
+  }, [aefLayers, seasonOn, goesOn]);
   // play: a day every 140 ms (the year in about 50 s); from the last day it starts over at Jan 1
   const toggleSeasonPlay = useCallback(() => {
     if (!seasonPlaying && seasonDay >= seasonDays - 1) setSeasonDay(0);
@@ -865,7 +960,7 @@ export default function App() {
           opacity: fuelOpacity,
           ramp: groundRamp,
           visible: fuel !== "off" && fuel !== "counties",
-          seasonDim: seasonOn && seasonData ? 0.18 : 0,
+          seasonDim: (seasonOn && seasonData) || goesOn ? 0.18 : 0,
           beforeId: BEFORE_ID,
         }),
       );
@@ -895,6 +990,9 @@ export default function App() {
           onHover: (i, x, y) => setSeasonHover(i < 0 || !pickRef.current ? null : { i, x, y }),
         }),
       );
+    }
+    if (goesOn && goesDoc) {
+      out.push(...goesLayers({ now: goesNow, seen: goesSeen, perimeter: goesPerim, beforeId: BEFORE_ID, trigger: [goesHour, goesRead] }));
     }
     if (fuel === "counties" && countyTable && counties) {
       const h0 = Math.floor(timeIdx);
@@ -943,6 +1041,7 @@ export default function App() {
     glowHours, grain, light, contourLines, pHide, pMax, ignScale, zLo, zHi, rankRamp, useWeather, standingAlpha, wxGate, fieldAlpha,
     timeIdx, weatherSrc, weatherKey, timeMode, countyTable, counties, countyVersion, cacheVersion, weekVersion, timeDepth, zHideCounty, wxGate,
     buildingsApi, bTable, bColors, seasonOn, seasonData, seasonJoin, seasonPerims, seasonDay, seasonReach,
+    goesOn, goesDoc, goesNow, goesSeen, goesPerim, goesHour, goesRead,
   ]);
   buildLayersRef.current = buildLayers;
   const deckLayers = useMemo(() => buildLayers(hourFracRef.current), [buildLayers]);
@@ -1176,6 +1275,24 @@ export default function App() {
           unread: seasonJoin?.unread ?? 0,
           total: seasonCount,
           burns: seasonPerims.length,
+        }}
+        goes={{
+          on: goesOn,
+          onChange: setGoesOn,
+          name: goesDoc?.fire.name ?? "Green",
+          acres: goesDoc?.fire.acres ?? 0,
+          cause: goesDoc?.fire.cause ?? "",
+          scans: goesDoc?.scans.length ?? 0,
+          read: goesRead,
+          hour: goesHour,
+          hours: goesHours,
+          t0: goesT0,
+          onHourChange: (h) => { setGoesPlaying(false); setGoesHour(h); },
+          playing: goesPlaying,
+          onPlayToggle: toggleGoesPlay,
+          now: goesNow.length,
+          nowPower: goesNow.reduce((a, p) => a + (Number.isNaN(p.power) ? 0 : p.power), 0),
+          seen: goesSeen.length,
         }}
       />
       {fuel === "counties" && countyHover && countyInfo ? (

@@ -198,7 +198,33 @@ export type ControlPanelProps = {
   buildingReach: number;
   onBuildingReachChange: (m: number) => void;
   season: SeasonPanel;
+  goes: GoesPanel;
 };
+
+/** One fire as GOES-West saw it (App.tsx, goes.ts). */
+export type GoesPanel = {
+  on: boolean;
+  onChange: (on: boolean) => void;
+  name: string;
+  acres: number;
+  cause: string;
+  /** Scans referenced and read so far. */
+  scans: number;
+  read: number;
+  /** Hour on the slider (0 = t0, ms UTC) and the hours in all. */
+  hour: number;
+  hours: number;
+  t0: number;
+  onHourChange: (h: number) => void;
+  playing: boolean;
+  onPlayToggle: () => void;
+  /** Fire pixels this hour, their summed power (MW), and footprints seen so far. */
+  now: number;
+  nowPower: number;
+  seen: number;
+};
+
+const pacific = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", month: "short", day: "numeric", hour: "numeric", timeZoneName: "short" });
 
 /** The fire season view (App.tsx, season.ts). */
 export type SeasonPanel = {
@@ -580,6 +606,40 @@ export function ControlPanel(p: ControlPanelProps) {
         </div>
         <p className="muted small">Right column: the fuel weight each class carries (first cut, to be tuned).</p>
         */}
+      </Fold>
+
+      <Fold k="goes" label="One fire from orbit" defaultOpen tag={p.goes.on ? pacific.format(new Date(p.goes.t0 + p.goes.hour * 3600e3)) : "off"}>
+        <div className="row">
+          <Seg value={p.goes.on ? "on" : "off"} options={[{ id: "on", label: "Show" }, { id: "off", label: "Off" }]} onChange={(v) => p.goes.onChange(v === "on")} />
+          <Help label="One fire from orbit">
+            The {p.goes.name} Fire as GOES-West saw it: the satellite's fire product (ABI fire / hot spot
+            characterization, every 5 minutes), read from NOAA's bucket as the view opens. Each box is one satellite
+            pixel, about 3 to 4 km across here, that held a fire that hour; brighter blue for more fire radiative
+            power. Faint outlines: pixels seen burning earlier. The fuel is the year before the fire, dim, lit inside
+            the final burn outline where the satellite has already seen fire. Pixels are placed as if the ground had
+            no height, so a fire high on a ridge can sit about a km off.
+          </Help>
+        </div>
+        {p.goes.on ? (
+          <>
+            <div className="row">
+              <button type="button" className="play" aria-label={p.goes.playing ? "Pause" : "Play"} title={p.goes.playing ? "Pause (Space)" : "Play (Space)"}
+                onClick={(e) => { p.goes.onPlayToggle(); e.currentTarget.blur(); }}>
+                {p.goes.playing ? "❚❚" : "▶"}
+              </button>
+              <span>{pacific.format(new Date(p.goes.t0 + p.goes.hour * 3600e3))}</span>
+            </div>
+            <Field label="Hour">
+              <Slider min={0} max={Math.max(0, p.goes.hours - 1)} step={1} value={p.goes.hour} onChange={p.goes.onHourChange} label="Hour" />
+            </Field>
+            <p className="muted small">
+              {p.goes.name} Fire, {p.goes.acres.toLocaleString()} acres{p.goes.cause ? `, ${p.goes.cause.toLowerCase()} cause` : ""}.
+              {" "}This hour: {p.goes.now} fire pixel{p.goes.now === 1 ? "" : "s"}{p.goes.nowPower > 0 ? `, ${Math.round(p.goes.nowPower)} MW` : ""}.
+              {" "}Seen burning so far: {p.goes.seen}.
+              {p.goes.read < p.goes.scans ? ` Reading scans: ${p.goes.read.toLocaleString()} of ${p.goes.scans.toLocaleString()}.` : ""}
+            </p>
+          </>
+        ) : null}
       </Fold>
 
       <Fold k="season" label={`The ${p.season.year} season`} defaultOpen tag={p.season.on ? dayLabel(p.season.year, p.season.day) : "off"}>

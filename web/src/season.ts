@@ -293,3 +293,40 @@ export function seasonLayers(o: SeasonLayerOpts) {
     } as never),
   ];
 }
+
+/**
+ * The one-fire view's mask: the ground inside the fire's final perimeter that GOES has seen burning so far
+ * (the union of the fire pixels' footprints, clipped to the perimeter). Null when nothing touches the tile.
+ */
+export function goesMask(t: AefTile, footprints: [number, number][][], perimeter: [number, number][][][]): Uint8Array | null {
+  if (!footprints.length || !perimeter.length) return null;
+  const px0 = Math.round((t.bbox[0] - X0) / RES);
+  const py0 = Math.round((Y0 - t.bbox[3]) / RES);
+  const X = (lon: number) => (lon - X0) / RES - px0;
+  const Y = (lat: number) => (Y0 - lat) / RES - py0;
+  if (!canvas || canvas.width !== t.width || canvas.height !== t.height) canvas = new OffscreenCanvas(t.width, t.height);
+  const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
+  ctx.globalCompositeOperation = "source-over";
+  ctx.clearRect(0, 0, t.width, t.height);
+  ctx.fillStyle = "#fff";
+  for (const f of footprints) {
+    ctx.beginPath();
+    f.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(X(x), Y(y)) : ctx.lineTo(X(x), Y(y))));
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.globalCompositeOperation = "destination-in";
+  ctx.beginPath();
+  for (const poly of perimeter)
+    for (const ring of poly) {
+      ring.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(X(x), Y(y)) : ctx.lineTo(X(x), Y(y))));
+      ctx.closePath();
+    }
+  ctx.fill("evenodd");
+  ctx.globalCompositeOperation = "source-over";
+  const img = ctx.getImageData(0, 0, t.width, t.height).data;
+  const out = new Uint8Array(t.width * t.height);
+  let any = false;
+  for (let i = 0; i < out.length; i++) if ((out[i] = img[4 * i + 3]!)) any = true;
+  return any ? out : null;
+}

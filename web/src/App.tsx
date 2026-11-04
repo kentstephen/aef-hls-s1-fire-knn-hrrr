@@ -148,6 +148,8 @@ export default function App() {
   const holdingRef = useRef(false);
   holdingRef.current = holding;
   const stepImgYearRef = useRef<(d: number) => void>(() => {});
+  /** The key handler is set up once; it turns the season on and off through this. */
+  const setSeasonOnRef = useRef<React.Dispatch<React.SetStateAction<boolean>>>(() => {});
   const stepImgYear = (d: number) => stepImgYearRef.current(d);
   const [mapStyle, setMapStyle] = useState<StyleSpecification | string | null>(null);
   useEffect(() => {
@@ -289,11 +291,12 @@ export default function App() {
       const space = e.code === "Space" || e.key === " ";
       const pairKey = e.key === "p" || e.key === "P";
       const yearKey = e.key === "[" ? -1 : e.key === "]" ? 1 : 0;
+      const seasonKey = e.key === "s" || e.key === "S";
       const full = e.key === "f" || e.key === "F";
       const labels = e.key === "l" || e.key === "L";
       const pick = e.key === "q" || e.key === "Q";
       const ground = e.key === "g" || e.key === "G";
-      if (!space && !pairKey && !yearKey && !full && !labels && !pick && !ground) return;
+      if (!space && !pairKey && !yearKey && !seasonKey && !full && !labels && !pick && !ground) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement | null;
       const tag = el?.tagName;
@@ -311,6 +314,8 @@ export default function App() {
       else if (pairKey) { if (!e.repeat) setPair((v) => !v); }
       // [ and ]: the imagery a year back or forward
       else if (yearKey) stepImgYear(yearKey);
+      // S: the 2025 season on or off
+      else if (seasonKey) { if (!e.repeat) setSeasonOnRef.current((v) => !v); }
       // G switched the old ignition head between pixels and counties: both off for now
       else if (ground) return;
       else if (pick) {
@@ -750,6 +755,7 @@ export default function App() {
   // view opens, over the fuel of the year before. A start whose 30 m circle holds fuel above the hide line lights
   // the ground in that circle; the burns light the ground inside them; the rest of the fuel stays dim.
   const [seasonOn, setSeasonOn] = useState(false);
+  setSeasonOnRef.current = setSeasonOn;
   const seasonDays = daysIn(SEASON_YEAR);
   const [seasonDay, setSeasonDay] = useState(seasonDays - 1);
   const [seasonPlaying, setSeasonPlaying] = useState(false);

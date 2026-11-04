@@ -444,7 +444,7 @@ export function ControlPanel(p: ControlPanelProps) {
         <A href="https://github.com/kentstephen/aef-hls-s1-fire-knn-hrrr">code on GitHub</A>
       </p>
       <p className="muted small" style={{ marginTop: 4 }}>
-        Keys: <b>Space</b> (hold) imagery · <b>[</b> <b>]</b> imagery year · <b>P</b> side by side · <b>F</b> full screen ·{" "}
+        Keys: <b>Space</b> (hold) imagery · <b>[</b> <b>]</b> imagery year · <b>P</b> side by side · <b>S</b> the season · <b>F</b> full screen ·{" "}
         <b>L</b> map labels off and on · <b>Q</b> tooltip off and on.
       </p>
 
@@ -772,6 +772,7 @@ export function ControlPanel(p: ControlPanelProps) {
       <Fold k="season" label={`The ${p.season.year} season`} defaultOpen tag={p.season.on ? dayLabel(p.season.year, p.season.day) : "off"}>
         <div className="row">
           <Seg value={p.season.on ? "on" : "off"} options={[{ id: "on", label: "Show" }, { id: "off", label: "Off" }]} onChange={(v) => p.season.onChange(v === "on")} />
+          <span className="muted small">S</span>
           <Help label="The season">
             Every California wildfire start of {p.season.year} (NIFC WFIGS points of origin) appears on the day it was
             reported, with the burn outlines of the larger fires. The ground under them is the fuel of {p.season.year - 1},

@@ -58,7 +58,8 @@ the fire records and the Sentinel-2 imagery are read from their public stores wh
 - **Sentinel-2** (`web/src/s2.ts`): Earth Genome's yearly mosaics, 2022 to 2025, found with Earth Genome's STAC
   search and read from each footprint's TCI COG on Source Cooperative, decoded in workers. Drawn bare, over the
   basemap's streets and labels: hold Space to see it in place of the fuel, `[` and `]` (or the wheel while Space
-  is held) to step its year, P for imagery and fuel side by side, moving together.
+  is held) to step its year, P for imagery and fuel side by side, moving together. S turns the 2025 season on
+  and off.
 - **Buildings** (zoom 14 in): Overture footprints read with DuckDB-WASM, each outline colored by the most burnable
   ground within a reach of it.
 - **The 2025 season**: every California wildfire start and burn perimeter of 2025 (NIFC WFIGS services), day by

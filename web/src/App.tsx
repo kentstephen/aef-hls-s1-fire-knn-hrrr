@@ -10,6 +10,7 @@ import type { Device, Texture } from "@luma.gl/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MapboxOverlay } from "@deck.gl/mapbox";
 import type { MapRef } from "react-map-gl/maplibre";
+import type { StyleSpecification } from "maplibre-gl";
 import { Map as MaplibreMap } from "react-map-gl/maplibre";
 import type * as zarr from "zarrita";
 import { fuelOf } from "./aef/fuel.js";
@@ -84,7 +85,7 @@ const HILLSHADE_ID = "aef-hillshade";
 /** A building with no burnable ground near it. */
 const BUILDING_GRAY: [number, number, number] = [69, 69, 77];
 
-/** CARTO's own building footprints off: the buildings drawn are Overture's (buildings.ts). */
+/** CARTO's own building footprints off (a backstop: loadMapStyle drops them first); the buildings are Overture's. */
 function hideBasemapBuildings(map: import("maplibre-gl").Map) {
   for (const l of map.getStyle().layers) {
     if ("source-layer" in l && l["source-layer"] === "buildings") map.setLayoutProperty(l.id, "visibility", "none");
@@ -117,8 +118,23 @@ function addHillshade(map: import("maplibre-gl").Map, on: boolean) {
   map.setLayoutProperty(HILLSHADE_ID, "visibility", on ? "visible" : "none");
 }
 
+/** The CARTO style without its own building footprints, so they never draw (the buildings are Overture's). */
+async function loadMapStyle(): Promise<StyleSpecification | string> {
+  try {
+    const style = (await (await fetch(MAP_STYLE_URL)).json()) as StyleSpecification;
+    style.layers = style.layers.filter((l) => !("source-layer" in l && l["source-layer"] === "buildings"));
+    return style;
+  } catch {
+    return MAP_STYLE_URL;
+  }
+}
+
 export default function App() {
   const mapRef = useRef<MapRef>(null);
+  const [mapStyle, setMapStyle] = useState<StyleSpecification | string | null>(null);
+  useEffect(() => {
+    void loadMapStyle().then(setMapStyle);
+  }, []);
   /** Whether the cursor picks (the tooltip); Q toggles it. */
   const pickRef = useRef(true);
   const cacheRef = useRef(new FfwiTileCache());
@@ -634,8 +650,11 @@ export default function App() {
   const buildingsRef = useRef<ReturnType<typeof createBuildings> | null>(null);
   const [bTable, setBTable] = useState<arrow.Table | null>(null);
   const [buildingsApi, setBuildingsApi] = useState<Awaited<ReturnType<typeof createBuildings>> | null>(null);
+  // the load starts over only when the view settles (moveend), not on every zoom step while moving: the first
+  // query takes ~30 s and each restart cancels it
+  const buildingsZoom = zoom >= BUILDINGS_MIN_ZOOM;
   useEffect(() => {
-    if (!view || zoom < BUILDINGS_MIN_ZOOM) return;
+    if (!view || !buildingsZoom) return;
     buildingsRef.current ??= createBuildings();
     const ac = new AbortController();
     buildingsRef.current
@@ -648,7 +667,7 @@ export default function App() {
         if ((e as Error).name !== "AbortError") console.warn("buildings:", e);
       });
     return () => ac.abort();
-  }, [view, zoom]);
+  }, [view, buildingsZoom]);
 
   // ---- each building's outline from the burnable ground near it (building-exposure.ts): the highest P(fuel)
   // within the reach, nearer ground counting more; dark gray under the hide line. Recomputed a moment after the
@@ -818,11 +837,12 @@ export default function App() {
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
+      {mapStyle ? (
       <MaplibreMap
         ref={mapRef}
         initialViewState={START_VIEW}
         hash
-        mapStyle={MAP_STYLE_URL}
+        mapStyle={mapStyle}
         attributionControl={false}
         // a flat, north-up map: no tilt or turn from a two-finger trackpad drag, right drag or touch
         maxPitch={0}
@@ -842,6 +862,7 @@ export default function App() {
       >
         <DeckGlOverlay layers={deckLayers as never} interleaved onDeviceInitialized={setDevice} overlayRef={overlayRef} />
       </MaplibreMap>
+      ) : null}
       {fuel === "lit" && !WEATHER_ON && zoom < MOSAIC_MIN_ZOOM ? (
         // the fuel head runs on the 10 m mosaic only; the coarse tiles below MOSAIC_MIN_ZOOM carry no fuel plane
         <div

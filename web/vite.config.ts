@@ -4,7 +4,7 @@ import { defineConfig } from "vite";
 export default defineConfig(({ command }) => ({
   plugins: [react()],
   // Project Pages site: production asset URLs need the repo prefix; local dev stays at "/".
-  base: command === "build" ? "/aef-hls-s1-fire-knn/" : "/",
+  base: command === "build" ? "/aef-hls-s1-fire-knn-hrrr/" : "/",
   worker: { format: "es" },
   server: {
     // Override with PORT; strictPort fails loudly.

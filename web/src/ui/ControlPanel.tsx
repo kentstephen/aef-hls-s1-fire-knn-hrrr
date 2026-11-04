@@ -286,7 +286,7 @@ export function ControlPanel(p: ControlPanelProps) {
         <A href="https://dynamical.org/catalog/noaa-hrrr-forecast-48-hour/">NOAA HRRR 48 h</A> via{" "}
         <A href="https://dynamical.org">dynamical.org</A> ({s.backend === "icechunk" ? "Icechunk" : s.backend === "zarr-v3" ? "Zarr v3" : "opening"}) ·{" "}
         <A href="https://www.frames.gov/catalog/27085">Fosberg 1978</A> · <A href="https://data-nifc.opendata.arcgis.com/">NIFC WFIGS</A> ignitions and perimeters ·{" "}
-        <A href="https://github.com/kentstephen/aef-hls-s1-fire-knn">code on GitHub</A>
+        <A href="https://github.com/kentstephen/aef-hls-s1-fire-knn-hrrr">code on GitHub</A>
       </p>
       <p className="muted small" style={{ marginTop: 4 }}>
         Keys: <b>Space</b> plays and pauses · <b>F</b> full screen ·{" "}

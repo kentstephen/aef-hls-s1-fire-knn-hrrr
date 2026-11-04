@@ -48,6 +48,13 @@ export type FuelLightProps = {
   glowHours: number;
   /** Grain: 0 = a flat fill; above 0 the fill breaks into that many cells across the tile, each lit by the value. */
   grain: number;
+  /**
+   * The season view (fuel alone): above 0, the fuel draws at this share of its opacity, and at full opacity where
+   * seasonTex is set (near a fire start that found fuel, inside a burn). 0 = off.
+   */
+  seasonDim: number;
+  /** The season mask per tile pixel (r8, 0..1). */
+  seasonTex: Texture;
 };
 
 const MODULE_NAME = "fuelLight";
@@ -81,6 +88,7 @@ uniform ${MODULE_NAME}Uniforms {
   float standingAlpha;
   float wxGate;
   float fieldAlpha;
+  float seasonDim;
 } ${MODULE_NAME};
 `,
   inject: {
@@ -92,6 +100,7 @@ uniform sampler2D fuelTex;
 uniform sampler2DArray ffwiTex;
 uniform sampler2D lutTex;
 uniform sampler2D rampTex;
+uniform sampler2D seasonTex;
 
 const float WX_NAN = intBitsToFloat(0x7fc00000);
 /** A node outside the HRRR grid holds -Infinity at every hour: no weather here, ever. */
@@ -262,7 +271,9 @@ float fuelHash(vec2 p) {
           } else {
             tp = clamp((fw - ${MODULE_NAME}.pHide) / max(${MODULE_NAME}.pMax - ${MODULE_NAME}.pHide, 0.0001), 0.0, 1.0);
           }
-          color = vec4(texture(rampTex, vec2(tp, 0.5)).rgb, min(1.0, 0.35 + tp));
+          // the season view: dim except where the tile's mask says a fire touched it
+          float sm = ${MODULE_NAME}.seasonDim > 0.0 ? mix(${MODULE_NAME}.seasonDim, 1.0, texture(seasonTex, geometry.uv).r) : 1.0;
+          color = vec4(texture(rampTex, vec2(tp, 0.5)).rgb, min(1.0, 0.35 + tp) * sm);
           return;
         }
         float f = wxAt(geometry.uv, ${MODULE_NAME}.layerIndex);
@@ -294,7 +305,7 @@ float fuelHash(vec2 p) {
       }
     `,
   },
-  uniformTypes: { mode: "f32", layerIndex: "f32", hideBelow: "f32", rescaleMax: "f32", glowHours: "f32", grain: "f32", pHide: "f32", pMax: "f32", scale: "f32", zLo: "f32", zHi: "f32", useWeather: "f32", standingAlpha: "f32", wxGate: "f32", fieldAlpha: "f32" },
+  uniformTypes: { mode: "f32", layerIndex: "f32", hideBelow: "f32", rescaleMax: "f32", glowHours: "f32", grain: "f32", pHide: "f32", pMax: "f32", scale: "f32", zLo: "f32", zHi: "f32", useWeather: "f32", standingAlpha: "f32", wxGate: "f32", fieldAlpha: "f32", seasonDim: "f32" },
   getUniforms: (p: Partial<FuelLightProps>) => ({
     mode: p.mode ?? 0,
     layerIndex: p.layerIndex ?? 0,
@@ -311,6 +322,8 @@ float fuelHash(vec2 p) {
     standingAlpha: p.standingAlpha ?? 0,
     wxGate: p.wxGate ?? 1,
     fieldAlpha: p.fieldAlpha ?? 0,
+    seasonDim: p.seasonDim ?? 0,
+    seasonTex: p.seasonTex,
     classTex: p.classTex,
     groundTex: p.groundTex,
     fuelTex: p.fuelTex,

@@ -23,7 +23,7 @@ const fuelScorer = () =>
  */
 type Job =
   | { type: "classify"; id: number; data: Int8Array; n: number }
-  | { type: "zarr"; id: number; timeIdx: number; py0: number; px0: number; h: number; w: number }
+  | { type: "zarr"; id: number; timeIdx: number; py0: number; px0: number; h: number; w: number; fuelYearIdx?: number[] }
   | { type: "abort"; id: number };
 
 let mosaic: Promise<AefArray> | null = null;
@@ -57,9 +57,11 @@ self.onmessage = async (ev: MessageEvent<Job>) => {
     if (!mosaic) mosaic = openAefMosaic().then((o) => o.arr);
     mosaic.catch(() => (mosaic = null));
     const arr = await mosaic;
-    // the map's year for the class heads, and the fuel head's years (2023 to 2025, newest last)
+    // the map's year for the class heads, and the fuel head's years (newest last): the head's own (2023 to 2025)
+    // unless the job names others (the season view reads the year before its fires)
+    const fy = m.fuelYearIdx ?? FUEL_YEAR_IDX;
     const ys = zarr.slice(m.py0, m.py0 + m.h), xs = zarr.slice(m.px0, m.px0 + m.w);
-    const idx = [...new Set([m.timeIdx, ...FUEL_YEAR_IDX])];
+    const idx = [...new Set([m.timeIdx, ...fy])];
     const got = await Promise.all(idx.map((t) => zarr.get(arr, [t, null, ys, xs], { signal: ac.signal })));
     for (const c of got)
       if (c.shape.length !== 3 || c.shape[0] !== NUM_BANDS || c.shape[1] !== m.h || c.shape[2] !== m.w) {
@@ -67,7 +69,7 @@ self.onmessage = async (ev: MessageEvent<Job>) => {
       }
     const data = (t: number) => got[idx.indexOf(t)]!.data as Int8Array;
     const n = m.w * m.h;
-    const years = FUEL_YEAR_IDX.map(data);
+    const years = fy.map(data);
     const gpu = await fuelScorer();
     const fuel = gpu ? await gpu(years, n) : scoreCpu(FUEL, FUEL_W, years, n);
     const c = classify(data(m.timeIdx), n);

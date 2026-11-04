@@ -21,7 +21,10 @@ import { ignitionRate, rateLabel } from "./aef/calibration.js";
 // import { loadPerimeters, type Perimeter, perimeterLayer, perimetersInRun } from "./perimeters.js";
 import { HEADS, NO_CLASS, type Teacher } from "./aef/head.js";
 import { AefLayers } from "./aef/layers.js";
-import { type AefArray, MOSAIC_MIN_ZOOM, openAefMosaic } from "./aef/mosaic.js";
+import { AEF_YEAR, type AefArray, MOSAIC_MIN_ZOOM, openAefMosaic } from "./aef/mosaic.js";
+import {
+  daysIn, fuelNear, loadSeasonPerimeters, loadSeasonStarts, SEASON_YEAR, seasonLayers, seasonMask, type SeasonPerimeter, type SeasonStarts,
+} from "./season.js";
 import { AefPool } from "./aef/pool.js";
 import { CoarsePool } from "./aef/coarse.js";
 import { type AefIndex, loadAefIndex } from "./aef/index.js";
@@ -224,6 +227,9 @@ export default function App() {
   const depthRef = useRef(START_DAYS * HOURS_PER_DAY);
   const [leadTimeIdx, setLeadTimeIdx] = useState(START_LEAD);
   const [isPlaying, setIsPlaying] = useState(WEATHER_ON);
+  /** The season view is on: Space plays its days instead of the forecast hours. */
+  const seasonOnRef = useRef(false);
+  const toggleSeasonPlayRef = useRef<() => void>(() => {});
   const [frameDurationMs, setFrameDurationMs] = useState(INITIAL_FRAME_MS);
   /**
    * How far into the hour the playhead is, 0..1 in 24 steps, so the ground glides between hours while playing.
@@ -274,7 +280,8 @@ export default function App() {
       const tag = el?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "BUTTON" || tag === "SELECT" || el?.isContentEditable) return;
       e.preventDefault();
-      if (space) setIsPlaying((p) => !p);
+      if (space && seasonOnRef.current) toggleSeasonPlayRef.current();
+      else if (space) setIsPlaying((p) => !p);
       // G switched the old ignition head between pixels and counties: both off for now
       else if (ground) return;
       else if (pick) {
@@ -677,7 +684,7 @@ export default function App() {
   useEffect(() => {
     if (!bTable || !buildingsApi || !aefLayers) return;
     const t = window.setTimeout(() => {
-      const tiles = [...aefLayers.live.values()];
+      const tiles = aefLayers.fineTiles();
       const stripe = rampStripe(rampStops(groundRamp));
       const colors = bTable.batches.map((b) =>
         exposureColors(buildingExposure(buildingsApi.ringsOf(b), tiles, buildingReach), pHide, pMax, stripe, BUILDING_GRAY, ignScale === "logit"),
@@ -686,6 +693,132 @@ export default function App() {
     }, 250);
     return () => clearTimeout(t);
   }, [bTable, buildingsApi, aefLayers, aefVersion, buildingReach, pHide, pMax, groundRamp, ignScale]);
+
+  // ---- the fire season (season.ts): the year's California starts and burn perimeters, read from NIFC when the
+  // view opens, over the fuel of the year before. A start whose 30 m circle holds fuel above the hide line lights
+  // the ground in that circle; the burns light the ground inside them; the rest of the fuel stays dim.
+  const [seasonOn, setSeasonOn] = useState(false);
+  const seasonDays = daysIn(SEASON_YEAR);
+  const [seasonDay, setSeasonDay] = useState(seasonDays - 1);
+  const [seasonPlaying, setSeasonPlaying] = useState(false);
+  const [seasonReach, setSeasonReach] = useState(30);
+  const [seasonData, setSeasonData] = useState<{ starts: SeasonStarts; perims: SeasonPerimeter[] } | null>(null);
+  const [seasonLoading, setSeasonLoading] = useState(false);
+  const [seasonHover, setSeasonHover] = useState<{ i: number; x: number; y: number } | null>(null);
+  useEffect(() => {
+    seasonOnRef.current = seasonOn;
+    if (!seasonOn) setSeasonPlaying(false);
+  }, [seasonOn]);
+  useEffect(() => {
+    if (!seasonOn || seasonData) return;
+    const ac = new AbortController();
+    setSeasonLoading(true);
+    Promise.all([loadSeasonStarts(SEASON_YEAR, ac.signal), loadSeasonPerimeters(SEASON_YEAR, ac.signal)])
+      .then(([starts, perims]) => setSeasonData({ starts, perims }))
+      .catch((e) => { if ((e as Error).name !== "AbortError") setError(`fire season: ${String(e)}`); })
+      .finally(() => setSeasonLoading(false));
+    return () => ac.abort();
+  }, [seasonOn, seasonData]);
+  // the season's fuel is the year before it; otherwise the newest year
+  useEffect(() => {
+    aefLayers?.setFuelYear(seasonOn ? SEASON_YEAR - 1 : AEF_YEAR);
+  }, [aefLayers, seasonOn]);
+  // play: a day every 140 ms (the year in about 50 s); from the last day it starts over at Jan 1
+  const toggleSeasonPlay = useCallback(() => {
+    if (!seasonPlaying && seasonDay >= seasonDays - 1) setSeasonDay(0);
+    setSeasonPlaying(!seasonPlaying);
+  }, [seasonPlaying, seasonDay, seasonDays]);
+  toggleSeasonPlayRef.current = toggleSeasonPlay;
+  useEffect(() => {
+    if (!seasonPlaying) return;
+    const t = window.setInterval(() => setSeasonDay((d) => Math.min(d + 1, seasonDays - 1)), 140);
+    return () => clearInterval(t);
+  }, [seasonPlaying, seasonDays]);
+  useEffect(() => {
+    if (seasonPlaying && seasonDay >= seasonDays - 1) setSeasonPlaying(false);
+  }, [seasonPlaying, seasonDay, seasonDays]);
+  /** How far into the starts (sorted by day) the day reaches. */
+  const seasonCount = useMemo(() => {
+    if (!seasonData) return 0;
+    const d = seasonData.starts.day;
+    let a = 0, b = seasonData.starts.n;
+    while (a < b) {
+      const m = (a + b) >> 1;
+      if (d[m]! <= seasonDay) a = m + 1;
+      else b = m;
+    }
+    return a;
+  }, [seasonData, seasonDay]);
+  // each start's fuel within the reach, from the 10 m tiles on hand: the ones in view read again as tiles land,
+  // the rest keep their last reading (NaN until read)
+  const seasonFuelRef = useRef<{ key: string; fuel: Float32Array } | null>(null);
+  const seasonJoin = useMemo(() => {
+    if (!seasonOn || !seasonData || !aefLayers) return null;
+    const st = seasonData.starts;
+    const key = `${aefLayers.year}|${seasonReach}`;
+    if (!seasonFuelRef.current || seasonFuelRef.current.key !== key || seasonFuelRef.current.fuel.length !== st.n) {
+      seasonFuelRef.current = { key, fuel: new Float32Array(st.n).fill(NaN) };
+    }
+    const all = seasonFuelRef.current.fuel;
+    const tiles = zoom >= MOSAIC_MIN_ZOOM ? aefLayers.fineTiles() : [];
+    const shown = new Int32Array(seasonCount);
+    const fuel = new Float32Array(seasonCount);
+    let inView = 0, found = 0, unread = 0;
+    for (let i = 0; i < seasonCount; i++) {
+      shown[i] = i;
+      const lon = st.lon[i]!, lat = st.lat[i]!;
+      const vis = !!view && lon >= view[0] && lon <= view[2] && lat >= view[1] && lat <= view[3];
+      if (vis && tiles.length) {
+        const f = fuelNear(lon, lat, seasonReach, tiles);
+        if (!Number.isNaN(f)) all[i] = f;
+      }
+      fuel[i] = all[i]!;
+      if (vis) {
+        inView++;
+        if (Number.isNaN(fuel[i]!)) unread++;
+        else if (fuel[i]! >= pHide) found++;
+      }
+    }
+    return { shown, fuel, inView, found, unread };
+    // aefVersion: tiles landed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seasonOn, seasonData, aefLayers, aefVersion, view, zoom, seasonCount, seasonReach, pHide]);
+  const seasonPerims = useMemo(
+    () => (seasonData ? seasonData.perims.filter((p) => p.day <= seasonDay) : []),
+    [seasonData, seasonDay],
+  );
+  // each tile's mask: the circles of the starts that found fuel and the burns that touch it; redrawn only when the
+  // set touching the tile changes
+  useEffect(() => {
+    if (!aefLayers || !seasonOn || !seasonData || !seasonJoin || !view) return;
+    const st = seasonData.starts;
+    const padLat = seasonReach / 111_320;
+    let changed = false;
+    for (const t of aefLayers.fineTiles()) {
+      const [w, s, e, n] = t.bbox;
+      if (e < view[0] || w > view[2] || n < view[1] || s > view[3]) continue;
+      const padLon = padLat / Math.cos((((s + n) / 2) * Math.PI) / 180);
+      const lit: number[] = [];
+      for (let k = 0; k < seasonJoin.shown.length; k++) {
+        const f = seasonJoin.fuel[k]!;
+        if (!(f >= pHide)) continue;
+        const i = seasonJoin.shown[k]!;
+        const lon = st.lon[i]!, lat = st.lat[i]!;
+        if (lon < w - padLon || lon > e + padLon || lat < s - padLat || lat > n + padLat) continue;
+        lit.push(i);
+      }
+      const per: number[] = [];
+      seasonPerims.forEach((p, j) => {
+        if (p.bbox[2] < w || p.bbox[0] > e || p.bbox[3] < s || p.bbox[1] > n) return;
+        per.push(j);
+      });
+      const key = `${seasonReach}|${lit.join(",")}|${per.join(",")}`;
+      if (t.seasonKey === key) continue;
+      const mask = seasonMask(t, lit.map((i) => [st.lon[i]!, st.lat[i]!]), seasonReach, per.map((j) => seasonPerims[j]!));
+      changed = aefLayers.setSeasonMask(t, key, mask) || changed;
+    }
+    if (changed) aefLayers.seasonChanged();
+  }, [aefLayers, seasonOn, seasonData, seasonJoin, seasonPerims, seasonReach, pHide, view]);
 
   const buildLayers = useCallback((hourFrac: number) => {
     const out: unknown[] = [];
@@ -732,6 +865,7 @@ export default function App() {
           opacity: fuelOpacity,
           ramp: groundRamp,
           visible: fuel !== "off" && fuel !== "counties",
+          seasonDim: seasonOn && seasonData ? 0.18 : 0,
           beforeId: BEFORE_ID,
         }),
       );
@@ -744,6 +878,21 @@ export default function App() {
           getLineColor: cs ? (_b, bi) => cs.colors[bi]! : [...BUILDING_GRAY, 255],
           colorKey: cs?.key ?? 0,
           beforeId: BEFORE_ID,
+        }),
+      );
+    }
+    if (seasonOn && seasonData && seasonJoin) {
+      out.push(
+        ...seasonLayers({
+          starts: seasonData.starts,
+          shown: seasonJoin.shown,
+          fuel: seasonJoin.fuel,
+          perims: seasonPerims,
+          day: seasonDay,
+          reachM: seasonReach,
+          pHide,
+          beforeId: BEFORE_ID,
+          onHover: (i, x, y) => setSeasonHover(i < 0 || !pickRef.current ? null : { i, x, y }),
         }),
       );
     }
@@ -793,7 +942,7 @@ export default function App() {
     leadTimeIdx, colormapIndex, hideBelow, rescaleMax, tauHours, aefLayers, aefVersion, fuel, teacher, fuelOpacity, groundRamp, zoom,
     glowHours, grain, light, contourLines, pHide, pMax, ignScale, zLo, zHi, rankRamp, useWeather, standingAlpha, wxGate, fieldAlpha,
     timeIdx, weatherSrc, weatherKey, timeMode, countyTable, counties, countyVersion, cacheVersion, weekVersion, timeDepth, zHideCounty, wxGate,
-    buildingsApi, bTable, bColors,
+    buildingsApi, bTable, bColors, seasonOn, seasonData, seasonJoin, seasonPerims, seasonDay, seasonReach,
   ]);
   buildLayersRef.current = buildLayers;
   const deckLayers = useMemo(() => buildLayers(hourFracRef.current), [buildLayers]);
@@ -1010,6 +1159,24 @@ export default function App() {
         weatherOn={WEATHER_ON}
         buildingReach={buildingReach}
         onBuildingReachChange={setBuildingReach}
+        season={{
+          year: SEASON_YEAR,
+          on: seasonOn,
+          onChange: setSeasonOn,
+          loading: seasonLoading,
+          day: seasonDay,
+          days: seasonDays,
+          onDayChange: (d) => { setSeasonPlaying(false); setSeasonDay(d); },
+          playing: seasonPlaying,
+          onPlayToggle: toggleSeasonPlay,
+          reach: seasonReach,
+          onReachChange: setSeasonReach,
+          inView: seasonJoin?.inView ?? 0,
+          found: seasonJoin?.found ?? 0,
+          unread: seasonJoin?.unread ?? 0,
+          total: seasonCount,
+          burns: seasonPerims.length,
+        }}
       />
       {fuel === "counties" && countyHover && countyInfo ? (
         <div style={tooltipStyle(countyHover.x, countyHover.y)}>
@@ -1033,7 +1200,22 @@ export default function App() {
           </div>
         </div>
       ) : null}
-      {fuel === "lit" && !WEATHER_ON && hover && hoverInfo ? (
+      {seasonOn && seasonData && seasonHover ? (
+        <div style={tooltipStyle(seasonHover.x, seasonHover.y)}>
+          <div style={{ fontWeight: 600 }}>{seasonData.starts.name[seasonHover.i] || "unnamed start"}</div>
+          <div>
+            {new Date(Date.UTC(SEASON_YEAR, 0, 1 + seasonData.starts.day[seasonHover.i]!)).toISOString().slice(0, 10)}
+            {" · "}{["cause unknown", "natural", "human"][seasonData.starts.cause[seasonHover.i]!]}
+            {seasonData.starts.acres[seasonHover.i]! > 0 ? ` · ${seasonData.starts.acres[seasonHover.i]!.toLocaleString(undefined, { maximumFractionDigits: 1 })} ac` : ""}
+          </div>
+          <div style={{ color: "#aaa" }}>
+            {(() => {
+              const f = seasonFuelRef.current?.fuel[seasonHover.i] ?? NaN;
+              return Number.isNaN(f) ? "fuel not read yet" : `most burnable ground within ${seasonReach} m: ${Math.round(f * 100)}%`;
+            })()}
+          </div>
+        </div>
+      ) : fuel === "lit" && !WEATHER_ON && hover && hoverInfo ? (
         // the weather off: the fuel head's reading alone
         <div style={tooltipStyle(hover.x, hover.y)}>
           <div style={{ fontWeight: 600 }}>

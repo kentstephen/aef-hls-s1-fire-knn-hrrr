@@ -10,7 +10,7 @@ import { lutTexture } from "./fuel.js";
 import { type Classified, type Teacher } from "./head.js";
 import { type AefIndex, levelFor } from "./index.js";
 import { E, fromLat, fromLon, TILE, tileBounds, tileRes, toLat, toLon } from "./mercator.js";
-import { type AefArray, MOSAIC_MIN_ZOOM, RES, X0, Y0, YEAR_IDX } from "./mosaic.js";
+import { AEF_YEAR, type AefArray, MOSAIC_MIN_ZOOM, RES, X0, Y0, YEAR_IDX, YEARS } from "./mosaic.js";
 import type { AefPool } from "./pool.js";
 import { rampStops, rampTexture, type GroundRamp } from "./ramp.js";
 import { fuelPipeline, type FuelMode } from "./render.js";
@@ -55,6 +55,11 @@ export type AefTile = {
   extentM: number;
   /** Pixel index under a lon/lat, or -1. */
   pixelAt: (lon: number, lat: number) => number;
+  /** 10 m mosaic tiles: the newest embedding year the fuel head read (its spread over that year and the two before). */
+  fuelYear?: number;
+  /** The season view's mask (r8, tile size) and the key it was drawn for. */
+  seasonTex?: Texture;
+  seasonKey?: string;
   gone?: boolean;
 };
 
@@ -91,6 +96,8 @@ export type AefLayerOpts = {
   grain: number;
   /** Draw as light: additive over the map, so bright ground adds up instead of covering. */
   light: boolean;
+  /** The season view (0 = off): the fuel at this share of its opacity, full where a tile's season mask is set. */
+  seasonDim?: number;
   opacity: number;
   beforeId?: string;
   visible: boolean;
@@ -144,6 +151,10 @@ export class AefLayers {
   private lastKey = "";
   private source: WeatherSource;
   private weatherKey = "ignition|run";
+  /** The newest embedding year the 10 m tiles score the fuel head on. */
+  private fuelYear = AEF_YEAR;
+  /** A 1 x 1 empty season mask for tiles that have none yet. */
+  private noMask: Texture | null = null;
 
   constructor(
     private pool: AefPool,
@@ -158,6 +169,44 @@ export class AefLayers {
     this.source = cacheSource(cache, "ignition");
   }
 
+  /** The year the fuel is read from (newest of the head's three): a new year reads every 10 m tile again. */
+  get year() {
+    return this.fuelYear;
+  }
+  setFuelYear(y: number) {
+    if (y === this.fuelYear) return;
+    this.fuelYear = y;
+    for (const t of [...this.live.values()]) if (t.kind === "zarr") this.drop(t);
+    this.version++;
+    this.redraw();
+  }
+
+  /** The 10 m tiles of the current fuel year on hand. */
+  fineTiles(): AefTile[] {
+    return [...this.live.values()].filter((t) => t.kind === "zarr" && !t.gone && t.fuelYear === this.fuelYear);
+  }
+
+  /** Set a tile's season mask (tile-size bytes, 0..255) drawn for key; false when it already has that key. */
+  setSeasonMask(t: AefTile, key: string, mask: Uint8Array | null): boolean {
+    if (t.seasonKey === key || !this.device || t.gone) return false;
+    const old = t.seasonTex;
+    t.seasonTex = mask
+      ? forgetData(this.device.createTexture({
+          format: "r8unorm", width: t.width, height: t.height, mipLevels: 1, data: mask,
+          sampler: { minFilter: "linear", magFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge" },
+        }))
+      : undefined;
+    t.seasonKey = key;
+    if (old) later(old);
+    return true;
+  }
+
+  /** Masks changed: draw again. */
+  seasonChanged() {
+    this.version++;
+    this.redraw();
+  }
+
   private textures(device: Device, rampId: GroundRamp) {
     if (this.device !== device || !this.ramp || !this.luts || this.rampId !== rampId) {
       if (this.device === device && this.ramp) later(this.ramp);
@@ -165,6 +214,8 @@ export class AefLayers {
       this.ramp = rampTexture(device, rampStops(rampId));
       this.rampId = rampId;
       this.luts = this.device === device && this.luts ? this.luts : { nlcd: lutTexture(device, "nlcd"), esri: lutTexture(device, "esri") };
+      this.noMask = forgetData(device.createTexture({ format: "r8unorm", width: 1, height: 1, mipLevels: 1, data: new Uint8Array(1),
+        sampler: { minFilter: "nearest", magFilter: "nearest" } }));
     }
     return { ramp: this.ramp, luts: this.luts };
   }
@@ -292,7 +343,7 @@ export class AefLayers {
   private drop(t: AefTile) {
     t.gone = true;
     if (this.live.get(t.key) === t) this.live.delete(t.key);
-    later(t.classTex.nlcd, t.classTex.esri, t.groundTex, t.fuelTex, t.ffwiTex);
+    later(t.classTex.nlcd, t.classTex.esri, t.groundTex, t.fuelTex, t.ffwiTex, ...(t.seasonTex ? [t.seasonTex] : []));
   }
 
   private async read<T>(f: () => Promise<T>): Promise<T> {
@@ -335,14 +386,18 @@ export class AefLayers {
       const py0 = ys.start ?? 0;
       const px0 = xs.start ?? 0;
       const { width, height } = o;
-      const classes = await this.pool.zarr(YEAR_IDX, py0, px0, height, width, o.signal);
+      // the class heads and the fuel head on the same newest year; the fuel head's spread over it and the two before
+      const fy = this.fuelYear;
+      const classes = await this.pool.zarr(YEARS.indexOf(fy), py0, px0, height, width, o.signal, [fy - 2, fy - 1, fy].map((y) => YEARS.indexOf(y)));
       const toLonLat = (u: number, v: number): [number, number] => [X0 + (px0 + u * width) * RES, Y0 - (py0 + v * height) * RES];
       const pixelAt = (lon: number, lat: number) => {
         const ci = Math.floor((lon - X0) / RES) - px0;
         const ri = Math.floor((Y0 - lat) / RES) - py0;
         return ci < 0 || ri < 0 || ci >= width || ri >= height ? -1 : ri * width + ci;
       };
-      return this.finish(o.device, `zarr:${py0},${px0}`, "zarr", width, height, classes, toLonLat, width * 10, pixelAt);
+      const t = this.finish(o.device, `zarr:${fy}:${py0},${px0}`, "zarr", width, height, classes, toLonLat, width * 10, pixelAt);
+      t.fuelYear = fy;
+      return t;
     });
   };
 
@@ -372,6 +427,8 @@ export class AefLayers {
       fieldAlpha: o.fieldAlpha,
       glowHours: o.glowHours,
       grain: o.grain,
+      seasonDim: o.seasonDim ?? 0,
+      seasonTex: d.seasonTex ?? this.noMask!,
     });
   };
 
@@ -388,7 +445,7 @@ export class AefLayers {
     }
     // debug hook for the headless probe (this instance is the one deck draws from)
     (globalThis as unknown as { __aef?: unknown }).__aef = { layers: this, cache: this.cache };
-    const key = `${opts.mode}|${opts.ramp}|${opts.teacher}|${opts.leadTimeIdx}|${opts.hideBelow}|${opts.rescaleMax}|${opts.pHide}|${opts.pMax}|${opts.scale}|${opts.zLo}|${opts.zHi}|${opts.useWeather}|${opts.standingAlpha}|${opts.wxGate}|${opts.fieldAlpha}|${opts.glowHours}|${opts.grain}`;
+    const key = `${opts.mode}|${opts.ramp}|${opts.teacher}|${opts.leadTimeIdx}|${opts.hideBelow}|${opts.rescaleMax}|${opts.pHide}|${opts.pMax}|${opts.scale}|${opts.zLo}|${opts.zHi}|${opts.useWeather}|${opts.standingAlpha}|${opts.wxGate}|${opts.fieldAlpha}|${opts.glowHours}|${opts.grain}|${opts.seasonDim ?? 0}`;
     if (key !== this.lastKey) {
       this.lastKey = key;
       this.version++;
@@ -416,7 +473,7 @@ export class AefLayers {
       visible: opts.visible && opts.zoom < MOSAIC_MIN_ZOOM,
     } as never);
     const fine = new ZarrLayer<zarr.Readable, "int8", AefTile>({
-      id: "aef-zarr",
+      id: `aef-zarr-${this.fuelYear}`,
       node: this.mosaic.arr,
       metadata: this.mosaic.attrs,
       selection: { time: YEAR_IDX, band: null },

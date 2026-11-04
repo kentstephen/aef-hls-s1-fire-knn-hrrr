@@ -197,6 +197,35 @@ export type ControlPanelProps = {
   /** Buildings: how far out (m) the burnable ground counts. */
   buildingReach: number;
   onBuildingReachChange: (m: number) => void;
+  season: SeasonPanel;
+};
+
+/** The fire season view (App.tsx, season.ts). */
+export type SeasonPanel = {
+  year: number;
+  on: boolean;
+  onChange: (on: boolean) => void;
+  loading: boolean;
+  /** Day of the season (0 = Jan 1) and the season's length. */
+  day: number;
+  days: number;
+  onDayChange: (d: number) => void;
+  playing: boolean;
+  onPlayToggle: () => void;
+  reach: number;
+  onReachChange: (m: number) => void;
+  /** Starts so far in view, how many found fuel, how many not read yet; all starts so far; burns so far. */
+  inView: number;
+  found: number;
+  unread: number;
+  total: number;
+  burns: number;
+};
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const dayLabel = (year: number, day: number) => {
+  const d = new Date(Date.UTC(year, 0, 1 + day));
+  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${year}`;
 };
 
 // const FIELD_OPTIONS = [
@@ -551,6 +580,48 @@ export function ControlPanel(p: ControlPanelProps) {
         </div>
         <p className="muted small">Right column: the fuel weight each class carries (first cut, to be tuned).</p>
         */}
+      </Fold>
+
+      <Fold k="season" label={`The ${p.season.year} season`} defaultOpen tag={p.season.on ? dayLabel(p.season.year, p.season.day) : "off"}>
+        <div className="row">
+          <Seg value={p.season.on ? "on" : "off"} options={[{ id: "on", label: "Show" }, { id: "off", label: "Off" }]} onChange={(v) => p.season.onChange(v === "on")} />
+          <Help label="The season">
+            Every California wildfire start of {p.season.year} (NIFC WFIGS points of origin) appears on the day it was
+            reported, with the burn outlines of the larger fires. The ground under them is the fuel of {p.season.year - 1},
+            the year before the fires, so the map cannot see their scars. A start's circle turns light blue when there is
+            fuel above the hide line within {p.season.reach} m of it, and the fuel inside the circle lights up; inside a burn
+            the fuel lights up too. Gray: no fuel that close. Everything else stays dim. Fuel shows from zoom {MOSAIC_MIN_ZOOM} in.
+          </Help>
+        </div>
+        {p.season.on ? (
+          <>
+            <div className="row">
+              <button type="button" className="play" aria-label={p.season.playing ? "Pause" : "Play"} title={p.season.playing ? "Pause (Space)" : "Play (Space)"}
+                onClick={(e) => { p.season.onPlayToggle(); e.currentTarget.blur(); }}>
+                {p.season.playing ? "❚❚" : "▶"}
+              </button>
+              <span>{dayLabel(p.season.year, p.season.day)}</span>
+            </div>
+            <Field label="Day of the season">
+              <Slider min={0} max={p.season.days - 1} step={1} value={p.season.day} onChange={p.season.onDayChange} label="Day of the season" onReset={() => p.season.onDayChange(p.season.days - 1)} />
+            </Field>
+            <Field label={`Reach ${p.season.reach} m${p.season.reach === 30 ? " (about 100 ft)" : ""}`}>
+              <Slider min={10} max={150} step={5} value={p.season.reach} onChange={p.season.onReachChange} label="Reach" onReset={() => p.season.onReachChange(30)} />
+            </Field>
+            {p.season.loading ? (
+              <p className="muted small">Reading the {p.season.year} starts and burns from NIFC...</p>
+            ) : (
+              <p className="muted small">
+                Through {dayLabel(p.season.year, p.season.day)}: {p.season.total.toLocaleString()} starts in California,{" "}
+                {p.season.burns.toLocaleString()} burn outlines. In view: {p.season.inView.toLocaleString()} starts
+                {p.season.inView - p.season.unread > 0
+                  ? `, ${p.season.found.toLocaleString()} of the ${(p.season.inView - p.season.unread).toLocaleString()} read (${Math.round((100 * p.season.found) / (p.season.inView - p.season.unread))}%) with fuel within ${p.season.reach} m`
+                  : ""}
+                {p.season.unread > 0 ? `; ${p.season.unread.toLocaleString()} not read yet${p.zoom < MOSAIC_MIN_ZOOM ? ` (zoom in past ${MOSAIC_MIN_ZOOM})` : ""}` : ""}.
+              </p>
+            )}
+          </>
+        ) : null}
       </Fold>
 
       {/* the time controls only with the weather on (App.tsx WEATHER_ON) */}

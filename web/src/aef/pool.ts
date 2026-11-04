@@ -53,8 +53,8 @@ export class AefPool {
     return this.ask({ type: "classify", data, n }, [data.buffer as ArrayBuffer], signal);
   }
 
-  /** A mosaic chunk read and classified in the worker. */
-  zarr(timeIdx: number, py0: number, px0: number, h: number, w: number, signal?: AbortSignal): Promise<Classified> {
-    return this.ask({ type: "zarr", timeIdx, py0, px0, h, w }, [], signal);
+  /** A mosaic chunk read and classified in the worker; fuelYearIdx: the fuel head's years (oldest first), else its own. */
+  zarr(timeIdx: number, py0: number, px0: number, h: number, w: number, signal?: AbortSignal, fuelYearIdx?: number[]): Promise<Classified> {
+    return this.ask({ type: "zarr", timeIdx, py0, px0, h, w, fuelYearIdx }, [], signal);
   }
 }

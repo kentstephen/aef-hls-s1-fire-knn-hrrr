@@ -26,6 +26,7 @@ labels or inputs, not the model.
     uv run scripts/fuel_lab.py build            # pixel table from data/fuel_grid (once)
     uv run scripts/fuel_lab.py run [--loop]     # every scenario in fuel_scenarios.py not yet in results/fuel_lab
     uv run scripts/fuel_lab.py board            # rewrite results/fuel_lab/LEADERBOARD.md
+    uv run scripts/fuel_lab.py one NAME         # one scenario, no torch (the runner uses this for LightGBM)
 
 RAM: build about 3 GB, a run about 6 to 10 GB at peak; a watchdog stops the process above --cap GB (default 20).
 """
@@ -499,16 +500,51 @@ def watchdog(cap_gb):
     return lambda: peak / 2**30
 
 
-def run(loop):
+def run_and_save(sc, meta):
+    try:
+        res = run_one(sc, meta)
+    except Exception as e:  # one broken scenario must not stop the queue
+        import traceback
+        traceback.print_exc()
+        (RES / f"{sc['name']}.json").write_text(json.dumps({"scenario": sc, "error": repr(e)}, indent=1))
+        return
+    res["peak_gb"] = round(PEAK(), 2)
+    json.dump(res, open(RES / f"{sc['name']}.json", "w"), indent=1)
+    a = res["views"]["all"]
+    print(f"   auc {a['auc']}  caught@1% {a['caught@0.01']} (hidden {a['hidden@0.01']})  caught@2% {a['caught@0.02']}  "
+          f"{res['seconds']} s, peak {res['peak_gb']} GB", flush=True)
+
+
+def scenarios():
+    import fuel_scenarios
+    importlib.reload(fuel_scenarios)
+    return fuel_scenarios.SCENARIOS
+
+
+def run_lgbm_child(sc, cap):
+    """LightGBM in its own process. With torch loaded, two OpenMP runtimes (torch's and Homebrew's libomp for
+    LightGBM) end up in one process and LightGBM deadlocks on macOS; the child never imports torch."""
+    import subprocess
+    r = subprocess.run([sys.executable, __file__, "one", sc["name"], "--cap", str(cap)])
+    if r.returncode != 0 and not (RES / f"{sc['name']}.json").exists():
+        (RES / f"{sc['name']}.json").write_text(json.dumps({"scenario": sc, "error": f"child exit {r.returncode}"}, indent=1))
+
+
+def run_named(name):
+    """One scenario by name, without importing torch (used for LightGBM)."""
+    sc = next(s for s in scenarios() if s["name"] == name)
+    meta = load_meta()
+    run_and_save(sc, meta)
+
+
+def run(loop, cap):
     import torch
     torch.set_num_threads(8)
     RES.mkdir(parents=True, exist_ok=True)
     meta = load_meta()
     print(f"{len(meta)} pixels, {meta.win.nunique()} windows, {meta.block.nunique()} blocks", flush=True)
     while True:
-        import fuel_scenarios
-        importlib.reload(fuel_scenarios)
-        todo = [s for s in fuel_scenarios.SCENARIOS if not (RES / f"{s['name']}.json").exists()]
+        todo = [s for s in scenarios() if not (RES / f"{s['name']}.json").exists()]
         if not todo:
             if loop:
                 time.sleep(60)
@@ -516,18 +552,10 @@ def run(loop):
             break
         sc = todo[0]
         print(f"== {sc['name']} ({len(todo)} left): {sc}", flush=True)
-        try:
-            res = run_one(sc, meta)
-        except Exception as e:  # one broken scenario must not stop the queue
-            import traceback
-            traceback.print_exc()
-            (RES / f"{sc['name']}.json").write_text(json.dumps({"scenario": sc, "error": repr(e)}, indent=1))
-            continue
-        res["peak_gb"] = round(PEAK(), 2)
-        json.dump(res, open(RES / f"{sc['name']}.json", "w"), indent=1)
-        a = res["views"]["all"]
-        print(f"   auc {a['auc']}  caught@1% {a['caught@0.01']} (hidden {a['hidden@0.01']})  caught@2% {a['caught@0.02']}  "
-              f"{res['seconds']} s, peak {res['peak_gb']} GB", flush=True)
+        if sc["model"] == "lgbm":
+            run_lgbm_child(sc, cap)
+        else:
+            run_and_save(sc, meta)
         try:
             board()
         except Exception as e:
@@ -536,10 +564,11 @@ def run(loop):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["build", "run", "board"])
+    ap.add_argument("cmd", choices=["build", "run", "one", "board"])
+    ap.add_argument("name", nargs="?", help="scenario name for 'one'")
     ap.add_argument("--loop", action="store_true", help="keep watching fuel_scenarios.py for new scenarios")
     ap.add_argument("--cap", type=float, default=20)
     a = ap.parse_args()
     PEAK = watchdog(a.cap)
-    {"build": build, "run": lambda: run(a.loop), "board": board}[a.cmd]()
+    {"build": build, "run": lambda: run(a.loop, a.cap), "one": lambda: run_named(a.name), "board": board}[a.cmd]()
     print(f"peak RSS {PEAK():.2f} GB")

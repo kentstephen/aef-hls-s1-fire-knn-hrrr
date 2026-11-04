@@ -1,0 +1,145 @@
+{
+ "views": {
+  "all": {
+   "n": 1574591,
+   "auc": 0.9541,
+   "hidden@0.005": 0.0054,
+   "caught@0.005": 0.4636,
+   "hidden@0.01": 0.0106,
+   "caught@0.01": 0.5618,
+   "hidden@0.02": 0.0215,
+   "caught@0.02": 0.6576,
+   "hidden@0.05": 0.051,
+   "caught@0.05": 0.779
+  },
+  "random": {
+   "n": 340840,
+   "auc": 0.9425,
+   "hidden@0.005": 0.0009,
+   "caught@0.005": 0.3797,
+   "hidden@0.01": 0.0019,
+   "caught@0.01": 0.4449,
+   "hidden@0.02": 0.0046,
+   "caught@0.02": 0.5068,
+   "hidden@0.05": 0.0132,
+   "caught@0.05": 0.6031
+  },
+  "clean": {
+   "n": 928922,
+   "auc": 0.9882,
+   "hidden@0.005": 0.0037,
+   "caught@0.005": 0.6097,
+   "hidden@0.01": 0.0062,
+   "caught@0.01": 0.7171,
+   "hidden@0.02": 0.0114,
+   "caught@0.02": 0.8092,
+   "hidden@0.05": 0.0261,
+   "caught@0.05": 0.9018
+  },
+  "agree": {
+   "n": 1037161,
+   "auc": 0.9888,
+   "hidden@0.005": 0.001,
+   "caught@0.005": 0.5474,
+   "hidden@0.01": 0.0026,
+   "caught@0.01": 0.6521,
+   "hidden@0.02": 0.0064,
+   "caught@0.02": 0.749,
+   "hidden@0.05": 0.0194,
+   "caught@0.05": 0.8623
+  }
+ },
+ "strict truth": {
+  "all": {
+   "n": 1574591,
+   "auc": 0.9594,
+   "hidden@0.005": 0.005,
+   "caught@0.005": 0.2801,
+   "hidden@0.01": 0.0101,
+   "caught@0.01": 0.4175,
+   "hidden@0.02": 0.0202,
+   "caught@0.02": 0.5558,
+   "hidden@0.05": 0.0512,
+   "caught@0.05": 0.7582
+  },
+  "random": {
+   "n": 340840,
+   "auc": 0.9855,
+   "hidden@0.005": 0.0018,
+   "caught@0.005": 0.367,
+   "hidden@0.01": 0.0027,
+   "caught@0.01": 0.4642,
+   "hidden@0.02": 0.0043,
+   "caught@0.02": 0.5855,
+   "hidden@0.05": 0.0115,
+   "caught@0.05": 0.7485
+  }
+ },
+ "caught@0.01 by kind": {
+  "urban and roads": 0.6115,
+  "snow and ice": 0.3901,
+  "farmland": 0.7446,
+  "water": 0.7516,
+  "bare": 0.2748
+ },
+ "caught@0.01 roads (EVT 7299)": 0.5472,
+ "hidden@0.01 by fuel family": {
+  "grass": 0.0183,
+  "grass-shrub": 0.011,
+  "shrub": 0.0143,
+  "timber-understory": 0.0001,
+  "timber-litter": 0.004
+ },
+ "caught@0.01 Overture mapped": {
+  "building": 0.8463,
+  "road (motorway to residential)": 0.6089,
+  "service road": 0.5682,
+  "track": 0.302
+ },
+ "hidden@0.01 by distance to non-fuel": {
+  "<=30 m": 0.0403,
+  "30-100 m": 0.0117,
+  ">100 m": 0.0051
+ },
+ "calibration (random view, after logit rescale)": {
+  "brier": 0.0477,
+  "ece": 0.0098,
+  "base_rate": 0.1338
+ },
+ "year test: 2024-trained, scored on 2025 embeddings": {
+  "n": 1574591,
+  "auc": 0.9535,
+  "hidden@0.005": 0.0058,
+  "caught@0.005": 0.4598,
+  "hidden@0.01": 0.0123,
+  "caught@0.01": 0.5619,
+  "hidden@0.02": 0.0236,
+  "caught@0.02": 0.6557,
+  "hidden@0.05": 0.0549,
+  "caught@0.05": 0.786
+ },
+ "scenario": {
+  "model": "torch",
+  "hidden": [
+   64
+  ],
+  "labels": "kinds",
+  "weights": "balanced",
+  "year_test": true,
+  "name": "mlp64_e_sd_kinds_2yr_reg",
+  "features": [
+   "e",
+   "sd"
+  ],
+  "train_years": "both",
+  "stop_on": "auc",
+  "patience": 5,
+  "dropout": 0.3,
+  "wd": 0.01,
+  "lr": 0.001
+ },
+ "params": 8971,
+ "aef_reads_per_pixel": 4,
+ "seconds": 56,
+ "peak_gb": 11.95
+}

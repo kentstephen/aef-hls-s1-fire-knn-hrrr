@@ -1,0 +1,152 @@
+{
+ "views": {
+  "all": {
+   "n": 1574591,
+   "auc": 0.953,
+   "hidden@0.005": 0.0056,
+   "caught@0.005": 0.4709,
+   "hidden@0.01": 0.0104,
+   "caught@0.01": 0.5704,
+   "hidden@0.02": 0.0204,
+   "caught@0.02": 0.6581,
+   "hidden@0.05": 0.0508,
+   "caught@0.05": 0.7792
+  },
+  "random": {
+   "n": 340840,
+   "auc": 0.9385,
+   "hidden@0.005": 0.0006,
+   "caught@0.005": 0.3727,
+   "hidden@0.01": 0.0013,
+   "caught@0.01": 0.4337,
+   "hidden@0.02": 0.0037,
+   "caught@0.02": 0.4925,
+   "hidden@0.05": 0.0125,
+   "caught@0.05": 0.5965
+  },
+  "clean": {
+   "n": 928922,
+   "auc": 0.987,
+   "hidden@0.005": 0.0042,
+   "caught@0.005": 0.6245,
+   "hidden@0.01": 0.0067,
+   "caught@0.01": 0.7334,
+   "hidden@0.02": 0.0115,
+   "caught@0.02": 0.8142,
+   "hidden@0.05": 0.0259,
+   "caught@0.05": 0.9006
+  },
+  "agree": {
+   "n": 1037161,
+   "auc": 0.9882,
+   "hidden@0.005": 0.0009,
+   "caught@0.005": 0.5584,
+   "hidden@0.01": 0.0022,
+   "caught@0.01": 0.6658,
+   "hidden@0.02": 0.0055,
+   "caught@0.02": 0.7557,
+   "hidden@0.05": 0.0182,
+   "caught@0.05": 0.8672
+  }
+ },
+ "strict truth": {
+  "all": {
+   "n": 1574591,
+   "auc": 0.96,
+   "hidden@0.005": 0.0055,
+   "caught@0.005": 0.3063,
+   "hidden@0.01": 0.0104,
+   "caught@0.01": 0.4077,
+   "hidden@0.02": 0.0201,
+   "caught@0.02": 0.5715,
+   "hidden@0.05": 0.0502,
+   "caught@0.05": 0.7723
+  },
+  "random": {
+   "n": 340840,
+   "auc": 0.9801,
+   "hidden@0.005": 0.0011,
+   "caught@0.005": 0.3672,
+   "hidden@0.01": 0.0021,
+   "caught@0.01": 0.4559,
+   "hidden@0.02": 0.0037,
+   "caught@0.02": 0.5837,
+   "hidden@0.05": 0.0105,
+   "caught@0.05": 0.7452
+  }
+ },
+ "caught@0.01 by kind": {
+  "urban and roads": 0.6013,
+  "snow and ice": 0.3988,
+  "farmland": 0.7385,
+  "water": 0.7516,
+  "bare": 0.3191
+ },
+ "caught@0.01 roads (EVT 7299)": 0.5415,
+ "hidden@0.01 by fuel family": {
+  "grass": 0.022,
+  "grass-shrub": 0.0101,
+  "shrub": 0.0102,
+  "timber-understory": 0.0001,
+  "timber-litter": 0.0032
+ },
+ "caught@0.01 Overture mapped": {
+  "building": 0.8288,
+  "road (motorway to residential)": 0.6014,
+  "service road": 0.564,
+  "track": 0.3003
+ },
+ "hidden@0.01 by distance to non-fuel": {
+  "<=30 m": 0.0356,
+  "30-100 m": 0.0105,
+  ">100 m": 0.006
+ },
+ "calibration (random view, after logit rescale)": {
+  "brier": 0.0479,
+  "ece": 0.0121,
+  "base_rate": 0.1338
+ },
+ "year test: 2024-trained, scored on 2025 embeddings": {
+  "n": 1574591,
+  "auc": 0.948,
+  "hidden@0.005": 0.0068,
+  "caught@0.005": 0.4594,
+  "hidden@0.01": 0.0173,
+  "caught@0.01": 0.5804,
+  "hidden@0.02": 0.0344,
+  "caught@0.02": 0.6814,
+  "hidden@0.05": 0.0781,
+  "caught@0.05": 0.8115
+ },
+ "travel": {
+  "train north, test south": {
+   "auc": 0.8929,
+   "caught@0.01 (cutoff set on this test set)": 0.3097,
+   "caught@0.02 (cutoff set on this test set)": 0.4144
+  },
+  "train south, test north": {
+   "auc": 0.945,
+   "caught@0.01 (cutoff set on this test set)": 0.5027,
+   "caught@0.02 (cutoff set on this test set)": 0.5856
+  }
+ },
+ "scenario": {
+  "model": "lgbm",
+  "hidden": [],
+  "labels": "binary",
+  "weights": "balanced",
+  "year_test": true,
+  "name": "lgbm_e_m3_m9_sd",
+  "features": [
+   "e",
+   "m3",
+   "m9",
+   "sd"
+  ],
+  "travel": true
+ },
+ "params": null,
+ "aef_reads_per_pixel": 94,
+ "seconds": 190,
+ "peak_gb": 8.38
+}

@@ -1,0 +1,43 @@
+{
+ "name": "goes_only_first_scan",
+ "target": "event matched to a NIFC / WFIGS perimeter or start (vs unmatched)",
+ "features": [
+  "log1p(first power MW, missing = 0)",
+  "first scan strength class",
+  "log(first scan pixels)"
+ ],
+ "strength_classes": {
+  "10, 11": 6,
+  "13": 5,
+  "14": 4,
+  "12": 3,
+  "15": 2,
+  "mask 30s": "as their 10s"
+ },
+ "score": "sigmoid(intercept + sum(coef * (x - mean) / scale))",
+ "mean": [
+  1.221158,
+  3.207394,
+  0.113843
+ ],
+ "scale": [
+  1.895839,
+  1.741872,
+  0.356713
+ ],
+ "coef": [
+  0.884422,
+  -0.219588,
+  -0.000313
+ ],
+ "intercept": -2.163245,
+ "years": [
+  2023,
+  2024,
+  2025,
+  2026
+ ],
+ "n": 13795,
+ "matched": 1675,
+ "auc_out_of_fold_by_place": 0.666
+}

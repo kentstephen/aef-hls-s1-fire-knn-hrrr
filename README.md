@@ -51,24 +51,38 @@ with modest skill overall (R2 0.2 to 0.5). `results/knn_aef_*.json`.
 ### The web map (`web/`)
 
 React, MapLibre and deck.gl. Nothing is precomputed but the model weights and small file indexes; the embeddings,
-the fire records and the Sentinel-2 imagery are read from their public stores when the view opens.
+the fire records and the Sentinel-2 imagery are read from their public stores when the view opens. Two pages:
 
-- **The ground**: P(fuel) from the 10 m AlphaEarth Zarr mosaic, from zoom 11 in. The panel picks the embeddings
-  year (2019 to 2025); the fuel model reads that year and the two before it.
+**GOES triage** (the default page, `web/src/triage/`): map left, table right. Every fire GOES-West saw over
+California in the Park Fire week (Jul 22 to Aug 2, 2024) fills the table as its scans are read, ranked by a
+GOES-only score (`models/goes_score.json`, fit by `scripts/goes_score_fit.py`). Then each event's fuel under and
+around it is read from the embeddings, top row first. Each event reads up to 24 mosaic chunks of 3 years, so the
+whole week is tens of GB; the bottom rows may never fill.
+
+**The fuel map** (`?app=fuel`):
+
+- **The ground**: P(fuel) from the 10 m AlphaEarth Zarr mosaic, from zoom 11 in. The panel shows the embeddings
+  year large (2019 to 2025); `[` and `]` step it. The fuel model reads that year and the two before it.
+- **Burned areas** (`web/src/perimeters.ts`): every California wildfire of 100 acres and up since 2020 (about 590),
+  read live from NIFC's WFIGS perimeter service, outlines simplified to about 30 m (about 4 MB). Bright cyan, which
+  none of the fuel ramps holds; outlines only. `B` shows and hides them. Hovering lists every fire that burned the
+  spot (name, year, acres), newest first.
+- **A fire's fuel by year** (`web/src/fuel/burnHist.ts`, `web/src/ui/FireHist.tsx`): clicking inside an outline
+  selects that fire (the newest where they overlap; Esc clears). The panel shows one bar per embeddings year, 2019 to
+  2025: the average P(fuel) over the outline's pixels in the mosaic chunks in view. The year on screen is read first,
+  then the others chunk by chunk, bars growing faint until complete. Park Fire near Cohasset, zoom 14: 94, 94, 95, 96,
+  94, 95 (fire year), 91 % (2025), read in about 9 s. P(fuel) asks whether ground can burn, not how much fuel is on
+  it, and burned wildland is still fuel to LANDFIRE, so a fire moves it little.
 - **Sentinel-2** (`web/src/s2.ts`): Earth Genome's yearly mosaics, 2022 to 2025, found with Earth Genome's STAC
-  search and read from each footprint's TCI COG on Source Cooperative, decoded in workers. Drawn bare, over the
-  basemap's streets and labels: hold Space to see it in place of the fuel, `[` and `]` (or the wheel while Space
-  is held) to step its year, P for imagery and fuel side by side, moving together. S turns the 2025 season on
-  and off.
-- **Buildings** (zoom 14 in): Overture footprints read with DuckDB-WASM, each outline colored by the most burnable
-  ground within a reach of it.
-- **The 2025 season**: every California wildfire start and burn perimeter of 2025 (NIFC WFIGS services), day by
-  day, over the fuel of 2024. A start whose circle (30 m by default) holds fuel lights the fuel inside it; burns light
-  the fuel inside them; the rest stays dim. Clicking a start or a burn reads that fire's whole NIFC record (dates,
-  size, cause, place, land, agency, NIFC's fuel notes, personnel, cost) into the panel.
-- **One fire from orbit** (off in the panel, code kept): the Green Fire (19,022 acres, lightning, July 2025) as
-  GOES-West's fire product saw it, hour by hour. GOES pixels are 2 to 4 km across, so over a 10 m fuel map they
-  cover the whole burn and say little about the ground.
+  search and read from each footprint's TCI COG on Source Cooperative, decoded in workers. Hold Space to see the
+  year matching the embeddings (2022 for earlier ones) in place of the fuel, drawn bare.
+- **Reading the mosaic** (`web/src/aef/aef.worker.ts`, `pool.ts`): chunks come from the S3 host, kept on disk in
+  IndexedDB between visits. Each worker also keeps the chunk-years it decoded lately in memory (192 MB each, least
+  recently used dropped), and a chunk always goes to the same worker, so the next year over needs one new read, not
+  three. Measured on the Mac's GPU for the fire bars above: 15 s before, 9 s after. Headless Chromium scores on a
+  software GPU (SwiftShader), about 20 times slower, so time it headed.
+- Behind `FUEL_ONLY` in `App.tsx` (off while it is true): the 2025 season of starts and burns, Overture buildings
+  colored by nearby fuel, GOES-West fires as boxes, one fire hour by hour.
 
 ```bash
 npm --prefix web install
@@ -214,3 +228,10 @@ National Fuel Moisture Database, HLS and Sentinel-1 (for the moisture work), NOA
 VIIRS S-NPP, CAL FIRE incidents, USFS FACTS prescribed burns, Mapterhorn terrain tiles.
 
 Python scripts run with `uv run` (dependencies inline in each script).
+
+## Inspirations
+
+- [goes-fdc-catalog](https://github.com/mmidzik/goes-fdc-catalog): GOES fire pixels (ABI FDC) as virtual Zarr
+  references into NOAA's bucket. This repo builds its own references the same way (`scripts/goes_fire_refs.py`).
+- [CTrees FuelWatch](https://fuelwatch.ctrees.org/): a live fuel moisture map on fuel groups. The fuel map here
+  starts from the same idea, with the fuel read from embeddings.

@@ -1,0 +1,101 @@
+/* map left, table right, filling the window */
+.triage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  background: #141418;
+  color: #e6e9ec;
+  font: 13px/1.4 "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+}
+.triage-map {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.triage-side {
+  width: min(680px, 48vw);
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #2a2a31;
+}
+.triage-head {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid #2a2a31;
+}
+.triage-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+.triage-sub {
+  color: #a3a8b0;
+  margin-top: 2px;
+}
+.triage-bar {
+  margin-top: 8px;
+  height: 3px;
+  background: #2a2a31;
+}
+.triage-bar > div {
+  height: 100%;
+  background: #ffb028;
+}
+/* the embeddings' bar: light blue, apart from the GOES amber */
+.triage-bar.fuel {
+  margin: 4px 0 2px;
+}
+.triage-bar.fuel > div {
+  background: #7cc4ff;
+}
+.triage-error {
+  margin-top: 6px;
+  color: #ffd27a;
+}
+.triage-tip {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  padding: 6px 9px;
+  border-radius: 6px;
+  background: rgba(20, 20, 24, 0.92);
+  color: #e6e9ec;
+  white-space: nowrap;
+}
+
+/* HighTable in the dark: its styled variables, inverted (selector outranks the library's own class) */
+.triage-side [class*="_styled_"] {
+  --hy-color-1: #e6e9ec;
+  --hy-color-2: #c9cdd3;
+  --hy-color-3: #8d939b;
+  --hy-color-5: #4a4a55;
+  --hy-color-7: #34343d;
+  --hy-color-8: #2a2a31;
+  --hy-color-9: #1c1c22;
+  --hy-color-10: #141418;
+  --hy-accent-1: #ffb028;
+  --hy-accent-2: #c98a1f;
+  --hy-accent-3: #3a3326;
+  --hy-accent-4: #26262e;
+  --hy-accent-5: #2b2720;
+  --hy-highlight-1: #5a4520;
+  --hy-highlight-2: #3d3220;
+  --cell-busy-background: linear-gradient(60deg, rgba(255, 255, 255, 0.03) 25%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.03) 75%);
+  font-variant-numeric: tabular-nums;
+}
+.triage-side td {
+  cursor: pointer;
+}
+.triage-clear {
+  float: right;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  color: #e6e9ec;
+  background: #26262e;
+  border: 1px solid #4a4a55;
+  border-radius: 999px;
+  padding: 1px 10px;
+  cursor: pointer;
+}
+.triage-clear:hover {
+  background: #34343d;
+}

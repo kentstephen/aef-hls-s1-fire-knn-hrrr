@@ -195,6 +195,8 @@ export type ControlPanelProps = {
   status: Status;
   /** False: no weather; the ground is the fuel head's P(fuel) alone and the Time panel is off. */
   weatherOn: boolean;
+  /** The fuel alone: the season, fire and building rows hidden. */
+  fuelOnly?: boolean;
   /** Buildings: how far out (m) the burnable ground counts. */
   buildingReach: number;
   onBuildingReachChange: (m: number) => void;
@@ -202,6 +204,8 @@ export type ControlPanelProps = {
   goes: GoesPanel;
   years: YearsPanel;
   fire: FirePanel;
+  /** The selected fire's fuel histograms, under the years box. */
+  burnHist?: React.ReactNode;
   /** The picked GOES fire hour by hour (null when none is picked). */
   fireHour: FireHourPanel | null;
 };
@@ -393,7 +397,7 @@ export function ControlPanel(p: ControlPanelProps) {
         </button>
       </div>
       {min && p.weatherOn ? <p className="pn-stamp">{timeTag}</p> : null}
-      {min ? <p className="pn-stamp">Embeddings {p.years.emb} · Sentinel-2 {p.years.img}{p.years.holding || p.years.imgOn ? " (shown)" : ""}</p> : null}
+      {min ? <p className="pn-stamp">Embeddings {p.years.emb}{p.fuelOnly ? "" : ` · Sentinel-2 ${p.years.img}${p.years.holding || p.years.imgOn ? " (shown)" : ""}`}</p> : null}
       {min && (p.fuel === "ignition" || p.fuel === "counties" || (p.fuel === "lit" && !p.weatherOn)) ? (
         <div className="pn-legend">
           <div className="ramp" role="img" aria-label={`${p.groundRamp} ramp`} style={{ backgroundImage: rampGradient(rampStops(p.groundRamp)) }} />
@@ -417,8 +421,8 @@ export function ControlPanel(p: ControlPanelProps) {
       */}
       <p>
         Each 10 m pixel's <b>AlphaEarth embeddings</b> go through a small model fit on fuel and non-fuel ground across
-        California, giving the chance the ground is burnable fuel. Fires are NIFC's records: where each one started and
-        the outline it burned.
+        California, giving the chance the ground is burnable fuel.
+        {p.fuelOnly ? null : " Fires are NIFC's records: where each one started and the outline it burned."}
         {/* the imagery is off for now: <b>Sentinel-2</b> shows what the ground looked like. */}
       </p>
 
@@ -430,7 +434,7 @@ export function ControlPanel(p: ControlPanelProps) {
               {p.years.embOptions.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
           </label>
-          <span className="muted small">the fuel model reads {p.years.emb - 2} to {p.years.emb}</span>
+          <span className="muted small">the fuel model reads {p.years.emb - 2} to {p.years.emb} · <kbd>[</kbd> <kbd>]</kbd> step · hold <kbd>Space</kbd> for Sentinel-2 · <kbd>B</kbd> burned areas</span>
         </div>
         {/* the imagery is off for now
         <div className="row">
@@ -450,12 +454,13 @@ export function ControlPanel(p: ControlPanelProps) {
           Hold <b>Space</b> to see the imagery (the wheel steps its year while held), <b>[</b> <b>]</b> a year back or
           forward, <b>P</b> for the two side by side. Imagery from zoom 9 in, fuel from zoom {MOSAIC_MIN_ZOOM} in.
         */}
-        <p className="muted small">Fuel from zoom {MOSAIC_MIN_ZOOM} in.</p>
+        <p className="muted small">Fuel from zoom {MOSAIC_MIN_ZOOM} in. Click inside a fire's outline for its fuel by year.</p>
       </div>
+      {p.burnHist}
       <p className="muted small" style={{ marginTop: 6 }}>
         Data: <A href="https://source.coop/tge-labs/aef">AlphaEarth Foundations</A> (tge-labs on Source Cooperative) ·{" "}
         {/* <A href="https://www.earthgenome.org/">Earth Genome</A> Sentinel-2 mosaics (CC BY 4.0) ·{" "} */}
-        <A href="https://data-nifc.opendata.arcgis.com/">NIFC WFIGS</A> fire starts and outlines · Overture Maps buildings ·{" "}
+        {p.fuelOnly ? null : <><A href="https://data-nifc.opendata.arcgis.com/">NIFC WFIGS</A> fire starts and outlines · Overture Maps buildings ·{" "}</>}
         {/* the weather sources, while the weather is off:
         <A href="https://dynamical.org/catalog/noaa-hrrr-forecast-48-hour/">NOAA HRRR 48 h</A> via{" "}
         <A href="https://dynamical.org">dynamical.org</A> ({s.backend === "icechunk" ? "Icechunk" : s.backend === "zarr-v3" ? "Zarr v3" : "opening"}) ·{" "}
@@ -463,7 +468,7 @@ export function ControlPanel(p: ControlPanelProps) {
         <A href="https://github.com/kentstephen/aef-hls-s1-fire-knn-hrrr">code on GitHub</A>
       </p>
       <p className="muted small" style={{ marginTop: 4 }}>
-        Keys: <b>S</b> the season · <b>F</b> full screen ·{" "}
+        Keys: {p.fuelOnly ? null : <><b>S</b> the season · </>}<b>F</b> full screen ·{" "}
         <b>L</b> map labels off and on · <b>Q</b> tooltip off and on.
       </p>
 
@@ -548,6 +553,7 @@ export function ControlPanel(p: ControlPanelProps) {
             <Field label={`Ramp top ${Math.round(p.pMax * 100)}%`}>
               <Slider min={0.05} max={1} step={0.01} value={p.pMax} onChange={p.onPMaxChange} label="Ramp top" onReset={() => p.onPMaxChange(1)} />
             </Field>
+            {p.fuelOnly ? null : <>
             <p className="muted small">
               Buildings (zoom 14 in): each outline takes the color of the most burnable ground within {p.buildingReach} m of it.
               Dark gray: nothing above the hide line that close.
@@ -555,6 +561,7 @@ export function ControlPanel(p: ControlPanelProps) {
             <Field label={`Building reach ${p.buildingReach} m${p.buildingReach === 30 ? " (about 100 ft, CAL FIRE defensible space)" : ""}`}>
               <Slider min={0} max={150} step={5} value={p.buildingReach} onChange={p.onBuildingReachChange} label="Building reach" onReset={() => p.onBuildingReachChange(30)} />
             </Field>
+            </>}
           </>
         ) : null}
         <p className="muted small">Reading: {reader}{s.aefReading > 0 ? ` · ${s.aefReading} tiles in flight` : ""}</p>
@@ -757,6 +764,7 @@ export function ControlPanel(p: ControlPanelProps) {
         */}
       </Fold>
 
+      {p.fuelOnly ? null : <>
       <Fold k="fire" label="The fire" defaultOpen tag={p.fire.record ? String(p.fire.record.IncidentName ?? "") : p.fire.pick ? "reading" : "none picked"}>
         {!p.fire.pick ? (
           <p className="muted small">Click a fire start or inside a burn outline (the season view, below) for NIFC's record of it.</p>
@@ -858,6 +866,7 @@ export function ControlPanel(p: ControlPanelProps) {
           </>
         ) : null}
       </Fold>
+      </>}
 
       {/* the time controls only with the weather on (App.tsx WEATHER_ON) */}
       {p.weatherOn ? (

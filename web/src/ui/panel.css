@@ -158,7 +158,19 @@
 .pn .yr { display: inline-flex; align-items: center; gap: 6px; min-width: 150px; }
 .pn .yr span { min-width: 76px; }
 .pn .yr select { background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line); border-radius: 6px; padding: 1px 4px; }
+/* the embeddings' year, big: the one number to read while stepping with [ ] */
+.pn .yr select[aria-label="Embeddings year"] { font-size: 36px; font-weight: 700; line-height: 1.1; padding: 2px 8px; font-variant-numeric: tabular-nums; }
+.pn .yr select[aria-label="Embeddings year"] option { font-size: 14px; font-weight: 400; }
 /* a fire's NIFC record */
 .pn table.rec { width: 100%; border-collapse: collapse; margin-top: 6px; }
 .pn table.rec th { text-align: left; font-weight: 400; color: var(--muted); padding: 2px 8px 2px 0; vertical-align: top; white-space: nowrap; }
 .pn table.rec td { padding: 2px 0; }
+/* the selected fire's fuel by year: one bar per embeddings year */
+.pn .fire-hist { margin: 10px 0 4px; padding: 8px 10px; border: 1px solid #00e5ff; border-radius: 8px; }
+.pn .fire-hist .fh-title { font-weight: 600; color: #00e5ff; margin-bottom: 2px; }
+.pn .fire-hist svg { display: block; margin-top: 6px; }
+.pn .fire-hist .fh-axis { font-size: 10px; fill: #9aa0a6; font-variant-numeric: tabular-nums; }
+.pn .fire-hist .fh-val { font-size: 11px; fill: #e8eaed; font-variant-numeric: tabular-nums; }
+.pn .fire-hist .fh-year { font-size: 11px; fill: #9aa0a6; font-variant-numeric: tabular-nums; }
+.pn .fire-hist .fh-year.on { font-size: 13px; font-weight: 700; fill: #e8eaed; }
+.pn .fire-hist .fh-tag { font-size: 10px; fill: #00e5ff; }

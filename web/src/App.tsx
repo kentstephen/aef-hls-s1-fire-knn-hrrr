@@ -19,6 +19,9 @@ import { ignitionRate, rateLabel } from "./aef/calibration.js";
 // the burn perimeters (perimeters.ts): not drawn for now; TODO draw them from GeoArrow (deck.gl-geoarrow) rather
 // than a 7 MB GeoJSON parsed on the main thread, and only while each fire burned
 // import { loadPerimeters, type Perimeter, perimeterLayer, perimetersInRun } from "./perimeters.js";
+import { type BurnArea, burnAreaLayer, burnAreasAt, loadCaBurnAreas, selectedBurnLayer } from "./perimeters.js";
+import { BurnHist, type YearHist } from "./fuel/burnHist.js";
+import { FireHist } from "./ui/FireHist.js";
 import { HEADS, NO_CLASS, type Teacher } from "./aef/head.js";
 import { AefLayers } from "./aef/layers.js";
 import { AEF_YEAR, type AefArray, MOSAIC_MIN_ZOOM, openAefMosaic, YEARS } from "./aef/mosaic.js";
@@ -69,6 +72,15 @@ import { ControlPanel, loadingSummary, type ColormapChoiceId, type FuelChoice, t
  * True brings back FFWI x P(fuel) hour by hour and the Time panel.
  */
 const WEATHER_ON = false;
+/**
+ * The fuel alone: no GOES boxes, no fire season, no buildings. The fuel is the claim; the fire tests that back it
+ * are in the README. False brings the other views back.
+ */
+const FUEL_ONLY = true;
+/** NIFC names come in capitals ("PARK"). */
+const titleCase = (s: string) => s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+/** The embeddings' years the fuel can be read for: the fuel model reads each year with the two before it. */
+const EMB_YEARS = YEARS.filter((y) => y - 2 >= YEARS[0]!);
 const MAP_STYLE_URL = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
 /** First basemap layer above water in CARTO styles; data goes under roads/labels. */
 const BEFORE_ID = "aeroway-runway";
@@ -168,6 +180,8 @@ export default function App() {
   const holdingRef = useRef(false);
   holdingRef.current = holding;
   const stepImgYearRef = useRef<(d: number) => void>(() => {});
+  /** [ and ]: the embeddings a year back or forward (the key handler is set up once). */
+  const stepEmbYearRef = useRef<(d: number) => void>(() => {});
   /** The key handler is set up once; it turns the season on and off through this. */
   const setSeasonOnRef = useRef<React.Dispatch<React.SetStateAction<boolean>>>(() => {});
   /** The picked GOES box (Esc flies back out), read by the key handler set up once. */
@@ -229,6 +243,20 @@ export default function App() {
   // the real ignitions as points over the ground (fires.ts, fires.bin): not drawn; the picture is the
   // ground and the weather
   // const [fires, setFires] = useState<Fires | null>(null);
+  // California's burned areas since 2020 (NIFC WFIGS, live): outlines over the fuel
+  const [burnAreas, setBurnAreas] = useState<BurnArea[] | null>(null);
+  /** B: the burned areas shown or hidden. */
+  const [burnOn, setBurnOn] = useState(true);
+  /** The fire clicked: its fuel histograms in the panel. Esc or a click outside every fire clears it. */
+  const [burnPick, setBurnPick] = useState<{ f: BurnArea; key: string; name: string; year: number | null; acres: number | null } | null>(null);
+  const burnPickRef = useRef(burnPick);
+  burnPickRef.current = burnPick;
+  const [burnHists, setBurnHists] = useState<YearHist[] | null>(null);
+  useEffect(() => {
+    const ac = new AbortController();
+    loadCaBurnAreas(ac.signal).then(setBurnAreas).catch((e) => { if (!ac.signal.aborted) setError(`perimeters: ${String(e)}`); });
+    return () => ac.abort();
+  }, []);
   // useEffect(() => { loadFires(import.meta.env.BASE_URL).then(setFires).catch((e) => setError(`fires: ${String(e)}`)); }, []);
   // const [showFires, setShowFires] = useState(true);
   // const fireList = useMemo(() => (fires && source ? firesInRun(fires, dateFromInitTimeIdx(initTimeIdx)) : []), [fires, source, initTimeIdx]);
@@ -311,20 +339,20 @@ export default function App() {
   }, [isPlaying, frameDurationMs]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      // the imagery keys (Space, P, [ ]) are off while the imagery is
-      // const space = e.code === "Space" || e.key === " ";
+      // Space held: the imagery; P (side by side) is off; [ ] step the embeddings' year
       // const pairKey = e.key === "p" || e.key === "P";
-      // const yearKey = e.key === "[" ? -1 : e.key === "]" ? 1 : 0;
-      const space = false;
+      const space = e.code === "Space" || e.key === " ";
       const pairKey = false;
-      const yearKey = 0;
-      const seasonKey = e.key === "s" || e.key === "S";
+      const yearKey = e.key === "[" ? -1 : e.key === "]" ? 1 : 0;
+      const seasonKey = !FUEL_ONLY && (e.key === "s" || e.key === "S");
       const full = e.key === "f" || e.key === "F";
       const labels = e.key === "l" || e.key === "L";
       const pick = e.key === "q" || e.key === "Q";
       const ground = e.key === "g" || e.key === "G";
+      const burn = e.key === "b" || e.key === "B";
+      if (e.key === "Escape" && burnPickRef.current) { setBurnPick(null); return; }
       if (e.key === "Escape" && boxPickRef.current !== null) { backOutRef.current(); return; }
-      if (!space && !pairKey && !yearKey && !seasonKey && !full && !labels && !pick && !ground) return;
+      if (!space && !pairKey && !yearKey && !seasonKey && !full && !labels && !pick && !ground && !burn) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement | null;
       const tag = el?.tagName;
@@ -340,8 +368,10 @@ export default function App() {
       // else if (space) setIsPlaying((p) => !p);
       if (space) { if (!e.repeat) setHolding(true); }
       else if (pairKey) { if (!e.repeat) setPair((v) => !v); }
-      // [ and ]: the imagery a year back or forward
-      else if (yearKey) stepImgYear(yearKey);
+      // [ and ]: the embeddings a year back or forward
+      else if (yearKey) stepEmbYearRef.current(yearKey);
+      // B: the burned areas on or off
+      else if (burn) { if (!e.repeat) setBurnOn((v) => !v); }
       // S: the 2025 season on or off
       else if (seasonKey) { if (!e.repeat) setSeasonOnRef.current((v) => !v); }
       // G switched the old ignition head between pixels and counties: both off for now
@@ -484,7 +514,7 @@ export default function App() {
     });
   }, [fuel, countyTable, counties, aefIndex]);
 
-  const [fuelOpacity, setFuelOpacity] = useState(0.9);
+  const [fuelOpacity, setFuelOpacity] = useState(FUEL_ONLY ? 1 : 0.9);
   const [groundRamp, setGroundRamp] = useState<GroundRamp>("viridis");
   /** Hours of afterglow on the ground (0 = this hour only). */
   // off by default: at the same point the past day's peak adds nothing to this hour (ignition/hour_memory.py)
@@ -744,7 +774,7 @@ export default function App() {
   const [buildingsApi, setBuildingsApi] = useState<Awaited<ReturnType<typeof createBuildings>> | null>(null);
   // the load starts over only when the view settles (moveend), not on every zoom step while moving: the first
   // query takes ~30 s and each restart cancels it
-  const buildingsZoom = zoom >= BUILDINGS_MIN_ZOOM;
+  const buildingsZoom = !FUEL_ONLY && zoom >= BUILDINGS_MIN_ZOOM;
   useEffect(() => {
     if (!view || !buildingsZoom) return;
     buildingsRef.current ??= createBuildings();
@@ -895,7 +925,7 @@ export default function App() {
 
   // ---- GOES boxes (goesboxes.ts): every fire GOES-West saw over California in the window, as boxes; clicking one
   // flies to it and lights the fuel inside it and in a ring around it, the rest dim
-  const [boxesOn, setBoxesOn] = useState(true);
+  const [boxesOn, setBoxesOn] = useState(!FUEL_ONLY);
   const [boxesDoc, setBoxesDoc] = useState<GoesDoc | null>(null);
   const boxPixelsRef = useRef<FirePixel[]>([]);
   const [boxesRead, setBoxesRead] = useState(0);
@@ -1032,6 +1062,18 @@ export default function App() {
   // the Sentinel-2 mosaic's. The season view puts the embeddings on the year before its fires; the imagery follows
   // the embeddings' year until it is picked itself
   const [embYear, setEmbYear] = useState(AEF_YEAR);
+  // the selected fire's histograms: the chunks in view, the year on screen first, then outward
+  const burnHist = useMemo(() => (aefLayers && poolRef.current ? new BurnHist(poolRef.current) : null), [aefLayers]);
+  useEffect(() => {
+    setBurnHists(null);
+    if (!burnPick || !burnHist || !view || zoom < MOSAIC_MIN_ZOOM) return;
+    const ac = new AbortController();
+    void burnHist.run(burnPick.f, burnPick.key, view, embYear, setBurnHists, ac.signal);
+    return () => ac.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [burnPick, burnHist, view, embYear]);
+  stepEmbYearRef.current = (d: number) =>
+    setEmbYear((y) => EMB_YEARS[Math.max(0, Math.min(EMB_YEARS.length - 1, EMB_YEARS.indexOf(y) + d))]!);
   useEffect(() => {
     setEmbYear(boxesOn ? BOXES_YEAR - 1 : seasonOn || goesOn ? SEASON_YEAR - 1 : AEF_YEAR);
   }, [seasonOn, goesOn, boxesOn]);
@@ -1051,11 +1093,10 @@ export default function App() {
   const [s2Version, setS2Version] = useState(0);
   const s2 = useMemo(() => new S2Imagery(() => setS2Version((v) => v + 1)), []);
   // the year's footprints under the view, looked for as the view settles
-  // the imagery is off for now: no footprint lookups
-  // useEffect(() => {
-  //   if (view) s2.discover(imgYear, view, zoom);
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [s2, view, imgYear]);
+  useEffect(() => {
+    if (view) s2.discover(imgYear, view, zoom);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s2, view, imgYear]);
   // ---- a clicked fire: its whole NIFC record for the panel
   const [firePick, setFirePick] = useState<FirePick | null>(null);
   const [fireRec, setFireRec] = useState<Record<string, unknown> | null>(null);
@@ -1168,8 +1209,7 @@ export default function App() {
   const buildLayers = useCallback((hourFrac: number) => {
     const out: unknown[] = [];
     // the imagery bare: over the basemap's streets and labels (no beforeId puts it on top), nothing drawn over it
-    // the imagery is off for now
-    // if (view) out.push(...s2.layers({ year: imgYear, view, visible: showImg, prefix: "" }));
+    if (view) out.push(...s2.layers({ year: imgYear, view, visible: showImg, prefix: "" }));
     if (showRaster && source && getTileData && colormapTexture) {
       out.push(
         new ZarrLayer<zarr.Readable, "float32", FfwiTileData>({
@@ -1216,14 +1256,18 @@ export default function App() {
           // the GOES fires view: every fuel pixel at full strength, no dimming or gray around the fire
           seasonDim: (seasonOn && seasonData) || goesOn ? 0.18 : 0,
           seasonGray: false,
-          solid: boxesOn,
+          // every fuel pixel at full strength (the GOES view and the fuel alone)
+          solid: boxesOn || FUEL_ONLY,
           // a picked fire: its whole area read, so it can be seen whole from zoom 10 (nothing outside it is read)
           only: boxesOn && boxPicked && reach ? { bbox: reach.bbox(), minZoom: MOSAIC_MIN_ZOOM - 1 } : undefined,
           beforeId: BEFORE_ID,
         }),
       );
     }
-    if (buildingsApi && bTable && zoom >= BUILDINGS_MIN_ZOOM && !showImg) {
+    // the burned areas over the fuel; the imagery stays bare
+    if (burnAreas) out.push(burnAreaLayer({ areas: burnAreas, visible: burnOn && !showImg, beforeId: BEFORE_ID }));
+    if (burnPick) out.push(selectedBurnLayer({ area: burnPick.f, visible: burnOn && !showImg, beforeId: BEFORE_ID }));
+    if (!FUEL_ONLY && buildingsApi && bTable && zoom >= BUILDINGS_MIN_ZOOM && !showImg) {
       const cs = bColors && bColors.colors.length === bTable.batches.length ? bColors : null;
       out.push(
         ...buildingsApi.layer({
@@ -1340,7 +1384,7 @@ export default function App() {
     glowHours, grain, light, contourLines, pHide, pMax, ignScale, zLo, zHi, rankRamp, useWeather, standingAlpha, wxGate, fieldAlpha,
     timeIdx, weatherSrc, weatherKey, timeMode, countyTable, counties, countyVersion, cacheVersion, weekVersion, timeDepth, zHideCounty, wxGate,
     buildingsApi, bTable, bColors, seasonOn, seasonData, seasonJoin, seasonPerims, seasonDay, seasonReach,
-    s2, s2Version, imgYear, showImg, view,
+    s2, s2Version, imgYear, showImg, view, burnAreas, burnOn, burnPick,
     goesOn, goesDoc, goesNow, goesSeen, goesPerim, goesHour, goesRead,
     boxesOn, boxEvents, boxPick, flyToBox, boxPicked, reachLines, boxNowEdges, boxNow, reach,
   ]);
@@ -1454,6 +1498,11 @@ export default function App() {
         }}
         onMove={(e) => { setZoom(e.viewState.zoom); follow(e.target, leftRef.current); }}
         onMoveEnd={(e) => readView(e.target)}
+        onClick={(e) => {
+          if (!burnOn || !burnAreas) return;
+          const hit = burnAreasAt(burnAreas, e.lngLat.lng, e.lngLat.lat)[0];
+          setBurnPick(hit ? { f: hit.f, key: hit.f.properties.attr_IrwinID ?? `${hit.name}:${hit.year}`, name: titleCase(hit.name), year: hit.year, acres: hit.acres } : null);
+        }}
         onMouseMove={(e) => { if (pickRef.current) setHover({ lon: e.lngLat.lng, lat: e.lngLat.lat, x: e.point.x, y: e.point.y }); }}
         onMouseOut={() => setHover(null)}
       >
@@ -1648,11 +1697,12 @@ export default function App() {
         onTauHoursChange={setTauHours}
         status={status}
         weatherOn={WEATHER_ON}
+        fuelOnly={FUEL_ONLY}
         buildingReach={buildingReach}
         onBuildingReachChange={setBuildingReach}
         years={{
           emb: embYear,
-          embOptions: YEARS.filter((y) => y - 2 >= YEARS[0]!),
+          embOptions: EMB_YEARS,
           onEmbChange: setEmbYear,
           img: imgYear,
           imgOptions: S2_YEARS,
@@ -1676,6 +1726,17 @@ export default function App() {
           waiting: autoStartRef.current,
         } : null}
         fire={{ pick: firePick, record: fireRec, onClear: () => setFirePick(null) }}
+        burnHist={burnPick ? (
+          <FireHist
+            name={burnPick.name}
+            fireYear={burnPick.year}
+            acres={burnPick.acres}
+            hists={burnHists}
+            embYear={embYear}
+            zoomOk={zoom >= MOSAIC_MIN_ZOOM}
+            minZoom={MOSAIC_MIN_ZOOM}
+          />
+        ) : null}
         season={{
           year: SEASON_YEAR,
           on: seasonOn,
@@ -1763,6 +1824,14 @@ export default function App() {
               ? `chance of fuel ${Math.round(hoverInfo.ground.fuel * 100)}%`
               : "no fuel reading here (zoom in past " + MOSAIC_MIN_ZOOM + ")"}
           </div>
+          {burnOn && burnAreas
+            ? burnAreasAt(burnAreas, hover.lon, hover.lat).map((b, i) => (
+                <div key={i} style={{ color: "#00e5ff" }}>
+                  {titleCase(b.name)} fire · {b.year ?? "year unknown"}
+                  {b.acres != null ? ` · ${Math.round(b.acres).toLocaleString()} acres` : ""}
+                </div>
+              ))
+            : null}
           <div style={{ color: "#aaa" }}>
             {hover.lat.toFixed(3)}, {hover.lon.toFixed(3)}
           </div>

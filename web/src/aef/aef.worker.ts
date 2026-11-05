@@ -29,6 +29,63 @@ type Job =
 let mosaic: Promise<AefArray> | null = null;
 const running = new Map<number, AbortController>();
 
+/**
+ * Chunk-years read lately, decoded, least recently used dropped past CACHE_CAP: the fuel head reads each year with
+ * the two before it, so the next year over (the map stepping a year, the fire bars) needs only one new read. The
+ * pool sends a chunk to the same worker every time, so this worker is the one that holds it.
+ */
+const CACHE_CAP = 192 * 1024 ** 2;
+const cache = new Map<string, Int8Array>();
+let cacheBytes = 0;
+/** Reads in flight, shared by every job that wants the same chunk-year; aborted once no job wants it. */
+const inflight = new Map<string, { p: Promise<Int8Array>; ac: AbortController; wants: number }>();
+
+function keep(k: string, d: Int8Array) {
+  cache.set(k, d);
+  cacheBytes += d.byteLength;
+  for (const [old, v] of cache) {
+    if (cacheBytes <= CACHE_CAP) break;
+    cache.delete(old);
+    cacheBytes -= v.byteLength;
+  }
+}
+
+async function chunkYear(arr: AefArray, t: number, py0: number, px0: number, h: number, w: number, signal: AbortSignal): Promise<Int8Array> {
+  const k = `${t}:${py0}:${px0}:${h}:${w}`;
+  const hit = cache.get(k);
+  if (hit) {
+    cache.delete(k);
+    cache.set(k, hit);
+    return hit;
+  }
+  let f = inflight.get(k);
+  if (!f || f.ac.signal.aborted) {
+    const ac = new AbortController();
+    const p = zarr.get(arr, [t, null, zarr.slice(py0, py0 + h), zarr.slice(px0, px0 + w)], { signal: ac.signal }).then((c) => {
+      if (c.shape.length !== 3 || c.shape[0] !== NUM_BANDS || c.shape[1] !== h || c.shape[2] !== w) {
+        throw new Error(`Unexpected chunk shape [${c.shape.join(", ")}] for a ${w} x ${h} tile`);
+      }
+      const d = c.data as Int8Array;
+      keep(k, d);
+      return d;
+    });
+    f = { p, ac, wants: 0 };
+    inflight.set(k, f);
+    const done = () => { if (inflight.get(k) === f) inflight.delete(k); };
+    p.then(done, done);
+  }
+  const g = f;
+  g.wants++;
+  const drop = () => { if (--g.wants === 0) g.ac.abort(); };
+  signal.addEventListener("abort", drop, { once: true });
+  try {
+    return await g.p;
+  } finally {
+    signal.removeEventListener("abort", drop);
+    if (!signal.aborted) g.wants--;
+  }
+}
+
 function reply(id: number, c: Classified) {
   postMessage({ id, ...c }, { transfer: [c.nlcd.buffer, c.esri.buffer, c.cover.buffer, c.ign.buffer, c.fuel.buffer] });
 }
@@ -60,20 +117,17 @@ self.onmessage = async (ev: MessageEvent<Job>) => {
     // the map's year for the class heads, and the fuel head's years (newest last): the head's own (2023 to 2025)
     // unless the job names others (the season view reads the year before its fires)
     const fy = m.fuelYearIdx ?? FUEL_YEAR_IDX;
-    const ys = zarr.slice(m.py0, m.py0 + m.h), xs = zarr.slice(m.px0, m.px0 + m.w);
     const idx = [...new Set([m.timeIdx, ...fy])];
-    const got = await Promise.all(idx.map((t) => zarr.get(arr, [t, null, ys, xs], { signal: ac.signal })));
-    for (const c of got)
-      if (c.shape.length !== 3 || c.shape[0] !== NUM_BANDS || c.shape[1] !== m.h || c.shape[2] !== m.w) {
-        throw new Error(`Unexpected chunk shape [${c.shape.join(", ")}] for a ${m.w} x ${m.h} tile`);
-      }
-    const data = (t: number) => got[idx.indexOf(t)]!.data as Int8Array;
+    const t0 = performance.now();
+    const got = await Promise.all(idx.map((t) => chunkYear(arr, t, m.py0, m.px0, m.h, m.w, ac.signal)));
+    const t1 = performance.now();
+    const data = (t: number) => got[idx.indexOf(t)]!;
     const n = m.w * m.h;
     const years = fy.map(data);
     const gpu = await fuelScorer();
     const fuel = gpu ? await gpu(years, n) : scoreCpu(FUEL, FUEL_W, years, n);
     const c = classify(data(m.timeIdx), n);
-    reply(m.id, { ...c, fuel });
+    reply(m.id, { ...c, fuel, ms: { read: t1 - t0, score: performance.now() - t1 } });
   } catch (e) {
     fail(m.id, e);
   } finally {

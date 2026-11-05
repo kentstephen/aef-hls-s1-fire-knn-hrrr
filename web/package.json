@@ -33,6 +33,7 @@
     "d3-contour": "^4.0.2",
     "fzstd": "^0.1.1",
     "h3-js": "^4.5.0",
+    "hightable": "^0.26.4",
     "icechunk-js": "^0.6.0",
     "lerc": "^4.2.0",
     "maplibre-gl": "^5.24.0",

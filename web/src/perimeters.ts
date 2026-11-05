@@ -75,3 +75,133 @@ export function perimeterLayer(o: { perimeters: Perimeter[]; initTime: Date; lea
     updateTriggers: { data: [now] },
   } as never);
 }
+
+// ---- California's burned areas, 2020 on, read live from NIFC's WFIGS perimeter service
+
+const WFIGS = "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters/FeatureServer/0/query";
+const WFIGS_WHERE = "attr_FireDiscoveryDateTime >= timestamp '2020-01-01 00:00:00' AND attr_IncidentTypeCategory = 'WF' " +
+  "AND attr_POOState = 'US-CA' AND attr_IncidentSize >= 100";
+
+export type BurnArea = {
+  type: "Feature";
+  properties: { poly_IncidentName: string | null; attr_IncidentSize: number | null; attr_FireDiscoveryDateTime: number | null; attr_IrwinID: string | null };
+  geometry: GeoJSON.Geometry;
+};
+
+/**
+ * Every California wildfire of 100 acres and up discovered from 2020 on (about 590), outlines simplified on the
+ * server to about 30 m: about 4 MB, a few seconds. The service can hold a fire twice; the largest is kept.
+ */
+export async function loadCaBurnAreas(signal?: AbortSignal): Promise<BurnArea[]> {
+  const q = new URLSearchParams({
+    where: WFIGS_WHERE,
+    outFields: "poly_IncidentName,attr_IncidentSize,attr_FireDiscoveryDateTime,attr_IrwinID",
+    outSR: "4326",
+    maxAllowableOffset: "0.0003",
+    geometryPrecision: "5",
+    resultRecordCount: "2000",
+    f: "geojson",
+  });
+  const r = await fetch(`${WFIGS}?${q}`, { signal });
+  if (!r.ok) throw new Error(`WFIGS perimeters: ${r.status}`);
+  const fc = (await r.json()) as { features: BurnArea[] };
+  const byFire = new Map<string, BurnArea>();
+  const out: BurnArea[] = [];
+  for (const f of fc.features) {
+    if (!f.geometry) continue;
+    const id = f.properties.attr_IrwinID;
+    if (!id) { out.push(f); continue; }
+    const had = byFire.get(id);
+    if (!had || (f.properties.attr_IncidentSize ?? 0) > (had.properties.attr_IncidentSize ?? 0)) byFire.set(id, f);
+  }
+  return out.concat([...byFire.values()]);
+}
+
+/** Bright cyan: no fuel ramp (viridis, inferno, magma, solar, fire) holds it, and it reads without red vision. */
+const BURN_LINE: [number, number, number, number] = [0, 229, 255, 255];
+
+/** The burned areas as outlines only: one stroke, no fill, no casing. */
+export function burnAreaLayer(o: { areas: BurnArea[]; visible: boolean; beforeId?: string }) {
+  return new GeoJsonLayer({
+    id: "ca-burn-areas",
+    data: o.areas as never,
+    filled: false,
+    stroked: true,
+    getLineColor: BURN_LINE,
+    getLineWidth: 1.5,
+    lineWidthUnits: "pixels",
+    lineWidthMinPixels: 1,
+    visible: o.visible,
+    beforeId: o.beforeId,
+  } as never);
+}
+
+const boxes = new WeakMap<BurnArea, [number, number, number, number]>();
+function boxOf(f: BurnArea): [number, number, number, number] {
+  let b = boxes.get(f);
+  if (!b) {
+    b = [Infinity, Infinity, -Infinity, -Infinity];
+    for (const ring of rings(f.geometry))
+      for (const [x, y] of ring) { if (x! < b[0]) b[0] = x!; if (y! < b[1]) b[1] = y!; if (x! > b[2]) b[2] = x!; if (y! > b[3]) b[3] = y!; }
+    boxes.set(f, b);
+  }
+  return b;
+}
+function rings(g: GeoJSON.Geometry): GeoJSON.Position[][] {
+  if (g.type === "Polygon") return g.coordinates;
+  if (g.type === "MultiPolygon") return g.coordinates.flat();
+  return [];
+}
+/** Even-odd over one polygon's rings (outer ring and its holes). */
+function inPolygon(poly: GeoJSON.Position[][], lon: number, lat: number): boolean {
+  let hit = false;
+  for (const r of poly)
+    for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+      const [xi, yi] = r[i]!, [xj, yj] = r[j]!;
+      if ((yi! > lat) !== (yj! > lat) && lon < ((xj! - xi!) * (lat - yi!)) / (yj! - yi!) + xi!) hit = !hit;
+    }
+  return hit;
+}
+/**
+ * Inside any one of the fire's polygons. Each polygon is tested on its own: NIFC's multipolygons can overlap
+ * (the Park fire's do near Cohasset), and one even-odd pass over all of them would call the overlap outside.
+ */
+function inside(f: BurnArea, lon: number, lat: number): boolean {
+  const g = f.geometry;
+  if (g.type === "Polygon") return inPolygon(g.coordinates, lon, lat);
+  if (g.type === "MultiPolygon") return g.coordinates.some((p) => inPolygon(p, lon, lat));
+  return false;
+}
+
+export type BurnHit = { name: string; year: number | null; acres: number | null; f: BurnArea };
+/** The fires that burned this point, newest first. */
+export function burnAreasAt(areas: BurnArea[], lon: number, lat: number): BurnHit[] {
+  const out: BurnHit[] = [];
+  for (const f of areas) {
+    const b = boxOf(f);
+    if (lon < b[0] || lon > b[2] || lat < b[1] || lat > b[3] || !inside(f, lon, lat)) continue;
+    const p = f.properties;
+    out.push({
+      name: p.poly_IncidentName ?? "unnamed",
+      year: p.attr_FireDiscoveryDateTime == null ? null : new Date(p.attr_FireDiscoveryDateTime).getUTCFullYear(),
+      acres: p.attr_IncidentSize,
+      f,
+    });
+  }
+  return out.sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
+}
+
+/** The selected fire: the same cyan, a heavier stroke. */
+export function selectedBurnLayer(o: { area: BurnArea; visible: boolean; beforeId?: string }) {
+  return new GeoJsonLayer({
+    id: "ca-burn-selected",
+    data: [o.area] as never,
+    filled: false,
+    stroked: true,
+    getLineColor: BURN_LINE,
+    getLineWidth: 4,
+    lineWidthUnits: "pixels",
+    visible: o.visible,
+    beforeId: o.beforeId,
+  } as never);
+}

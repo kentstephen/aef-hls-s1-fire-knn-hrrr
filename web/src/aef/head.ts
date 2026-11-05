@@ -130,7 +130,11 @@ export function ignLogit(byte: number): number {
  * fuel head's P(fuel) as a byte (0 = none, else 1 + P * 254; fuel/head.ts). The fuel plane is filled only on
  * the 10 m mosaic, where the worker reads the fuel head's three years; the COG overviews leave it 0.
  */
-export type Classified = { nlcd: Uint8Array; esri: Uint8Array; cover: Uint8Array; ign: Uint8Array; fuel: Uint8Array };
+export type Classified = {
+  nlcd: Uint8Array; esri: Uint8Array; cover: Uint8Array; ign: Uint8Array; fuel: Uint8Array;
+  /** Worker time spent reading (disk or network, and decoding) and scoring, in ms. */
+  ms?: { read: number; score: number };
+};
 
 /**
  * Every pixel of a band-major int8 block [64, n] through the three heads. Argmax of the logits is

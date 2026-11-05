@@ -97,7 +97,7 @@ async function fetchRange(url: string, off: number, len: number, signal?: AbortS
 }
 
 /** A scan's chunks, nearby byte ranges merged into one request (gaps under 32 KB), decoded. */
-async function fetchChunks(url: string, refs: Ref[], v: VarLayout, signal?: AbortSignal): Promise<[number, number, Int16Array][]> {
+async function fetchChunks<T extends Int16Array | Float32Array = Int16Array>(url: string, refs: Ref[], v: VarLayout, signal?: AbortSignal): Promise<[number, number, T][]> {
   const sorted = [...refs].sort((a, b) => a[2] - b[2]);
   const groups: Ref[][] = [];
   for (const r of sorted) {
@@ -106,12 +106,12 @@ async function fetchChunks(url: string, refs: Ref[], v: VarLayout, signal?: Abor
     if (g && last && r[2] - (last[2] + last[3]) < 32768) g.push(r);
     else groups.push([r]);
   }
-  const out: [number, number, Int16Array][] = [];
+  const out: [number, number, T][] = [];
   for (const g of groups) {
     const off = g[0]![2];
     const end = Math.max(...g.map((r) => r[2] + r[3]));
     const b = await fetchRange(url, off, end - off, signal);
-    for (const [cy, cx, o, len] of g) out.push([cy, cx, (await decode(b.subarray(o - off, o - off + len), v)) as Int16Array]);
+    for (const [cy, cx, o, len] of g) out.push([cy, cx, (await decode(b.subarray(o - off, o - off + len), v)) as T]);
   }
   return out;
 }
@@ -185,11 +185,11 @@ export async function readGoesFire(
       onScan(i, out);
       return;
     }
-    for (const [cy, cx, off, len] of s.refs.Power) power.set(`${cy}.${cx}`, (await decode(await fetchRange(url, off, len, signal), e.vars.Power)) as Float32Array);
+    // nearby chunks in one request each, as for the mask alone
+    for (const [cy, cx, p] of await fetchChunks<Float32Array>(url, s.refs.Power, e.vars.Power, signal)) power.set(`${cy}.${cx}`, p);
     const [pY, pX] = e.vars.Power.chunks as [number, number];
     const out: FirePixel[] = [];
-    for (const [cy, cx, off, len] of s.refs.Mask) {
-      const m = (await decode(await fetchRange(url, off, len, signal), e.vars.Mask)) as Int16Array;
+    for (const [cy, cx, m] of await fetchChunks(url, s.refs.Mask, e.vars.Mask, signal)) {
       for (let y = 0; y < chY; y++) {
         const row = cy * chY + y;
         if (row < r0 || row > r1) continue;

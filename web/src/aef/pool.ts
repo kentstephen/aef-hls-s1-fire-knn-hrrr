@@ -13,22 +13,23 @@ export class AefPool {
     this.ws = Array.from({ length: size }, () => {
       const w = new Worker(new URL("./aef.worker.ts", import.meta.url), { type: "module" });
       const ent: W = { w, busy: 0, waiting: new Map() };
-      w.onmessage = (ev: MessageEvent<{ id: number; error?: { name: string; message: string }; nlcd?: Uint8Array; esri?: Uint8Array; cover?: Uint8Array; ign?: Uint8Array; fuel?: Uint8Array }>) => {
-        const { id, error, nlcd, esri, cover, ign, fuel } = ev.data;
+      w.onmessage = (ev: MessageEvent<{ id: number; error?: { name: string; message: string }; nlcd?: Uint8Array; esri?: Uint8Array; cover?: Uint8Array; ign?: Uint8Array; fuel?: Uint8Array; ms?: Classified["ms"] }>) => {
+        const { id, error, nlcd, esri, cover, ign, fuel, ms } = ev.data;
         const p = ent.waiting.get(id);
         if (!p) return;
         ent.waiting.delete(id);
         ent.busy--;
         if (error) p.no(Object.assign(new Error(error.message), { name: error.name }));
-        else p.ok({ nlcd: nlcd!, esri: esri!, cover: cover!, ign: ign!, fuel: fuel ?? new Uint8Array(nlcd!.length) });
+        else p.ok({ nlcd: nlcd!, esri: esri!, cover: cover!, ign: ign!, fuel: fuel ?? new Uint8Array(nlcd!.length), ms });
       };
       return ent;
     });
   }
 
-  private ask(msg: Record<string, unknown>, transfer: ArrayBuffer[], signal?: AbortSignal): Promise<Classified> {
+  /** `slot`: the worker to use (a chunk always goes to the same one, which keeps its reads); else the least busy. */
+  private ask(msg: Record<string, unknown>, transfer: ArrayBuffer[], signal?: AbortSignal, slot?: number): Promise<Classified> {
     if (signal?.aborted) return Promise.reject(aborted());
-    const ent = this.ws.reduce((a, b) => (b.busy < a.busy ? b : a));
+    const ent = slot === undefined ? this.ws.reduce((a, b) => (b.busy < a.busy ? b : a)) : this.ws[slot % this.ws.length]!;
     const id = ++this.nextId;
     ent.busy++;
     return new Promise<Classified>((ok, no) => {
@@ -55,6 +56,8 @@ export class AefPool {
 
   /** A mosaic chunk read and classified in the worker; fuelYearIdx: the fuel head's years (oldest first), else its own. */
   zarr(timeIdx: number, py0: number, px0: number, h: number, w: number, signal?: AbortSignal, fuelYearIdx?: number[]): Promise<Classified> {
-    return this.ask({ type: "zarr", timeIdx, py0, px0, h, w, fuelYearIdx }, [], signal);
+    // a small hash of the chunk's place, so neighbors spread over the workers
+    const slot = Math.abs(Math.imul(py0 >> 8, 73856093) ^ Math.imul(px0 >> 8, 19349663));
+    return this.ask({ type: "zarr", timeIdx, py0, px0, h, w, fuelYearIdx }, [], signal, slot);
   }
 }

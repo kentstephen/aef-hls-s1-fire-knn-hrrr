@@ -17,8 +17,12 @@ eras of one form each; the web map reads each era with its own layout.
   scout  one scan an hour over --days from the fire's discovery: fire pixels in the box, to pick the window
   build  every scan from --from to --to: writes web/public/goes/<slug>.json
 
+--region ca in place of --fire: all of California instead of one fire's box (the map's GOES boxes view finds the
+fires itself from these scans), written to web/public/goes/ca-<from date>.json.
+
     uv run scripts/goes_fire_refs.py --fire Green --year 2025 scout
     uv run scripts/goes_fire_refs.py --fire Green --year 2025 build --from 2025-07-02T01 --to 2025-07-08T00
+    uv run scripts/goes_fire_refs.py --region ca --year 2024 build --from 2024-07-22T00 --to 2024-08-03T00
 
 Small: headers only, a few hundred KB of output, under 1 GB of RAM.
 """
@@ -47,6 +51,8 @@ PRODUCT = "ABI-L2-FDCC"
 VARS = ("Mask", "Power")
 FIRE_MASK = (10, 11, 12, 13, 14, 30, 31, 32, 33, 34)  # processed and temporally filtered fires; low probability left out
 MARGIN_KM = 15
+# California's outline box (lon / lat), for --region ca
+REGIONS = {"ca": [-124.5, 32.5, -114.1, 42.05]}
 PERIMS = "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters/FeatureServer/0/query"
 
 s3 = S3Store(BUCKET, region="us-east-1", skip_signature=True)
@@ -236,7 +242,9 @@ def build(fire, t_from, t_to, slug):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--fire", required=True)
+    who = ap.add_mutually_exclusive_group(required=True)
+    who.add_argument("--fire")
+    who.add_argument("--region", choices=sorted(REGIONS))
     ap.add_argument("--year", type=int, required=True)
     sub = ap.add_subparsers(dest="cmd", required=True)
     sc = sub.add_parser("scout")
@@ -245,13 +253,20 @@ def main():
     b.add_argument("--from", dest="t_from", required=True)
     b.add_argument("--to", dest="t_to", required=True)
     a = ap.parse_args()
+    utc = lambda s: datetime.fromisoformat(s).replace(tzinfo=timezone.utc)  # noqa: E731
+    if a.region:
+        if a.cmd != "build":
+            sys.exit("--region: build only")
+        t_from = utc(a.t_from)
+        region = dict(name=a.region.upper(), objectid=0, acres=0, cause="", discovered=int(t_from.timestamp() * 1000), bbox=REGIONS[a.region])
+        build(region, t_from, utc(a.t_to), f"{a.region}-{t_from:%Y-%m-%d}")
+        return
     fire = fire_info(a.fire, a.year)
     print(f"{fire['name']}: {fire['acres']} ac, {fire['cause']}, discovered "
           f"{datetime.fromtimestamp(fire['discovered'] / 1000, timezone.utc):%Y-%m-%d %H:%M} UTC, bbox {[round(v, 4) for v in fire['bbox']]}", flush=True)
     if a.cmd == "scout":
         scout(fire, a.days)
     else:
-        utc = lambda s: datetime.fromisoformat(s).replace(tzinfo=timezone.utc)  # noqa: E731
         build(fire, utc(a.t_from), utc(a.t_to), f"{fire['name'].lower()}-{a.year}")
 
 

@@ -96,6 +96,26 @@ async function fetchRange(url: string, off: number, len: number, signal?: AbortS
   }
 }
 
+/** A scan's chunks, nearby byte ranges merged into one request (gaps under 32 KB), decoded. */
+async function fetchChunks(url: string, refs: Ref[], v: VarLayout, signal?: AbortSignal): Promise<[number, number, Int16Array][]> {
+  const sorted = [...refs].sort((a, b) => a[2] - b[2]);
+  const groups: Ref[][] = [];
+  for (const r of sorted) {
+    const g = groups[groups.length - 1];
+    const last = g?.[g.length - 1];
+    if (g && last && r[2] - (last[2] + last[3]) < 32768) g.push(r);
+    else groups.push([r]);
+  }
+  const out: [number, number, Int16Array][] = [];
+  for (const g of groups) {
+    const off = g[0]![2];
+    const end = Math.max(...g.map((r) => r[2] + r[3]));
+    const b = await fetchRange(url, off, end - off, signal);
+    for (const [cy, cx, o, len] of g) out.push([cy, cx, (await decode(b.subarray(o - off, o - off + len), v)) as Int16Array]);
+  }
+  return out;
+}
+
 // ---- navigation: GOES fixed grid scan angles to lon/lat (GOES-R PUG)
 
 function xyToLonLat(x: number, y: number, p: Era["projection"]): [number, number] | null {
@@ -134,6 +154,8 @@ export async function readGoesFire(
   onScan: (i: number, pixels: FirePixel[]) => void,
   signal?: AbortSignal,
   inFlight = 12,
+  /** false: Mask only (the boxes view needs no fire power), each scan's chunks fetched in as few requests as fit. */
+  withPower = true,
 ): Promise<void> {
   const fire = new Set(doc.fire_mask);
   let next = 0;
@@ -144,6 +166,25 @@ export async function readGoesFire(
     const [r0, r1, c0, c1] = e.box;
     const [chY, chX] = e.vars.Mask.chunks as [number, number];
     const power = new Map<string, Float32Array>();
+    if (!withPower) {
+      const out: FirePixel[] = [];
+      for (const [cy, cx, m] of await fetchChunks(url, s.refs.Mask, e.vars.Mask, signal)) {
+        for (let y = 0; y < chY; y++) {
+          const row = cy * chY + y;
+          if (row < r0 || row > r1) continue;
+          for (let x = 0; x < chX; x++) {
+            const col = cx * chX + x;
+            if (col < c0 || col > c1) continue;
+            const v = m[y * chX + x]!;
+            if (!fire.has(v)) continue;
+            const poly = footprint(e, row, col);
+            if (poly) out.push({ t: s.t, key: `${s.era}:${row}:${col}`, polygon: poly, power: NaN, mask: v });
+          }
+        }
+      }
+      onScan(i, out);
+      return;
+    }
     for (const [cy, cx, off, len] of s.refs.Power) power.set(`${cy}.${cx}`, (await decode(await fetchRange(url, off, len, signal), e.vars.Power)) as Float32Array);
     const [pY, pX] = e.vars.Power.chunks as [number, number];
     const out: FirePixel[] = [];

@@ -98,9 +98,15 @@ export type AefLayerOpts = {
   light: boolean;
   /** The season view (0 = off): the fuel at this share of its opacity, full where a tile's season mask is set. */
   seasonDim?: number;
+  /** With seasonDim: the fuel outside the mask in gray, color only inside it. */
+  seasonGray?: boolean;
+  /** Every fuel pixel drawn fully opaque (no fade-in at the low end of the ramp). */
+  solid?: boolean;
   opacity: number;
   beforeId?: string;
   visible: boolean;
+  /** Read the 10 m tiles only inside this lon / lat box, and from this zoom (a fire's area, zoomed out to see it whole). */
+  only?: { bbox: [number, number, number, number]; minZoom: number };
 };
 
 /** Textures freed a moment later: a draw already queued may still bind them. */
@@ -428,6 +434,8 @@ export class AefLayers {
       glowHours: o.glowHours,
       grain: o.grain,
       seasonDim: o.seasonDim ?? 0,
+      seasonGray: o.seasonGray ? 1 : 0,
+      solid: o.solid ? 1 : 0,
       seasonTex: d.seasonTex ?? this.noMask!,
     });
   };
@@ -445,7 +453,7 @@ export class AefLayers {
     }
     // debug hook for the headless probe (this instance is the one deck draws from)
     (globalThis as unknown as { __aef?: unknown }).__aef = { layers: this, cache: this.cache };
-    const key = `${opts.mode}|${opts.ramp}|${opts.teacher}|${opts.leadTimeIdx}|${opts.hideBelow}|${opts.rescaleMax}|${opts.pHide}|${opts.pMax}|${opts.scale}|${opts.zLo}|${opts.zHi}|${opts.useWeather}|${opts.standingAlpha}|${opts.wxGate}|${opts.fieldAlpha}|${opts.glowHours}|${opts.grain}|${opts.seasonDim ?? 0}`;
+    const key = `${opts.mode}|${opts.ramp}|${opts.teacher}|${opts.leadTimeIdx}|${opts.hideBelow}|${opts.rescaleMax}|${opts.pHide}|${opts.pMax}|${opts.scale}|${opts.zLo}|${opts.zHi}|${opts.useWeather}|${opts.standingAlpha}|${opts.wxGate}|${opts.fieldAlpha}|${opts.glowHours}|${opts.grain}|${opts.seasonDim ?? 0}|${opts.seasonGray ? 1 : 0}|${opts.solid ? 1 : 0}`;
     if (key !== this.lastKey) {
       this.lastKey = key;
       this.version++;
@@ -462,28 +470,32 @@ export class AefLayers {
         ? { blend: true, blendColorOperation: "add", blendColorSrcFactor: "src-alpha", blendColorDstFactor: "one", blendAlphaOperation: "add", blendAlphaSrcFactor: "one", blendAlphaDstFactor: "one-minus-src-alpha" }
         : {},
     };
-    const coarse = new RasterTileLayer<AefTile>({
-      id: "aef-coarse",
-      tilesetDescriptor: coarseTileset(),
-      getTileData: this.coarseGetTileData,
-      maxRequests: 12,
-      maxCacheSize: 300,
-      refinementStrategy: "best-available",
-      ...common,
-      visible: opts.visible && opts.zoom < MOSAIC_MIN_ZOOM,
-    } as never);
+    // the COG overviews below MOSAIC_MIN_ZOOM: off. They carry no fuel plane, so zoomed out nothing is read.
+    // Their reader stays (named here so it still compiles) for when they come back.
+    void [RasterTileLayer, coarseTileset, this.coarseGetTileData];
+    // const coarse = new RasterTileLayer<AefTile>({
+    //   id: "aef-coarse",
+    //   tilesetDescriptor: coarseTileset(),
+    //   getTileData: this.coarseGetTileData,
+    //   maxRequests: 12,
+    //   maxCacheSize: 300,
+    //   refinementStrategy: "best-available",
+    //   ...common,
+    //   visible: opts.visible && opts.zoom < MOSAIC_MIN_ZOOM,
+    // } as never);
     const fine = new ZarrLayer<zarr.Readable, "int8", AefTile>({
       id: `aef-zarr-${this.fuelYear}`,
       node: this.mosaic.arr,
       metadata: this.mosaic.attrs,
       selection: { time: YEAR_IDX, band: null },
       getTileData: this.zarrGetTileData,
-      minZoom: MOSAIC_MIN_ZOOM,
+      minZoom: opts.only?.minZoom ?? MOSAIC_MIN_ZOOM,
+      extent: opts.only?.bbox,
       maxRequests: 6,
       maxCacheSize: 400,
       ...common,
     } as never);
-    return [coarse, fine];
+    return [fine];
   }
 
   /**

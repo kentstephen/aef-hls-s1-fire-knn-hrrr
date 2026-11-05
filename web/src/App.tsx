@@ -5,7 +5,7 @@ import {
 } from "@developmentseed/deck.gl-raster/gpu-modules";
 import colormapsPngUrl from "@developmentseed/deck.gl-raster/gpu-modules/colormaps.png";
 import { ZarrLayer } from "@developmentseed/deck.gl-zarr";
-import { PathLayer } from "@deck.gl/layers";
+import { PathLayer, PolygonLayer } from "@deck.gl/layers";
 import type { Device, Texture } from "@luma.gl/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MapboxOverlay } from "@deck.gl/mapbox";
@@ -28,9 +28,17 @@ import {
 } from "./season.js";
 import { S2_YEARS, S2Imagery } from "./s2.js";
 import { byHour, type FirePixel, type GoesDoc, goesLayers, loadGoesDoc, loadGoesPerimeter, readGoesFire } from "./goes.js";
+import { fireOutline, goesBoxLayers, type GoesEvent, goesEvents, ringBox } from "./goesboxes.js";
+import { FireReach } from "./reach.js";
 
 /** The one fire GOES-West is shown for (web/public/goes/<slug>.json from scripts/goes_fire_refs.py). */
 const GOES_FIRE = "green-2025";
+/** GOES-West over all of California for a window (web/public/goes/<slug>.json, scripts/goes_fire_refs.py --region ca):
+ * the fires as boxes. July 22 to Aug 2, 2024: the busiest week of 2023 to 2026 (the Park and Borel fires). */
+const BOXES_DOC = "ca-2024-07-22";
+const BOXES_YEAR = 2024;
+/** All of California, where the boxes view opens. */
+const CA_VIEW = { longitude: -119.4, latitude: 37.3, zoom: 5.6 };
 import { AefPool } from "./aef/pool.js";
 import { CoarsePool } from "./aef/coarse.js";
 import { type AefIndex, loadAefIndex } from "./aef/index.js";
@@ -75,7 +83,10 @@ const INITIAL_FRAME_MS = 200; // 72 hours in about 14 s
  * outbreak, extreme wind and single-digit humidity from Texas into the Mid-South.)
  */
 // Redding, California: the ground draws from the 10 m mosaic only (zoom MOSAIC_MIN_ZOOM in), where the fuel head runs
-const START_VIEW = { longitude: -122.3917, latitude: 40.5865, zoom: 12.5 };
+// const START_VIEW = { longitude: -122.3917, latitude: 40.5865, zoom: 12.5 };
+/** The fire the map opens on and plays: the Park Fire (Butte and Tehama counties, July 24, 2024 on). */
+const START_FIRE = { name: "Park Fire", lon: -121.806, lat: 40.09 };
+const START_VIEW = { longitude: START_FIRE.lon, latitude: START_FIRE.lat, zoom: 11 };
 const START_INIT = new Date("2026-08-10T12:00:00Z");
 const START_LEAD = 0;
 /**
@@ -138,6 +149,15 @@ async function loadMapStyle(): Promise<StyleSpecification | string> {
   }
 }
 
+const pacificHour = (t: number) => new Date(t).toLocaleString("en-US", { timeZone: "America/Los_Angeles", month: "short", day: "numeric", hour: "numeric", timeZoneName: "short" });
+
+/** An event in a line: when GOES first and last saw it (Pacific time, the fires' own), scans and pixels. */
+function boxLine(ev: GoesEvent): string {
+  const f = (t: number) => new Date(t).toLocaleString("en-US", { timeZone: "America/Los_Angeles", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  const pt = new Date(ev.t0).toLocaleString("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "short" }).split(" ").pop();
+  return `${f(ev.t0)} to ${f(ev.t1)} ${pt} · ${ev.scans} scan${ev.scans === 1 ? "" : "s"} · ${ev.pixels} GOES pixel${ev.pixels === 1 ? "" : "s"}`;
+}
+
 export default function App() {
   const mapRef = useRef<MapRef>(null);
   /** The pair's left map (P): the imagery beside the fuel, moving together. */
@@ -150,6 +170,9 @@ export default function App() {
   const stepImgYearRef = useRef<(d: number) => void>(() => {});
   /** The key handler is set up once; it turns the season on and off through this. */
   const setSeasonOnRef = useRef<React.Dispatch<React.SetStateAction<boolean>>>(() => {});
+  /** The picked GOES box (Esc flies back out), read by the key handler set up once. */
+  const boxPickRef = useRef<number | null>(null);
+  const backOutRef = useRef<() => void>(() => {});
   const stepImgYear = (d: number) => stepImgYearRef.current(d);
   const [mapStyle, setMapStyle] = useState<StyleSpecification | string | null>(null);
   useEffect(() => {
@@ -288,14 +311,19 @@ export default function App() {
   }, [isPlaying, frameDurationMs]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const space = e.code === "Space" || e.key === " ";
-      const pairKey = e.key === "p" || e.key === "P";
-      const yearKey = e.key === "[" ? -1 : e.key === "]" ? 1 : 0;
+      // the imagery keys (Space, P, [ ]) are off while the imagery is
+      // const space = e.code === "Space" || e.key === " ";
+      // const pairKey = e.key === "p" || e.key === "P";
+      // const yearKey = e.key === "[" ? -1 : e.key === "]" ? 1 : 0;
+      const space = false;
+      const pairKey = false;
+      const yearKey = 0;
       const seasonKey = e.key === "s" || e.key === "S";
       const full = e.key === "f" || e.key === "F";
       const labels = e.key === "l" || e.key === "L";
       const pick = e.key === "q" || e.key === "Q";
       const ground = e.key === "g" || e.key === "G";
+      if (e.key === "Escape" && boxPickRef.current !== null) { backOutRef.current(); return; }
       if (!space && !pairKey && !yearKey && !seasonKey && !full && !labels && !pick && !ground) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement | null;
@@ -393,7 +421,7 @@ export default function App() {
   const [pHide, setPHide] = useState(0.5);
   const [pMax, setPMax] = useState(WEATHER_ON ? 0.95 : 1);
   /** How the ignition logit meets the ramp: probability, logit, or rank among the pixels in view this hour. */
-  const [ignScale, setIgnScale] = useState<IgnScale>("probability");
+  const [ignScale, setIgnScale] = useState<IgnScale>("logit");
   const [zLo, setZLo] = useState(0);
   const [zHi, setZHi] = useState(4);
   /** Rank scale: the quantiles in view that sit at the hide line and the ramp top. */
@@ -457,7 +485,7 @@ export default function App() {
   }, [fuel, countyTable, counties, aefIndex]);
 
   const [fuelOpacity, setFuelOpacity] = useState(0.9);
-  const [groundRamp, setGroundRamp] = useState<GroundRamp>("inferno");
+  const [groundRamp, setGroundRamp] = useState<GroundRamp>("viridis");
   /** Hours of afterglow on the ground (0 = this hour only). */
   // off by default: at the same point the past day's peak adds nothing to this hour (ignition/hour_memory.py)
   const [glowHours, setGlowHours] = useState(0);
@@ -865,13 +893,148 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aefLayers, aefVersion, goesOn, goesSeen, goesPerim, view]);
 
+  // ---- GOES boxes (goesboxes.ts): every fire GOES-West saw over California in the window, as boxes; clicking one
+  // flies to it and lights the fuel inside it and in a ring around it, the rest dim
+  const [boxesOn, setBoxesOn] = useState(true);
+  const [boxesDoc, setBoxesDoc] = useState<GoesDoc | null>(null);
+  const boxPixelsRef = useRef<FirePixel[]>([]);
+  const [boxesRead, setBoxesRead] = useState(0);
+  const [boxPick, setBoxPick] = useState<number | null>(null);
+  const [boxHover, setBoxHover] = useState<{ ev: GoesEvent; x: number; y: number } | null>(null);
+  boxPickRef.current = boxPick;
+  useEffect(() => {
+    if (boxesOn) { setSeasonOn(false); setGoesOn(false); }
+    else setBoxPick(null);
+  }, [boxesOn]);
+  useEffect(() => {
+    if (seasonOn || goesOn) setBoxesOn(false);
+  }, [seasonOn, goesOn]);
+  const boxesStarted = useRef(false);
+  useEffect(() => {
+    if (!boxesOn || boxesStarted.current) return;
+    boxesStarted.current = true;
+    loadGoesDoc(`${import.meta.env.BASE_URL}goes/${BOXES_DOC}.json`)
+      .then((d) => {
+        setBoxesDoc(d);
+        // the scans stream in; the events are joined again at most every 500 ms
+        let timer = 0;
+        let read = 0;
+        return readGoesFire(d, (_i, px) => {
+          read++;
+          if (px.length) boxPixelsRef.current.push(...px);
+          if (!timer) timer = window.setTimeout(() => { timer = 0; setBoxesRead(read); }, 500);
+        }, undefined, 12, false).then(() => setBoxesRead(read));
+      })
+      .catch((e) => setError(`GOES boxes: ${String(e)}`));
+  }, [boxesOn]);
+  const boxEvents = useMemo(() => goesEvents(boxPixelsRef.current), [boxesRead]); // eslint-disable-line react-hooks/exhaustive-deps
+  const boxPicked = boxPick === null ? null : boxEvents.find((ev) => ev.id === boxPick) ?? null;
+  // once every scan is read, the opening fire is picked and plays (the biggest event over its spot)
+  const autoPicked = useRef(false);
+  // fly to a box: the box and its ring fill the view, never zoomed out past where the fuel draws
+  const flyToBox = useCallback((ev: GoesEvent) => {
+    const m = mapRef.current?.getMap();
+    if (!m) return;
+    setBoxPick(ev.id);
+    setBoxHover(null);
+    reachRef.current?.dispose();
+    const r = new FireReach(ev.px, ev.bbox);
+    reachRef.current = r;
+    setReach(r);
+    setBoxHour(0);
+    setBoxPlaying(false);
+    autoStartRef.current = true;
+    // play once the fuel is read under a quarter of the grid, or after 25 s at the latest
+    window.setTimeout(() => { if (autoStartRef.current && reachRef.current === r) { autoStartRef.current = false; setBoxPlaying(true); } }, 25000);
+    // the whole fire in view, down to zoom 10 (its area is all that is read)
+    const [w, s, e, n] = ringBox(ev.bbox);
+    const cam = m.cameraForBounds([[w, s], [e, n]], { padding: 40 });
+    const zoom = Math.max(MOSAIC_MIN_ZOOM - 1, Math.min(14, cam?.zoom ?? MOSAIC_MIN_ZOOM));
+    m.flyTo({ center: [(w + e) / 2, (s + n) / 2], zoom, duration: 1800, essential: true });
+  }, []);
+  useEffect(() => {
+    if (autoPicked.current || !boxesDoc || boxesRead < boxesDoc.scans.length || boxPick !== null) return;
+    autoPicked.current = true;
+    const ev = boxEvents
+      .filter((e) => START_FIRE.lon >= e.bbox[0] && START_FIRE.lon <= e.bbox[2] && START_FIRE.lat >= e.bbox[1] && START_FIRE.lat <= e.bbox[3])
+      .sort((a, b) => b.pixels - a.pixels)[0];
+    if (ev) flyToBox(ev);
+  }, [boxesDoc, boxesRead, boxEvents, boxPick, flyToBox]);
+  backOutRef.current = () => {
+    setBoxPick(null);
+    setBoxPlaying(false);
+    reachRef.current?.dispose();
+    reachRef.current = null;
+    setReach(null);
+    setReachLines([]);
+    mapRef.current?.getMap().flyTo({ center: [CA_VIEW.longitude, CA_VIEW.latitude], zoom: CA_VIEW.zoom, duration: 1500, essential: true });
+  };
+  // ---- the picked fire hour by hour (reach.ts): its burning pixels, and the fuel lit as far as the fire could reach
+  // from them (slope and fuel), more the longer a pixel burns; the rest of the fuel gray
+  const reachRef = useRef<FireReach | null>(null);
+  /** Play once the fuel under the fire has been read (the flight over, the tiles in). */
+  const autoStartRef = useRef(false);
+  const [reach, setReach] = useState<FireReach | null>(null);
+  const [boxHour, setBoxHour] = useState(0);
+  const [boxPlaying, setBoxPlaying] = useState(false);
+  const [reachLines, setReachLines] = useState<{ level: number; rings: [number, number][][] }[]>([]);
+  /** The hour whose reach is drawn (the masks and lines), and how long the last one took. */
+  const [reachDone, setReachDone] = useState<{ hour: number; ms: number } | null>(null);
+  // the fuel under the grid, again as new 10 m tiles come in (at most every 1.5 s)
+  useEffect(() => {
+    if (!reach || !aefLayers) return;
+    const t = window.setTimeout(() => {
+      const share = reach.setFuel(aefLayers.fineTiles());
+      if (autoStartRef.current && share > 0.25) { autoStartRef.current = false; setBoxPlaying(true); }
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [reach, aefLayers, aefVersion]);
+  // an hour's reach: computed in the worker, then laid on the tiles
+  useEffect(() => {
+    if (!reach) return;
+    let gone = false;
+    void reach.run(boxHour).then(({ lines, ms }) => {
+      if (gone) return;
+      setReachLines(lines);
+      setReachDone({ hour: boxHour, ms });
+    });
+    return () => { gone = true; };
+  }, [reach, boxHour]);
+  useEffect(() => {
+    if (!aefLayers || !boxesOn) return;
+    const key = reach && reachDone ? `reach|${boxPick}|${reachDone.hour}` : "reach|none";
+    let changed = false;
+    for (const t of aefLayers.fineTiles()) {
+      if (t.seasonKey === key) continue;
+      changed = aefLayers.setSeasonMask(t, key, reach && reachDone ? reach.mask(t) : null) || changed;
+    }
+    if (changed) aefLayers.seasonChanged();
+    // aefVersion: new tiles need their mask
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aefLayers, aefVersion, boxesOn, reach, reachDone]);
+  // playing: the next hour once this one is drawn, about 3 hours a second
+  useEffect(() => {
+    if (!boxPlaying || !reach || !reachDone || reachDone.hour !== boxHour) return;
+    if (boxHour >= reach.hours - 1) { setBoxPlaying(false); return; }
+    const t = window.setTimeout(() => setBoxHour((h) => h + 1), 330);
+    return () => clearTimeout(t);
+  }, [boxPlaying, reach, reachDone, boxHour]);
+  const toggleBoxPlay = useCallback(() => {
+    if (!reach) return;
+    if (!boxPlaying && boxHour >= reach.hours - 1) setBoxHour(0);
+    setBoxPlaying(!boxPlaying);
+  }, [reach, boxPlaying, boxHour]);
+  const boxNow = reach?.byHour.get(boxHour) ?? [];
+  // this hour's burning pixels as one outline: edges shared by two touching pixels drop out
+  const boxNowEdges = useMemo(() => fireOutline(boxNow), [boxNow]);
+
   // ---- the years on screen: the embeddings the fuel is read from (the newest of the fuel model's three years) and
   // the Sentinel-2 mosaic's. The season view puts the embeddings on the year before its fires; the imagery follows
   // the embeddings' year until it is picked itself
   const [embYear, setEmbYear] = useState(AEF_YEAR);
   useEffect(() => {
-    setEmbYear(seasonOn || goesOn ? SEASON_YEAR - 1 : AEF_YEAR);
-  }, [seasonOn, goesOn]);
+    setEmbYear(boxesOn ? BOXES_YEAR - 1 : seasonOn || goesOn ? SEASON_YEAR - 1 : AEF_YEAR);
+  }, [seasonOn, goesOn, boxesOn]);
   useEffect(() => {
     aefLayers?.setFuelYear(embYear);
   }, [aefLayers, embYear]);
@@ -888,10 +1051,11 @@ export default function App() {
   const [s2Version, setS2Version] = useState(0);
   const s2 = useMemo(() => new S2Imagery(() => setS2Version((v) => v + 1)), []);
   // the year's footprints under the view, looked for as the view settles
-  useEffect(() => {
-    if (view) s2.discover(imgYear, view, zoom);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [s2, view, imgYear]);
+  // the imagery is off for now: no footprint lookups
+  // useEffect(() => {
+  //   if (view) s2.discover(imgYear, view, zoom);
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [s2, view, imgYear]);
   // ---- a clicked fire: its whole NIFC record for the panel
   const [firePick, setFirePick] = useState<FirePick | null>(null);
   const [fireRec, setFireRec] = useState<Record<string, unknown> | null>(null);
@@ -1004,7 +1168,8 @@ export default function App() {
   const buildLayers = useCallback((hourFrac: number) => {
     const out: unknown[] = [];
     // the imagery bare: over the basemap's streets and labels (no beforeId puts it on top), nothing drawn over it
-    if (view) out.push(...s2.layers({ year: imgYear, view, visible: showImg, prefix: "" }));
+    // the imagery is off for now
+    // if (view) out.push(...s2.layers({ year: imgYear, view, visible: showImg, prefix: "" }));
     if (showRaster && source && getTileData && colormapTexture) {
       out.push(
         new ZarrLayer<zarr.Readable, "float32", FfwiTileData>({
@@ -1045,10 +1210,15 @@ export default function App() {
           glowHours,
           grain,
           light,
-          opacity: fuelOpacity,
+          opacity: boxesOn ? 1 : fuelOpacity,
           ramp: groundRamp,
           visible: fuel !== "off" && fuel !== "counties" && !showImg,
+          // the GOES fires view: every fuel pixel at full strength, no dimming or gray around the fire
           seasonDim: (seasonOn && seasonData) || goesOn ? 0.18 : 0,
+          seasonGray: false,
+          solid: boxesOn,
+          // a picked fire: its whole area read, so it can be seen whole from zoom 10 (nothing outside it is read)
+          only: boxesOn && boxPicked && reach ? { bbox: reach.bbox(), minZoom: MOSAIC_MIN_ZOOM - 1 } : undefined,
           beforeId: BEFORE_ID,
         }),
       );
@@ -1082,6 +1252,46 @@ export default function App() {
     }
     if (goesOn && goesDoc && !showImg) {
       out.push(...goesLayers({ now: goesNow, seen: goesSeen, perimeter: goesPerim, beforeId: BEFORE_ID, trigger: [goesHour, goesRead] }));
+    }
+    if (boxesOn && !showImg && boxPicked) {
+      // the reach lines: off (the fuel's glow carries the reach on its own)
+      // out.push(new PathLayer<[number, number][]>({
+      //   id: "reach-lines",
+      //   data: reachLines.flatMap((l) => l.rings),
+      //   getPath: (d: [number, number][]) => d,
+      //   getColor: [255, 255, 255, 110],
+      //   getWidth: 1,
+      //   widthUnits: "pixels",
+      //   beforeId: BEFORE_ID,
+      // } as never));
+      out.push(new PolygonLayer<FirePixel>({
+        id: "reach-fire-fill",
+        data: boxNow,
+        getPolygon: (d: FirePixel) => d.polygon,
+        filled: true,
+        stroked: false,
+        getFillColor: [255, 150, 30, 90],
+        beforeId: BEFORE_ID,
+      } as never));
+      out.push(new PathLayer<[number, number][]>({
+        id: "reach-fire-now",
+        data: boxNowEdges,
+        getPath: (d: [number, number][]) => d,
+        // orange: apart from viridis (no orange in it) and from the gray fuel
+        getColor: [255, 150, 30, 255],
+        getWidth: 2,
+        widthUnits: "pixels",
+        beforeId: BEFORE_ID,
+      } as never));
+    }
+    if (boxesOn && !showImg && !boxPicked) {
+      out.push(...goesBoxLayers({
+        events: boxEvents,
+        picked: boxPick,
+        beforeId: BEFORE_ID,
+        onHover: (ev, x, y) => setBoxHover(ev && pickRef.current ? { ev, x, y } : null),
+        onClick: flyToBox,
+      }));
     }
     if (fuel === "counties" && countyTable && counties) {
       const h0 = Math.floor(timeIdx);
@@ -1132,6 +1342,7 @@ export default function App() {
     buildingsApi, bTable, bColors, seasonOn, seasonData, seasonJoin, seasonPerims, seasonDay, seasonReach,
     s2, s2Version, imgYear, showImg, view,
     goesOn, goesDoc, goesNow, goesSeen, goesPerim, goesHour, goesRead,
+    boxesOn, boxEvents, boxPick, flyToBox, boxPicked, reachLines, boxNowEdges, boxNow, reach,
   ]);
   buildLayersRef.current = buildLayers;
   const deckLayers = useMemo(() => buildLayers(hourFracRef.current), [buildLayers]);
@@ -1255,7 +1466,44 @@ export default function App() {
       ) : null}
       </div>
       ) : null}
-      {fuel === "lit" && !WEATHER_ON && zoom < MOSAIC_MIN_ZOOM ? (
+      {boxesOn ? (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 28,
+            left: "50%",
+            transform: "translateX(-50%)",
+            pointerEvents: "none",
+            background: "rgba(20,20,24,0.88)",
+            color: "#eee",
+            fontSize: 13,
+            padding: "8px 14px",
+            borderRadius: 8,
+            zIndex: 1500,
+            textAlign: "center",
+          }}
+        >
+          {boxPicked ? (
+            <>
+              {boxLine(boxPicked)}
+              <br />
+              <span style={{ color: "#aaa", fontSize: 12 }}>
+                {reach ? pacificHour(reach.t0 + boxHour * 3600e3) : ""} · {boxNow.length} GOES pixel{boxNow.length === 1 ? "" : "s"} burning · Esc to go back out
+              </span>
+            </>
+          ) : (
+            <>
+              {boxesDoc && boxesRead < boxesDoc.scans.length && !autoPicked.current
+                ? `${START_FIRE.name}: reading GOES-West's scans from NOAA, ${boxesRead} of ${boxesDoc.scans.length}`
+                : `GOES-West fires over California, July 22 to Aug 2, 2024: ${boxEvents.length} boxes`}
+              <br />
+              <span style={{ color: "#aaa", fontSize: 12 }}>
+                {boxesDoc && boxesRead < boxesDoc.scans.length && !autoPicked.current ? "it plays once they are in" : "Click a box to fly to it"}
+              </span>
+            </>
+          )}
+        </div>
+      ) : fuel === "lit" && !WEATHER_ON && zoom < MOSAIC_MIN_ZOOM ? (
         // the fuel head runs on the 10 m mosaic only; the coarse tiles below MOSAIC_MIN_ZOOM carry no fuel plane
         <div
           style={{
@@ -1415,6 +1663,18 @@ export default function App() {
           pair,
           onPairChange: setPair,
         }}
+        fireHour={reach && boxPicked ? {
+          playing: boxPlaying,
+          onPlayToggle: toggleBoxPlay,
+          hour: boxHour,
+          hours: reach.hours,
+          onHourChange: (h) => { setBoxPlaying(false); setBoxHour(h); },
+          t0: reach.t0,
+          burning: boxNow.length,
+          cellM: reach.cellM,
+          ms: reachDone?.ms ?? 0,
+          waiting: autoStartRef.current,
+        } : null}
         fire={{ pick: firePick, record: fireRec, onClear: () => setFirePick(null) }}
         season={{
           year: SEASON_YEAR,
@@ -1475,7 +1735,12 @@ export default function App() {
           </div>
         </div>
       ) : null}
-      {showImg ? null : seasonOn && seasonData && seasonHover ? (
+      {showImg ? null : boxesOn && boxHover ? (
+        <div style={tooltipStyle(boxHover.x, boxHover.y)}>
+          <div style={{ fontWeight: 600 }}>{boxLine(boxHover.ev)}</div>
+          <div style={{ color: "#aaa" }}>click to fly to it</div>
+        </div>
+      ) : seasonOn && seasonData && seasonHover ? (
         <div style={tooltipStyle(seasonHover.x, seasonHover.y)}>
           <div style={{ fontWeight: 600 }}>{seasonData.starts.name[seasonHover.i] || "unnamed start"}</div>
           <div>

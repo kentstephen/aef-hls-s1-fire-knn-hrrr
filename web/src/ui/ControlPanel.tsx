@@ -202,6 +202,22 @@ export type ControlPanelProps = {
   goes: GoesPanel;
   years: YearsPanel;
   fire: FirePanel;
+  /** The picked GOES fire hour by hour (null when none is picked). */
+  fireHour: FireHourPanel | null;
+};
+
+export type FireHourPanel = {
+  playing: boolean;
+  onPlayToggle: () => void;
+  hour: number;
+  hours: number;
+  onHourChange: (h: number) => void;
+  t0: number;
+  burning: number;
+  cellM: number;
+  ms: number;
+  /** Waiting for the fuel under the fire before playing. */
+  waiting: boolean;
 };
 
 /** The years on screen: the embeddings the fuel is read from, and the Sentinel-2 mosaic's. */
@@ -328,7 +344,7 @@ export function ControlPanel(p: ControlPanelProps) {
   const s = p.status;
   const loading = loadingSummary(s);
   const [min, setMin] = useState(false);
-  const reader = p.zoom >= MOSAIC_MIN_ZOOM ? "10 m mosaic" : "COG overviews";
+  const reader = p.zoom >= MOSAIC_MIN_ZOOM ? "10 m mosaic" : `nothing (the fuel reads from zoom ${MOSAIC_MIN_ZOOM} in)`;
   const weekEnd = new Date(p.weekStart.getTime());
   weekEnd.setUTCDate(weekEnd.getUTCDate() + p.weekDays - 1);
   /** The latest day whose 12Z run is in the store (the latest init, or the day before it when it is an earlier run). */
@@ -402,7 +418,8 @@ export function ControlPanel(p: ControlPanelProps) {
       <p>
         Each 10 m pixel's <b>AlphaEarth embeddings</b> go through a small model fit on fuel and non-fuel ground across
         California, giving the chance the ground is burnable fuel. Fires are NIFC's records: where each one started and
-        the outline it burned. <b>Sentinel-2</b> shows what the ground looked like.
+        the outline it burned.
+        {/* the imagery is off for now: <b>Sentinel-2</b> shows what the ground looked like. */}
       </p>
 
       <div className="years">
@@ -415,6 +432,7 @@ export function ControlPanel(p: ControlPanelProps) {
           </label>
           <span className="muted small">the fuel model reads {p.years.emb - 2} to {p.years.emb}</span>
         </div>
+        {/* the imagery is off for now
         <div className="row">
           <label className="yr">
             <span>Sentinel-2</span>
@@ -431,11 +449,12 @@ export function ControlPanel(p: ControlPanelProps) {
         <p className="muted small">
           Hold <b>Space</b> to see the imagery (the wheel steps its year while held), <b>[</b> <b>]</b> a year back or
           forward, <b>P</b> for the two side by side. Imagery from zoom 9 in, fuel from zoom {MOSAIC_MIN_ZOOM} in.
-        </p>
+        */}
+        <p className="muted small">Fuel from zoom {MOSAIC_MIN_ZOOM} in.</p>
       </div>
       <p className="muted small" style={{ marginTop: 6 }}>
         Data: <A href="https://source.coop/tge-labs/aef">AlphaEarth Foundations</A> (tge-labs on Source Cooperative) ·{" "}
-        <A href="https://www.earthgenome.org/">Earth Genome</A> Sentinel-2 mosaics (CC BY 4.0) ·{" "}
+        {/* <A href="https://www.earthgenome.org/">Earth Genome</A> Sentinel-2 mosaics (CC BY 4.0) ·{" "} */}
         <A href="https://data-nifc.opendata.arcgis.com/">NIFC WFIGS</A> fire starts and outlines · Overture Maps buildings ·{" "}
         {/* the weather sources, while the weather is off:
         <A href="https://dynamical.org/catalog/noaa-hrrr-forecast-48-hour/">NOAA HRRR 48 h</A> via{" "}
@@ -444,7 +463,7 @@ export function ControlPanel(p: ControlPanelProps) {
         <A href="https://github.com/kentstephen/aef-hls-s1-fire-knn-hrrr">code on GitHub</A>
       </p>
       <p className="muted small" style={{ marginTop: 4 }}>
-        Keys: <b>Space</b> (hold) imagery · <b>[</b> <b>]</b> imagery year · <b>P</b> side by side · <b>S</b> the season · <b>F</b> full screen ·{" "}
+        Keys: <b>S</b> the season · <b>F</b> full screen ·{" "}
         <b>L</b> map labels off and on · <b>Q</b> tooltip off and on.
       </p>
 
@@ -453,6 +472,34 @@ export function ControlPanel(p: ControlPanelProps) {
           <div className="bar"><span style={{ width: `${Math.round(loading.fraction * 100)}%` }} /></div>
           <p className="muted small">{loading.label}. Everything is read straight from the cloud stores; nothing is precomputed but the model weights.</p>
         </div>
+      ) : null}
+
+      {p.fireHour ? (
+        <Fold k="firehour" label="The fire, hour by hour" defaultOpen tag={pacific.format(new Date(p.fireHour.t0 + p.fireHour.hour * 3600e3))}>
+          <div className="row">
+            <button type="button" className="play" aria-label={p.fireHour.playing ? "Pause" : "Play"} title={p.fireHour.playing ? "Pause" : "Play"}
+              onClick={(e) => { p.fireHour!.onPlayToggle(); e.currentTarget.blur(); }}>
+              {p.fireHour.playing ? "❚❚" : "▶"}
+            </button>
+            <span>{pacific.format(new Date(p.fireHour.t0 + p.fireHour.hour * 3600e3))}</span>
+            <Help label="The fire, hour by hour">
+              GOES-West's fire pixels, hour by hour (orange outline: burning this hour). Around them the fuel lights up as
+              far as a fire could reach from them: faster through fuel (ground that is not fuel spreads at a tenth of the
+              rate) and uphill (Rothermel's slope factor), the way fire models trace arrival lines. A pixel that keeps
+              burning reaches farther; one that stops fades over a few hours. It
+              is relative reach, not hours or a forecast: there is no wind or fuel moisture in it yet. The rest of the
+              fuel is gray. Elevation: Mapterhorn (Copernicus 30 m).
+            </Help>
+          </div>
+          <Field label="Hour">
+            <Slider min={0} max={Math.max(0, p.fireHour.hours - 1)} step={1} value={p.fireHour.hour} onChange={p.fireHour.onHourChange} label="Hour" />
+          </Field>
+          <p className="muted small">
+            {p.fireHour.waiting ? "Reading the fuel under the fire before playing. " : ""}
+            {p.fireHour.burning} GOES pixel{p.fireHour.burning === 1 ? "" : "s"} burning this hour. Reach on {p.fireHour.cellM} m cells
+            {p.fireHour.ms ? `, ${Math.round(p.fireHour.ms)} ms an hour` : ""}.
+          </p>
+        </Fold>
       ) : null}
 
       <Fold k="fuel" label="The ground" defaultOpen tag={p.fuel === "ignition" ? "ignition risk" : p.fuel === "counties" ? "counties" : p.fuel === "lit" ? (p.weatherOn ? "lit by FFWI" : "P(fuel)") : p.fuel === "cover" ? "land cover" : "off"}>

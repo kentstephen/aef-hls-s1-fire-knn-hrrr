@@ -23,9 +23,9 @@ export type YearHist = { year: number; mean: number | null; n: number; done: num
 
 type Edge = [x0: number, y0: number, x1: number, y1: number];
 /** Each polygon of the fire as its ring edges in mosaic pixel coordinates (x right, y down from Y0). */
-type Poly = { edges: Edge[]; y0: number; y1: number; x0: number; x1: number };
+export type Poly = { edges: Edge[]; y0: number; y1: number; x0: number; x1: number };
 
-function polysOf(f: BurnArea): Poly[] {
+export function polysOf(f: { geometry: GeoJSON.Geometry }): Poly[] {
   const g = f.geometry;
   const list = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
   return list.map((rings) => {
@@ -46,7 +46,7 @@ function polysOf(f: BurnArea): Poly[] {
  * 1 where the pixel center is inside any of the fire's polygons (even-odd within one polygon, so holes stay out;
  * union across polygons, which NIFC lets overlap). Null when the chunk holds none of the fire.
  */
-function chunkMask(polys: Poly[], cy: number, cx: number): Uint8Array | null {
+export function chunkMask(polys: Poly[], cy: number, cx: number): Uint8Array | null {
   const r0 = cy * CHUNK, c0 = cx * CHUNK;
   let mask: Uint8Array | null = null;
   const xs: number[] = [];

@@ -1,0 +1,170 @@
+/* the map fills the window; the card floats over it */
+.risk {
+  position: fixed;
+  inset: 0;
+  background: #141418;
+  color: #e6e9ec;
+  font: 13px/1.4 "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+}
+.risk-card {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 320px;
+  padding: 12px 14px;
+  background: rgba(20, 20, 24, 0.92);
+  border: 1px solid #2a2a31;
+  border-radius: 6px;
+}
+.risk-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+.risk-tools {
+  margin: 8px 0 6px;
+  display: flex;
+  gap: 6px;
+}
+.risk-tools button {
+  font: inherit;
+  color: #a3a8b0;
+  background: transparent;
+  border: 1px solid #3a3a42;
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.risk-tools button.on {
+  color: #00e5ff;
+  border-color: #00e5ff;
+}
+.risk-sub {
+  color: #a3a8b0;
+}
+.risk-bar {
+  margin-top: 6px;
+  height: 3px;
+  background: #2a2a31;
+}
+.risk-bar > div {
+  height: 100%;
+  background: #e6e9ec;
+}
+.risk-spot {
+  margin-top: 10px;
+}
+.risk-spot table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.risk-spot td {
+  padding: 2px 0;
+  vertical-align: top;
+}
+.risk-spot td:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.risk-foot {
+  margin-top: 10px;
+  color: #6f747c;
+  font-size: 11px;
+}
+.risk-legend {
+  margin-top: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+.risk-legend-ends {
+  display: flex;
+  justify-content: space-between;
+  color: #a3a8b0;
+  font-size: 11px;
+}
+.risk-value {
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.risk-value b {
+  font-size: 22px;
+}
+.risk-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+}
+.risk-spot td.risk-part {
+  width: 70px;
+  padding: 0 8px;
+  vertical-align: middle;
+}
+.risk-part {
+  background: none;
+}
+.risk-part > div {
+  height: 8px;
+  border-radius: 1px;
+  min-width: 1px;
+}
+.risk-note {
+  margin-top: 4px;
+  color: #6f747c;
+  font-size: 11px;
+}
+.risk-context {
+  margin-top: 8px;
+  color: #a3a8b0;
+}
+.risk-tip {
+  position: absolute;
+  pointer-events: none;
+  padding: 6px 8px;
+  background: rgba(20, 20, 24, 0.94);
+  border: 1px solid #2a2a31;
+  border-radius: 4px;
+  max-width: 280px;
+  z-index: 2;
+}
+.risk-feature {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #2a2a31;
+  max-height: 40vh;
+  overflow: auto;
+}
+.risk-feature-title {
+  font-weight: 600;
+}
+.risk-feature table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #a3a8b0;
+}
+.risk-feature td {
+  padding: 1px 0;
+  vertical-align: top;
+  word-break: break-word;
+}
+.risk-feature td:first-child {
+  padding-right: 8px;
+  white-space: nowrap;
+}
+.risk-kinds {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  font-size: 11px;
+  color: #a3a8b0;
+}
+.risk-kinds i {
+  display: inline-block;
+  width: 10px;
+  height: 3px;
+  margin-right: 4px;
+  vertical-align: middle;
+}

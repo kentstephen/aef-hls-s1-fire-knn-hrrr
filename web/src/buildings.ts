@@ -1,5 +1,5 @@
 import type { Layer } from "@deck.gl/core";
-import { GeoArrowPathLayer } from "@geoarrow/deck.gl-geoarrow";
+import { GeoArrowPathLayer, GeoArrowSolidPolygonLayer } from "@geoarrow/deck.gl-geoarrow";
 import * as duckdb from "@haybarn/haybarn-wasm";
 import ehWorker from "@haybarn/haybarn-wasm/dist/duckdb-browser-eh.worker.js?url";
 import mvpWorker from "@haybarn/haybarn-wasm/dist/duckdb-browser-mvp.worker.js?url";
@@ -55,7 +55,9 @@ type LayerOpts = {
   opacity?: number;
   /** Change this to recompute colors from the getLineColor function. */
   colorKey?: unknown;
-  /** deck.gl LayerExtensions for the outline layer. */
+  /** A fill under each outline in this color (none when unset), triangulated on the page's thread. */
+  fillColor?: RGBA;
+  /** deck.gl LayerExtensions for the outline layer (and the fill). */
   extensions?: unknown[];
   /** Extra props passed straight to each GeoArrowPathLayer (e.g. an extension's props). */
   extraProps?: Record<string, unknown> | ((batch: arrow.RecordBatch, batchIndex: number) => Record<string, unknown>);
@@ -278,8 +280,22 @@ export async function createBuildings(opts: { spatial?: boolean } = {}) {
   /** One outline layer per batch (tile) so deck.gl keeps the GPU buffers of tiles that stay in view. */
   function layer(o: LayerOpts): Layer[] {
     const color = o.getLineColor ?? PALE;
-    return o.table.batches
-      .filter((b) => b.numRows > 0)
+    const batches = o.table.batches.filter((b) => b.numRows > 0);
+    const fills = !o.fillColor
+      ? []
+      : batches.map((batch, bi) =>
+          new GeoArrowSolidPolygonLayer({
+            id: `${o.id ?? "buildings"}-fill-${tileKeyOf(batch) ?? bi}`,
+            data: batch,
+            getPolygon: batch.getChild("geometry")!.data[0]! as never,
+            getFillColor: o.fillColor,
+            earcutWorkerUrl: null,
+            opacity: o.opacity ?? 1,
+            ...(o.extensions ? { extensions: o.extensions } : {}),
+            ...(typeof o.extraProps === "function" ? o.extraProps(batch, bi) : o.extraProps),
+            beforeId: o.beforeId,
+          } as never) as unknown as Layer);
+    return fills.concat(batches
       .map((batch, bi) => {
         const rings = ringsOf(batch);
         const c = typeof color === "function" ? color(batch, bi) : color;
@@ -304,7 +320,7 @@ export async function createBuildings(opts: { spatial?: boolean } = {}) {
           // read by the MapLibre overlay
           beforeId: o.beforeId,
         } as never) as unknown as Layer;
-      });
+      }));
   }
 
   function tileKeyOf(batch: arrow.RecordBatch): string | null {

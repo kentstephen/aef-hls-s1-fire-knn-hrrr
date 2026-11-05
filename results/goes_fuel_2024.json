@@ -1,0 +1,729 @@
+{
+ "all events": {
+  "n": 3966,
+  "matched": 525,
+  "unmatched": 3441,
+  "places": 1804,
+  "knn in": [
+   0.642,
+   0.611,
+   0.672
+  ],
+  "knn around": [
+   0.646,
+   0.614,
+   0.678
+  ],
+  "head in": [
+   0.647,
+   0.616,
+   0.677
+  ],
+  "head around": [
+   0.648,
+   0.616,
+   0.679
+  ],
+  "lf in": [
+   0.573,
+   0.542,
+   0.602
+  ],
+  "lf around": [
+   0.601,
+   0.568,
+   0.633
+  ],
+  "GOES alone (power, class, pixels)": [
+   0.66,
+   0.628,
+   0.69
+  ],
+  "GOES + knn fuel": [
+   0.746,
+   0.715,
+   0.774
+  ],
+  "GOES + head fuel": [
+   0.744,
+   0.713,
+   0.773
+  ],
+  "GOES + lf fuel": [
+   0.718,
+   0.687,
+   0.746
+  ],
+  "share with < 10 % fuel in and around (knn)": {
+   "matched": 0.008,
+   "unmatched": 0.035
+  },
+  "share with < 10 % fuel in and around (lf)": {
+   "matched": 0.01,
+   "unmatched": 0.05
+  },
+  "median fuel share": {
+   "perimeter": {
+    "knn_in": 0.945,
+    "knn_around": 0.932,
+    "head_in": 0.928,
+    "head_around": 0.901,
+    "lf_in": 0.944,
+    "lf_around": 0.939
+   },
+   "start": {
+    "knn_in": 0.841,
+    "knn_around": 0.815,
+    "head_in": 0.804,
+    "head_around": 0.775,
+    "lf_in": 0.848,
+    "lf_around": 0.813
+   },
+   "unmatched": {
+    "knn_in": 0.716,
+    "knn_around": 0.697,
+    "head_in": 0.645,
+    "head_around": 0.634,
+    "lf_in": 0.823,
+    "lf_around": 0.765
+   }
+  }
+ },
+ "not at a recurring pixel (under 5 events there in the year)": {
+  "n": 3370,
+  "matched": 492,
+  "unmatched": 2878,
+  "places": 1760,
+  "knn in": [
+   0.609,
+   0.577,
+   0.64
+  ],
+  "knn around": [
+   0.61,
+   0.577,
+   0.643
+  ],
+  "head in": [
+   0.615,
+   0.584,
+   0.644
+  ],
+  "head around": [
+   0.614,
+   0.582,
+   0.645
+  ],
+  "lf in": [
+   0.551,
+   0.519,
+   0.581
+  ],
+  "lf around": [
+   0.573,
+   0.541,
+   0.604
+  ],
+  "GOES alone (power, class, pixels)": [
+   0.669,
+   0.635,
+   0.7
+  ],
+  "GOES + knn fuel": [
+   0.728,
+   0.698,
+   0.759
+  ],
+  "GOES + head fuel": [
+   0.731,
+   0.701,
+   0.76
+  ],
+  "GOES + lf fuel": [
+   0.71,
+   0.68,
+   0.74
+  ],
+  "share with < 10 % fuel in and around (knn)": {
+   "matched": 0.006,
+   "unmatched": 0.026
+  },
+  "share with < 10 % fuel in and around (lf)": {
+   "matched": 0.008,
+   "unmatched": 0.039
+  },
+  "median fuel share": {
+   "perimeter": {
+    "knn_in": 0.957,
+    "knn_around": 0.934,
+    "head_in": 0.929,
+    "head_around": 0.902,
+    "lf_in": 0.952,
+    "lf_around": 0.943
+   },
+   "start": {
+    "knn_in": 0.841,
+    "knn_around": 0.807,
+    "head_in": 0.802,
+    "head_around": 0.77,
+    "lf_in": 0.848,
+    "lf_around": 0.806
+   },
+   "unmatched": {
+    "knn_in": 0.783,
+    "knn_around": 0.755,
+    "head_in": 0.719,
+    "head_around": 0.696,
+    "lf_in": 0.85,
+    "lf_around": 0.799
+   }
+  }
+ },
+ "single-scan events": {
+  "n": 2339,
+  "matched": 178,
+  "unmatched": 2161,
+  "places": 1376,
+  "knn in": [
+   0.574,
+   0.526,
+   0.621
+  ],
+  "knn around": [
+   0.575,
+   0.524,
+   0.624
+  ],
+  "head in": [
+   0.579,
+   0.534,
+   0.624
+  ],
+  "head around": [
+   0.575,
+   0.528,
+   0.622
+  ],
+  "lf in": [
+   0.527,
+   0.481,
+   0.569
+  ],
+  "lf around": [
+   0.54,
+   0.493,
+   0.588
+  ],
+  "GOES alone (power, class, pixels)": [
+   0.595,
+   0.532,
+   0.661
+  ],
+  "GOES + knn fuel": [
+   0.659,
+   0.609,
+   0.709
+  ],
+  "GOES + head fuel": [
+   0.656,
+   0.607,
+   0.707
+  ],
+  "GOES + lf fuel": [
+   0.639,
+   0.587,
+   0.691
+  ],
+  "share with < 10 % fuel in and around (knn)": {
+   "matched": 0.017,
+   "unmatched": 0.032
+  },
+  "share with < 10 % fuel in and around (lf)": {
+   "matched": 0.017,
+   "unmatched": 0.046
+  },
+  "median fuel share": {
+   "perimeter": {
+    "knn_in": 0.965,
+    "knn_around": 0.945,
+    "head_in": 0.939,
+    "head_around": 0.917,
+    "lf_in": 0.955,
+    "lf_around": 0.954
+   },
+   "start": {
+    "knn_in": 0.812,
+    "knn_around": 0.747,
+    "head_in": 0.761,
+    "head_around": 0.712,
+    "lf_in": 0.841,
+    "lf_around": 0.763
+   },
+   "unmatched": {
+    "knn_in": 0.778,
+    "knn_around": 0.752,
+    "head_in": 0.721,
+    "head_around": 0.696,
+    "lf_in": 0.851,
+    "lf_around": 0.806
+   }
+  }
+ },
+ "events seen in 2+ scans": {
+  "n": 1627,
+  "matched": 347,
+  "unmatched": 1280,
+  "places": 916,
+  "knn in": [
+   0.714,
+   0.678,
+   0.748
+  ],
+  "knn around": [
+   0.717,
+   0.682,
+   0.753
+  ],
+  "head in": [
+   0.718,
+   0.683,
+   0.754
+  ],
+  "head around": [
+   0.719,
+   0.684,
+   0.755
+  ],
+  "lf in": [
+   0.63,
+   0.591,
+   0.667
+  ],
+  "lf around": [
+   0.665,
+   0.626,
+   0.703
+  ],
+  "GOES alone (power, class, pixels)": [
+   0.645,
+   0.603,
+   0.684
+  ],
+  "GOES + knn fuel": [
+   0.768,
+   0.735,
+   0.8
+  ],
+  "GOES + head fuel": [
+   0.77,
+   0.737,
+   0.802
+  ],
+  "GOES + lf fuel": [
+   0.734,
+   0.7,
+   0.769
+  ],
+  "share with < 10 % fuel in and around (knn)": {
+   "matched": 0.003,
+   "unmatched": 0.039
+  },
+  "share with < 10 % fuel in and around (lf)": {
+   "matched": 0.006,
+   "unmatched": 0.056
+  },
+  "median fuel share": {
+   "perimeter": {
+    "knn_in": 0.934,
+    "knn_around": 0.924,
+    "head_in": 0.918,
+    "head_around": 0.888,
+    "lf_in": 0.942,
+    "lf_around": 0.935
+   },
+   "start": {
+    "knn_in": 0.864,
+    "knn_around": 0.851,
+    "head_in": 0.817,
+    "head_around": 0.806,
+    "lf_in": 0.848,
+    "lf_around": 0.844
+   },
+   "unmatched": {
+    "knn_in": 0.59,
+    "knn_around": 0.572,
+    "head_in": 0.53,
+    "head_around": 0.504,
+    "lf_in": 0.756,
+    "lf_around": 0.686
+   }
+  }
+ },
+ "first-scan class 2": {
+  "n": 2509,
+  "matched": 202,
+  "unmatched": 2307,
+  "places": 1356,
+  "knn in": [
+   0.602,
+   0.555,
+   0.648
+  ],
+  "knn around": [
+   0.614,
+   0.561,
+   0.663
+  ],
+  "head in": [
+   0.604,
+   0.557,
+   0.649
+  ],
+  "head around": [
+   0.611,
+   0.561,
+   0.658
+  ],
+  "lf in": [
+   0.536,
+   0.493,
+   0.579
+  ],
+  "lf around": [
+   0.568,
+   0.519,
+   0.614
+  ],
+  "GOES alone (power, class, pixels)": [
+   0.445,
+   0.386,
+   0.504
+  ],
+  "GOES + knn fuel": [
+   0.571,
+   0.52,
+   0.621
+  ],
+  "GOES + head fuel": [
+   0.577,
+   0.527,
+   0.625
+  ],
+  "GOES + lf fuel": [
+   0.53,
+   0.481,
+   0.579
+  ],
+  "share with < 10 % fuel in and around (knn)": {
+   "matched": 0.01,
+   "unmatched": 0.032
+  },
+  "share with < 10 % fuel in and around (lf)": {
+   "matched": 0.015,
+   "unmatched": 0.043
+  },
+  "median fuel share": {
+   "perimeter": {
+    "knn_in": 0.955,
+    "knn_around": 0.943,
+    "head_in": 0.934,
+    "head_around": 0.915,
+    "lf_in": 0.952,
+    "lf_around": 0.95
+   },
+   "start": {
+    "knn_in": 0.817,
+    "knn_around": 0.8,
+    "head_in": 0.745,
+    "head_around": 0.748,
+    "lf_in": 0.791,
+    "lf_around": 0.798
+   },
+   "unmatched": {
+    "knn_in": 0.801,
+    "knn_around": 0.775,
+    "head_in": 0.73,
+    "head_around": 0.713,
+    "lf_in": 0.876,
+    "lf_around": 0.825
+   }
+  }
+ },
+ "first-scan class 3": {
+  "n": 283,
+  "matched": 31,
+  "unmatched": 252,
+  "places": 212,
+  "knn in": [
+   0.656,
+   0.553,
+   0.751
+  ],
+  "knn around": [
+   0.66,
+   0.561,
+   0.752
+  ],
+  "head in": [
+   0.679,
+   0.579,
+   0.77
+  ],
+  "head around": [
+   0.684,
+   0.583,
+   0.773
+  ],
+  "lf in": [
+   0.645,
+   0.547,
+   0.737
+  ],
+  "lf around": [
+   0.633,
+   0.53,
+   0.726
+  ],
+  "GOES alone (power, class, pixels)": [
+   0.389,
+   0.283,
+   0.495
+  ],
+  "GOES + knn fuel": [
+   0.627,
+   0.523,
+   0.727
+  ],
+  "GOES + head fuel": [
+   0.648,
+   0.546,
+   0.742
+  ],
+  "GOES + lf fuel": [
+   0.617,
+   0.507,
+   0.714
+  ],
+  "share with < 10 % fuel in and around (knn)": {
+   "matched": 0.032,
+   "unmatched": 0.127
+  },
+  "share with < 10 % fuel in and around (lf)": {
+   "matched": 0.032,
+   "unmatched": 0.135
+  },
+  "median fuel share": {
+   "perimeter": {
+    "knn_in": 0.928,
+    "knn_around": 0.926,
+    "head_in": 0.834,
+    "head_around": 0.872,
+    "lf_in": 0.941,
+    "lf_around": 0.915
+   },
+   "start": {
+    "knn_in": 0.779,
+    "knn_around": 0.699,
+    "head_in": 0.729,
+    "head_around": 0.652,
+    "lf_in": 0.786,
+    "lf_around": 0.714
+   },
+   "unmatched": {
+    "knn_in": 0.584,
+    "knn_around": 0.565,
+    "head_in": 0.496,
+    "head_around": 0.491,
+    "lf_in": 0.615,
+    "lf_around": 0.588
+   }
+  }
+ },
+ "first-scan class 4": {
+  "n": 51,
+  "matched": 10,
+  "unmatched": 41,
+  "places": 49,
+  "note": "too few in one group"
+ },
+ "first-scan class 5": {
+  "n": 129,
+  "matched": 22,
+  "unmatched": 107,
+  "places": 118,
+  "knn in": [
+   0.548,
+   0.425,
+   0.667
+  ],
+  "knn around": [
+   0.555,
+   0.431,
+   0.677
+  ],
+  "head in": [
+   0.555,
+   0.431,
+   0.677
+  ],
+  "head around": [
+   0.556,
+   0.433,
+   0.678
+  ],
+  "lf in": [
+   0.534,
+   0.411,
+   0.654
+  ],
+  "lf around": [
+   0.576,
+   0.447,
+   0.698
+  ],
+  "GOES alone (power, class, pixels)": [
+   0.745,
+   0.604,
+   0.875
+  ],
+  "GOES + knn fuel": [
+   0.715,
+   0.551,
+   0.861
+  ],
+  "GOES + head fuel": [
+   0.721,
+   0.564,
+   0.861
+  ],
+  "GOES + lf fuel": [
+   0.724,
+   0.565,
+   0.87
+  ],
+  "share with < 10 % fuel in and around (knn)": {
+   "matched": 0.0,
+   "unmatched": 0.019
+  },
+  "share with < 10 % fuel in and around (lf)": {
+   "matched": 0.0,
+   "unmatched": 0.019
+  },
+  "median fuel share": {
+   "perimeter": {
+    "knn_in": 0.959,
+    "knn_around": 0.919,
+    "head_in": 0.937,
+    "head_around": 0.898,
+    "lf_in": 0.94,
+    "lf_around": 0.92
+   },
+   "start": {
+    "knn_in": 0.904,
+    "knn_around": 0.84,
+    "head_in": 0.874,
+    "head_around": 0.806,
+    "lf_in": 0.835,
+    "lf_around": 0.792
+   },
+   "unmatched": {
+    "knn_in": 0.896,
+    "knn_around": 0.839,
+    "head_in": 0.847,
+    "head_around": 0.794,
+    "lf_in": 0.862,
+    "lf_around": 0.818
+   }
+  }
+ },
+ "first-scan class 6": {
+  "n": 994,
+  "matched": 260,
+  "unmatched": 734,
+  "places": 635,
+  "knn in": [
+   0.787,
+   0.748,
+   0.822
+  ],
+  "knn around": [
+   0.786,
+   0.745,
+   0.824
+  ],
+  "head in": [
+   0.788,
+   0.75,
+   0.825
+  ],
+  "head around": [
+   0.785,
+   0.743,
+   0.822
+  ],
+  "lf in": [
+   0.702,
+   0.659,
+   0.74
+  ],
+  "lf around": [
+   0.732,
+   0.689,
+   0.771
+  ],
+  "GOES alone (power, class, pixels)": [
+   0.7,
+   0.658,
+   0.742
+  ],
+  "GOES + knn fuel": [
+   0.822,
+   0.782,
+   0.857
+  ],
+  "GOES + head fuel": [
+   0.826,
+   0.786,
+   0.86
+  ],
+  "GOES + lf fuel": [
+   0.798,
+   0.755,
+   0.835
+  ],
+  "share with < 10 % fuel in and around (knn)": {
+   "matched": 0.004,
+   "unmatched": 0.018
+  },
+  "share with < 10 % fuel in and around (lf)": {
+   "matched": 0.004,
+   "unmatched": 0.049
+  },
+  "median fuel share": {
+   "perimeter": {
+    "knn_in": 0.93,
+    "knn_around": 0.915,
+    "head_in": 0.898,
+    "head_around": 0.881,
+    "lf_in": 0.933,
+    "lf_around": 0.931
+   },
+   "start": {
+    "knn_in": 0.872,
+    "knn_around": 0.821,
+    "head_in": 0.827,
+    "head_around": 0.795,
+    "lf_in": 0.863,
+    "lf_around": 0.826
+   },
+   "unmatched": {
+    "knn_in": 0.462,
+    "knn_around": 0.458,
+    "head_in": 0.401,
+    "head_around": 0.409,
+    "lf_in": 0.583,
+    "lf_around": 0.538
+   }
+  }
+ }
+}

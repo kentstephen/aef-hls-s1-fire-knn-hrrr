@@ -1,0 +1,270 @@
+{
+ "year": 2024,
+ "n_events": 3966,
+ "windows": {
+  "wfigs_near": "WFIGS wildfires of 10+ acres, 10.0 km, -1 to +30 d (looser than the label)",
+  "calfire": "5.0 km, -1 to +7 d",
+  "rx_wfigs": "5.0 km, -1 to +14 d",
+  "rx_facts": "2.0 km, -60 to +3 d of completion",
+  "viirs": "3.0 km, t0 - 12 h to t1 + 12 h",
+  "chance": "the same rules with event times moved by (-90, -45, 45, 90) days, mean"
+ },
+ "all unmatched": {
+  "n": 3441,
+  "sources": {
+   "wfigs_near": {
+    "seen": 105,
+    "by_chance": 70.8
+   },
+   "calfire": {
+    "seen": 42,
+    "by_chance": 9.8
+   },
+   "rx_wfigs": {
+    "seen": 56,
+    "by_chance": 8.2
+   },
+   "rx_facts": {
+    "seen": 56,
+    "by_chance": 27.5
+   },
+   "viirs": {
+    "seen": 551,
+    "by_chance": 12.0
+   }
+  },
+  "farmland_half_or_more": 264,
+  "recurring_5plus": 563,
+  "kinds": {
+   "nothing else saw it": 2193,
+   "fixed hot spot (5+ events or VIIRS static)": 560,
+   "VIIRS heat, no record": 327,
+   "farmland (half the box or more)": 226,
+   "prescribed burn record": 93,
+   "CAL FIRE incident": 42
+  }
+ },
+ "unmatched, strong (class 5+ first scan or 2+ scans)": {
+  "n": 1645,
+  "sources": {
+   "wfigs_near": {
+    "seen": 57,
+    "by_chance": 35.2
+   },
+   "calfire": {
+    "seen": 34,
+    "by_chance": 5.5
+   },
+   "rx_wfigs": {
+    "seen": 48,
+    "by_chance": 5.0
+   },
+   "rx_facts": {
+    "seen": 47,
+    "by_chance": 19.2
+   },
+   "viirs": {
+    "seen": 487,
+    "by_chance": 10.8
+   }
+  },
+  "farmland_half_or_more": 199,
+  "recurring_5plus": 413,
+  "kinds": {
+   "nothing else saw it": 661,
+   "fixed hot spot (5+ events or VIIRS static)": 411,
+   "VIIRS heat, no record": 292,
+   "farmland (half the box or more)": 169,
+   "prescribed burn record": 78,
+   "CAL FIRE incident": 34
+  }
+ },
+ "unmatched, strong and kNN fuel in >= 0.8": {
+  "n": 542,
+  "sources": {
+   "wfigs_near": {
+    "seen": 37,
+    "by_chance": 20.5
+   },
+   "calfire": {
+    "seen": 26,
+    "by_chance": 2.2
+   },
+   "rx_wfigs": {
+    "seen": 39,
+    "by_chance": 4.2
+   },
+   "rx_facts": {
+    "seen": 46,
+    "by_chance": 18.5
+   },
+   "viirs": {
+    "seen": 248,
+    "by_chance": 3.8
+   }
+  },
+  "farmland_half_or_more": 0,
+  "recurring_5plus": 68,
+  "kinds": {
+   "nothing else saw it": 211,
+   "VIIRS heat, no record": 172,
+   "prescribed burn record": 68,
+   "fixed hot spot (5+ events or VIIRS static)": 65,
+   "CAL FIRE incident": 26
+  }
+ },
+ "unmatched, single scan and class 2 to 4": {
+  "n": 1796,
+  "sources": {
+   "wfigs_near": {
+    "seen": 48,
+    "by_chance": 35.5
+   },
+   "calfire": {
+    "seen": 8,
+    "by_chance": 4.2
+   },
+   "rx_wfigs": {
+    "seen": 8,
+    "by_chance": 3.2
+   },
+   "rx_facts": {
+    "seen": 9,
+    "by_chance": 8.2
+   },
+   "viirs": {
+    "seen": 64,
+    "by_chance": 1.2
+   }
+  },
+  "farmland_half_or_more": 65,
+  "recurring_5plus": 150,
+  "kinds": {
+   "nothing else saw it": 1532,
+   "fixed hot spot (5+ events or VIIRS static)": 149,
+   "farmland (half the box or more)": 57,
+   "VIIRS heat, no record": 35,
+   "prescribed burn record": 15,
+   "CAL FIRE incident": 8
+  }
+ },
+ "matched (how often each source sees a known fire)": {
+  "n": 525,
+  "sources": {
+   "wfigs_near": {
+    "seen": 325,
+    "by_chance": 60.0
+   },
+   "calfire": {
+    "seen": 311,
+    "by_chance": 8.2
+   },
+   "rx_wfigs": {
+    "seen": 11,
+    "by_chance": 4.8
+   },
+   "rx_facts": {
+    "seen": 3,
+    "by_chance": 5.8
+   },
+   "viirs": {
+    "seen": 206,
+    "by_chance": 7.2
+   }
+  },
+  "farmland_half_or_more": 6,
+  "recurring_5plus": 33,
+  "viirs_share_by_scans": {
+   "1 scan": 0.146,
+   "2+ scans": 0.519
+  }
+ },
+ "near-zero fuel (kNN < 10 % in and around)": {
+  "n": 124,
+  "matched": 4,
+  "unmatched": 120,
+  "lf_majority": {
+   "bare": 88,
+   "farmland": 23,
+   "urban": 12,
+   "fuel": 1
+  },
+  "viirs_seen": 17,
+  "viirs_static": 2,
+  "recurring_5plus": 47,
+  "by_month_and_ground": {
+   "1": {
+    "bare": 0,
+    "farmland": 0,
+    "fuel": 0,
+    "urban": 1
+   },
+   "2": {
+    "bare": 1,
+    "farmland": 0,
+    "fuel": 0,
+    "urban": 0
+   },
+   "3": {
+    "bare": 13,
+    "farmland": 0,
+    "fuel": 0,
+    "urban": 1
+   },
+   "4": {
+    "bare": 5,
+    "farmland": 1,
+    "fuel": 0,
+    "urban": 1
+   },
+   "5": {
+    "bare": 2,
+    "farmland": 0,
+    "fuel": 0,
+    "urban": 0
+   },
+   "6": {
+    "bare": 2,
+    "farmland": 1,
+    "fuel": 0,
+    "urban": 0
+   },
+   "7": {
+    "bare": 21,
+    "farmland": 0,
+    "fuel": 0,
+    "urban": 1
+   },
+   "8": {
+    "bare": 21,
+    "farmland": 0,
+    "fuel": 1,
+    "urban": 5
+   },
+   "9": {
+    "bare": 13,
+    "farmland": 3,
+    "fuel": 0,
+    "urban": 0
+   },
+   "10": {
+    "bare": 9,
+    "farmland": 15,
+    "fuel": 0,
+    "urban": 1
+   },
+   "11": {
+    "bare": 0,
+    "farmland": 3,
+    "fuel": 0,
+    "urban": 2
+   },
+   "12": {
+    "bare": 1,
+    "farmland": 0,
+    "fuel": 0,
+    "urban": 0
+   }
+  }
+ }
+}

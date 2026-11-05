@@ -1,0 +1,334 @@
+{
+ "year": 2025,
+ "n_events": 3014,
+ "windows": {
+  "wfigs_near": "WFIGS wildfires of 10+ acres, 10.0 km, -1 to +30 d (looser than the label)",
+  "calfire": "5.0 km, -1 to +7 d",
+  "rx_wfigs": "5.0 km, -1 to +14 d",
+  "rx_facts": "2.0 km, -60 to +3 d of completion",
+  "viirs": "3.0 km, t0 - 12 h to t1 + 12 h",
+  "chance": "the same rules with event times moved by (-90, -45, 45, 90) days, mean"
+ },
+ "all unmatched": {
+  "n": 2632,
+  "sources": {
+   "wfigs_near": {
+    "seen": 70,
+    "by_chance": 57.5
+   },
+   "calfire": {
+    "seen": 20,
+    "by_chance": 4.5
+   },
+   "rx_wfigs": {
+    "seen": 50,
+    "by_chance": 9.2
+   },
+   "rx_facts": {
+    "seen": 64,
+    "by_chance": 28.0
+   },
+   "viirs": {
+    "seen": 565,
+    "by_chance": 16.5
+   }
+  },
+  "farmland_half_or_more": 254,
+  "recurring_5plus": 236,
+  "kinds": {
+   "nothing else saw it": 1753,
+   "VIIRS heat, no record": 300,
+   "fixed hot spot (5+ events or VIIRS static)": 236,
+   "farmland (half the box or more)": 231,
+   "prescribed burn record": 92,
+   "CAL FIRE incident": 20
+  }
+ },
+ "unmatched, strong (class 5+ first scan or 2+ scans)": {
+  "n": 1182,
+  "sources": {
+   "wfigs_near": {
+    "seen": 30,
+    "by_chance": 29.5
+   },
+   "calfire": {
+    "seen": 18,
+    "by_chance": 2.5
+   },
+   "rx_wfigs": {
+    "seen": 46,
+    "by_chance": 6.2
+   },
+   "rx_facts": {
+    "seen": 57,
+    "by_chance": 22.8
+   },
+   "viirs": {
+    "seen": 497,
+    "by_chance": 13.8
+   }
+  },
+  "farmland_half_or_more": 195,
+  "recurring_5plus": 176,
+  "kinds": {
+   "nothing else saw it": 465,
+   "VIIRS heat, no record": 266,
+   "farmland (half the box or more)": 176,
+   "fixed hot spot (5+ events or VIIRS static)": 175,
+   "prescribed burn record": 82,
+   "CAL FIRE incident": 18
+  }
+ },
+ "unmatched, strong and kNN fuel in >= 0.8": {
+  "n": 506,
+  "sources": {
+   "wfigs_near": {
+    "seen": 21,
+    "by_chance": 17.8
+   },
+   "calfire": {
+    "seen": 10,
+    "by_chance": 1.8
+   },
+   "rx_wfigs": {
+    "seen": 44,
+    "by_chance": 6.0
+   },
+   "rx_facts": {
+    "seen": 57,
+    "by_chance": 22.8
+   },
+   "viirs": {
+    "seen": 278,
+    "by_chance": 6.5
+   }
+  },
+  "farmland_half_or_more": 0,
+  "recurring_5plus": 61,
+  "kinds": {
+   "VIIRS heat, no record": 180,
+   "nothing else saw it": 175,
+   "prescribed burn record": 80,
+   "fixed hot spot (5+ events or VIIRS static)": 61,
+   "CAL FIRE incident": 10
+  }
+ },
+ "unmatched, single scan and class 2 to 4": {
+  "n": 1450,
+  "sources": {
+   "wfigs_near": {
+    "seen": 40,
+    "by_chance": 28.0
+   },
+   "calfire": {
+    "seen": 2,
+    "by_chance": 2.0
+   },
+   "rx_wfigs": {
+    "seen": 4,
+    "by_chance": 3.0
+   },
+   "rx_facts": {
+    "seen": 7,
+    "by_chance": 5.2
+   },
+   "viirs": {
+    "seen": 68,
+    "by_chance": 2.8
+   }
+  },
+  "farmland_half_or_more": 59,
+  "recurring_5plus": 60,
+  "kinds": {
+   "nothing else saw it": 1288,
+   "fixed hot spot (5+ events or VIIRS static)": 61,
+   "farmland (half the box or more)": 55,
+   "VIIRS heat, no record": 34,
+   "prescribed burn record": 10,
+   "CAL FIRE incident": 2
+  }
+ },
+ "matched (how often each source sees a known fire)": {
+  "n": 382,
+  "sources": {
+   "wfigs_near": {
+    "seen": 252,
+    "by_chance": 35.8
+   },
+   "calfire": {
+    "seen": 243,
+    "by_chance": 5.2
+   },
+   "rx_wfigs": {
+    "seen": 3,
+    "by_chance": 4.2
+   },
+   "rx_facts": {
+    "seen": 5,
+    "by_chance": 3.5
+   },
+   "viirs": {
+    "seen": 167,
+    "by_chance": 7.2
+   }
+  },
+  "farmland_half_or_more": 6,
+  "recurring_5plus": 8,
+  "viirs_share_by_scans": {
+   "1 scan": 0.14,
+   "2+ scans": 0.575
+  }
+ },
+ "near-zero fuel (kNN < 10 % in and around)": {
+  "n": 82,
+  "matched": 2,
+  "unmatched": 80,
+  "lf_majority": {
+   "farmland": 41,
+   "bare": 33,
+   "urban": 8
+  },
+  "viirs_seen": 26,
+  "viirs_static": 0,
+  "recurring_5plus": 1,
+  "by_month_and_ground": {
+   "1": {
+    "bare": 0,
+    "farmland": 1,
+    "urban": 1
+   },
+   "2": {
+    "bare": 4,
+    "farmland": 0,
+    "urban": 0
+   },
+   "3": {
+    "bare": 5,
+    "farmland": 0,
+    "urban": 0
+   },
+   "4": {
+    "bare": 2,
+    "farmland": 7,
+    "urban": 1
+   },
+   "6": {
+    "bare": 1,
+    "farmland": 0,
+    "urban": 3
+   },
+   "7": {
+    "bare": 5,
+    "farmland": 1,
+    "urban": 0
+   },
+   "8": {
+    "bare": 10,
+    "farmland": 0,
+    "urban": 0
+   },
+   "9": {
+    "bare": 4,
+    "farmland": 7,
+    "urban": 2
+   },
+   "10": {
+    "bare": 2,
+    "farmland": 19,
+    "urban": 1
+   },
+   "11": {
+    "bare": 0,
+    "farmland": 6,
+    "urban": 0
+   }
+  },
+  "osm_kinds": {
+   "nothing mapped": 55,
+   "town": 10,
+   "landfill or waste": 6,
+   "other industry": 6,
+   "farmland": 3,
+   "oil field or refinery": 1,
+   "gas, biomass or other power plant": 1
+  },
+  "osm_examples": {
+   "farmland": [
+    "unnamed (38.910, -121.734; unmatched, 2 events there)",
+    "unnamed (38.901, -121.736; unmatched, 2 events there)",
+    "unnamed (39.007, -121.760; unmatched, 1 events there)"
+   ],
+   "gas, biomass or other power plant": [
+    "El Segundo Cogen (33.911, -118.396; start, 1 events there)"
+   ],
+   "landfill or waste": [
+    "unnamed (34.106, -117.294; unmatched, 1 events there)",
+    "unnamed (34.235, -118.529; unmatched, 1 events there)",
+    "unnamed (37.345, -121.917; unmatched, 1 events there)",
+    "unnamed (33.463, -117.691; unmatched, 1 events there)",
+    "unnamed (37.316, -121.998; unmatched, 1 events there)"
+   ],
+   "nothing mapped": [
+    "unnamed (32.901, -115.223; unmatched, 10 events there)",
+    "unnamed (39.277, -122.164; unmatched, 4 events there)",
+    "unnamed (35.152, -116.080; unmatched, 4 events there)",
+    "unnamed (35.137, -116.069; unmatched, 4 events there)",
+    "unnamed (35.158, -116.085; unmatched, 4 events there)"
+   ],
+   "oil field or refinery": [
+    "Torrance Refinery (33.852, -118.339; start, 1 events there)"
+   ],
+   "other industry": [
+    "unnamed (39.506, -122.153; unmatched, 3 events there)",
+    "Far West Rice (39.552, -121.851; unmatched, 2 events there)",
+    "unnamed (32.959, -116.274; unmatched, 1 events there)",
+    "unnamed (39.491, -121.790; unmatched, 1 events there)",
+    "unnamed (33.847, -116.359; unmatched, 1 events there)"
+   ],
+   "town": [
+    "unnamed (39.535, -122.112; unmatched, 4 events there)",
+    "unnamed (39.572, -122.090; unmatched, 4 events there)",
+    "unnamed (39.535, -122.112; unmatched, 4 events there)",
+    "unnamed (39.514, -122.136; unmatched, 4 events there)",
+    "Indian Village (36.461, -116.891; unmatched, 3 events there)"
+   ]
+  },
+  "osm_kind_by_landfire_majority": {
+   "farmland": {
+    "bare": 0,
+    "farmland": 3,
+    "urban": 0
+   },
+   "gas, biomass or other power plant": {
+    "bare": 0,
+    "farmland": 0,
+    "urban": 1
+   },
+   "landfill or waste": {
+    "bare": 0,
+    "farmland": 0,
+    "urban": 6
+   },
+   "nothing mapped": {
+    "bare": 30,
+    "farmland": 25,
+    "urban": 0
+   },
+   "oil field or refinery": {
+    "bare": 0,
+    "farmland": 0,
+    "urban": 1
+   },
+   "other industry": {
+    "bare": 2,
+    "farmland": 4,
+    "urban": 0
+   },
+   "town": {
+    "bare": 1,
+    "farmland": 9,
+    "urban": 0
+   }
+  }
+ }
+}

@@ -19,7 +19,7 @@ Three readings of each 10 m pixel's fuel, embeddings of --emb-year (the year bef
   lf    LANDFIRE LF2024 FBFM40 itself (fuel = not 91 to 99), the map the other two learned from
 
   plan    the chunks each event needs -> data/goes/chunks_<year>.parquet (with --max-events per label)
-  grids   the three readings per chunk -> data/goes/grids/<cy>_<cx>.npz (resumable); LANDFIRE in 8 x 8 chunk
+  grids   the three readings per chunk -> data/goes/grids/<emb_year>/<cy>_<cx>.npz (resumable); LANDFIRE in 8 x 8 chunk
           blocks -> data/goes/lf/
   shares  per event: fuel share in and around -> data/goes/event_fuel_<year>.parquet
 
@@ -49,12 +49,17 @@ from goes_ca_detections import lonlat_to_xy, xy_to_lonlat  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 G = ROOT / "data" / "goes"
-GRIDS = G / "grids"
+GRIDS_ROOT = G / "grids"
 LAB = ROOT / "data" / "fuel_lab"
 LFB = G / "lf"
 LF_BLOCK = 8  # chunks a side per LANDFIRE request (2048 px)
 RING = 1.5  # GOES pixels
 K, REFS, STEP = 15, 200_000, 2
+
+
+def grids_dir(emb_year):
+    """One folder per embedding year: the same chunk reads different embeddings for fires of different years."""
+    return GRIDS_ROOT / str(emb_year)
 
 
 def grid_params(year):
@@ -88,7 +93,7 @@ def plan(a):
     ch.to_parquet(G / f"chunks_{a.year}.parquet", index=False)
     ev[["event"]].to_parquet(G / f"events_kept_{a.year}.parquet", index=False)
     u = ch[["cy", "cx"]].drop_duplicates()
-    done = sum((GRIDS / f"{cy}_{cx}.npz").exists() for cy, cx in zip(u.cy, u.cx))
+    done = sum((grids_dir(a.emb_year) / f"{cy}_{cx}.npz").exists() for cy, cx in zip(u.cy, u.cx))
     print(f"{len(ev)} events kept ({ev.label.value_counts().to_dict()}), {len(ch)} event-chunks, {len(u)} distinct chunks ({done} done)")
 
 
@@ -165,8 +170,9 @@ def grids(a):
     from fire_test_grids import Head, dequant, open_aef, p_fuel_grid, read_blocks
     import faiss
     faiss.omp_set_num_threads(4)
+    GRIDS = grids_dir(a.emb_year)
     GRIDS.mkdir(parents=True, exist_ok=True)
-    ch = pd.read_parquet(G / f"chunks_{a.year}.parquet")
+    ch = pd.concat([pd.read_parquet(G / f"chunks_{a.year}.parquet")] + [pd.read_parquet(p) for p in a.extra_chunks])
     u = ch[["cy", "cx"]].drop_duplicates()
     todo = sorted((int(cy), int(cx)) for cy, cx in zip(u.cy, u.cx) if not (GRIDS / f"{cy}_{cx}.npz").exists())
     todo.sort(key=lambda c: (c[0] // LF_BLOCK, c[1] // LF_BLOCK, c))  # block by block, so each LANDFIRE block is fetched once and reused
@@ -220,6 +226,7 @@ def shares(a):
     kept = pd.read_parquet(G / f"events_kept_{a.year}.parquet").event
     px = pd.read_parquet(G / f"event_px_{a.year}.parquet")
     ch = pd.read_parquet(G / f"chunks_{a.year}.parquet")
+    GRIDS = grids_dir(a.emb_year)
     cache = {}
 
     def load(cy, cx):
@@ -284,6 +291,8 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--max-gb", type=float, default=4.0)
+    ap.add_argument("--extra-chunks", nargs="*", default=[], help="grids: more chunk lists (parquet with cy, cx) to make too, "
+                    "e.g. data/goes/track_chunks_<year>.parquet from goes_fuel_track.py")
     ap.add_argument("--limit", type=int, default=0, help="grids: only the first n chunks (a timing trial)")
     a = ap.parse_args()
     a.emb_year = a.emb_year or a.year - 1

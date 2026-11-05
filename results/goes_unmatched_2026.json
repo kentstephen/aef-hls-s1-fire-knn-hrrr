@@ -1,0 +1,224 @@
+{
+ "year": 2026,
+ "n_events": 3472,
+ "windows": {
+  "wfigs_near": "WFIGS wildfires of 10+ acres, 10.0 km, -1 to +30 d (looser than the label)",
+  "calfire": "5.0 km, -1 to +7 d",
+  "rx_wfigs": "5.0 km, -1 to +14 d",
+  "rx_facts": "2.0 km, -60 to +3 d of completion",
+  "viirs": "3.0 km, t0 - 12 h to t1 + 12 h",
+  "chance": "the same rules with event times moved by (-90, -45, 45, 90) days, mean"
+ },
+ "all unmatched": {
+  "n": 3053,
+  "sources": {
+   "wfigs_near": {
+    "seen": 68,
+    "by_chance": 55.8
+   },
+   "calfire": {
+    "seen": 39,
+    "by_chance": 9.2
+   },
+   "rx_wfigs": {
+    "seen": 58,
+    "by_chance": 10.8
+   },
+   "rx_facts": {
+    "seen": 43,
+    "by_chance": 19.0
+   }
+  },
+  "farmland_half_or_more": 242,
+  "recurring_5plus": 559,
+  "kinds": {
+   "nothing else saw it": 2167,
+   "fixed hot spot (5+ events or VIIRS static)": 557,
+   "farmland (half the box or more)": 209,
+   "prescribed burn record": 81,
+   "CAL FIRE incident": 39
+  }
+ },
+ "unmatched, strong (class 5+ first scan or 2+ scans)": {
+  "n": 1430,
+  "sources": {
+   "wfigs_near": {
+    "seen": 33,
+    "by_chance": 25.5
+   },
+   "calfire": {
+    "seen": 31,
+    "by_chance": 5.0
+   },
+   "rx_wfigs": {
+    "seen": 53,
+    "by_chance": 7.2
+   },
+   "rx_facts": {
+    "seen": 36,
+    "by_chance": 16.2
+   }
+  },
+  "farmland_half_or_more": 168,
+  "recurring_5plus": 425,
+  "kinds": {
+   "nothing else saw it": 760,
+   "fixed hot spot (5+ events or VIIRS static)": 423,
+   "farmland (half the box or more)": 144,
+   "prescribed burn record": 72,
+   "CAL FIRE incident": 31
+  }
+ },
+ "unmatched, strong and kNN fuel in >= 0.8": {
+  "n": 401,
+  "sources": {
+   "wfigs_near": {
+    "seen": 21,
+    "by_chance": 14.5
+   },
+   "calfire": {
+    "seen": 16,
+    "by_chance": 2.8
+   },
+   "rx_wfigs": {
+    "seen": 47,
+    "by_chance": 3.5
+   },
+   "rx_facts": {
+    "seen": 36,
+    "by_chance": 16.2
+   }
+  },
+  "farmland_half_or_more": 0,
+  "recurring_5plus": 51,
+  "kinds": {
+   "nothing else saw it": 269,
+   "prescribed burn record": 66,
+   "fixed hot spot (5+ events or VIIRS static)": 50,
+   "CAL FIRE incident": 16
+  }
+ },
+ "unmatched, single scan and class 2 to 4": {
+  "n": 1623,
+  "sources": {
+   "wfigs_near": {
+    "seen": 35,
+    "by_chance": 30.2
+   },
+   "calfire": {
+    "seen": 8,
+    "by_chance": 4.2
+   },
+   "rx_wfigs": {
+    "seen": 5,
+    "by_chance": 3.5
+   },
+   "rx_facts": {
+    "seen": 7,
+    "by_chance": 2.8
+   }
+  },
+  "farmland_half_or_more": 74,
+  "recurring_5plus": 134,
+  "kinds": {
+   "nothing else saw it": 1407,
+   "fixed hot spot (5+ events or VIIRS static)": 134,
+   "farmland (half the box or more)": 65,
+   "prescribed burn record": 9,
+   "CAL FIRE incident": 8
+  }
+ },
+ "matched (how often each source sees a known fire)": {
+  "n": 419,
+  "sources": {
+   "wfigs_near": {
+    "seen": 241,
+    "by_chance": 40.2
+   },
+   "calfire": {
+    "seen": 260,
+    "by_chance": 8.5
+   },
+   "rx_wfigs": {
+    "seen": 4,
+    "by_chance": 1.5
+   },
+   "rx_facts": {
+    "seen": 2,
+    "by_chance": 0.8
+   }
+  },
+  "farmland_half_or_more": 3,
+  "recurring_5plus": 22
+ },
+ "near-zero fuel (kNN < 10 % in and around)": {
+  "n": 135,
+  "matched": 5,
+  "unmatched": 130,
+  "lf_majority": {
+   "bare": 89,
+   "farmland": 31,
+   "urban": 12,
+   "fuel": 3
+  },
+  "viirs_seen": null,
+  "viirs_static": null,
+  "recurring_5plus": 29,
+  "by_month_and_ground": {
+   "2": {
+    "bare": 1,
+    "farmland": 1,
+    "fuel": 0,
+    "urban": 0
+   },
+   "3": {
+    "bare": 3,
+    "farmland": 6,
+    "fuel": 0,
+    "urban": 0
+   },
+   "4": {
+    "bare": 4,
+    "farmland": 3,
+    "fuel": 1,
+    "urban": 2
+   },
+   "5": {
+    "bare": 1,
+    "farmland": 0,
+    "fuel": 0,
+    "urban": 1
+   },
+   "6": {
+    "bare": 10,
+    "farmland": 0,
+    "fuel": 0,
+    "urban": 3
+   },
+   "7": {
+    "bare": 35,
+    "farmland": 0,
+    "fuel": 0,
+    "urban": 2
+   },
+   "8": {
+    "bare": 29,
+    "farmland": 0,
+    "fuel": 2,
+    "urban": 1
+   },
+   "9": {
+    "bare": 5,
+    "farmland": 9,
+    "fuel": 0,
+    "urban": 0
+   },
+   "10": {
+    "bare": 1,
+    "farmland": 12,
+    "fuel": 0,
+    "urban": 3
+   }
+  }
+ }
+}

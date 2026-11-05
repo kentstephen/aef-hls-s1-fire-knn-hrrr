@@ -89,6 +89,41 @@ uv run scripts/goes_fire_refs.py --fire Green --year 2025 scout        # fire pi
 uv run scripts/goes_fire_refs.py --fire Green --year 2025 build --from 2025-07-02T00:00 --to 2025-07-20T00:00
 ```
 
+### GOES + fuel test (`scripts/goes_ca_detections.py`, `goes_events.py`, `goes_fuel.py`, `goes_fuel_score.py`)
+
+GOES finds the heat; the embeddings say what ground is under and around it. Every GOES-18 FDCC scan of 2025 (one per
+15 min) gives California's fire pixels, joined into 3,014 events (pixels touching on the same or the next day).
+An event is matched if a NIFC perimeter or WFIGS wildfire start lies near it (382), unmatched otherwise (2,632).
+For each event's first box, the fuel share inside the hot pixels ("in") and in the ring 1.5 GOES pixels out
+("around") is read three ways from the 10 m pixels of 2024: kNN on the AlphaEarth embeddings, the fuel head, and
+LANDFIRE. No COG overviews; 35,777 mosaic chunks.
+
+Results (`results/goes_fuel_2025.json`, AUC matched vs unmatched, 95 % intervals resampling 0.1 degree places):
+
+| | all events | 2+ scans | single scan |
+|---|---|---|---|
+| kNN fuel in | 0.582 [0.544, 0.618] | 0.640 | 0.497 |
+| head fuel in | 0.585 [0.549, 0.621] | 0.645 | 0.491 |
+| LANDFIRE fuel in | 0.541 [0.505, 0.574] | 0.610 | 0.456 |
+| GOES alone (power, class, pixels) | 0.705 [0.672, 0.738] | 0.653 | 0.634 |
+| GOES + kNN fuel | 0.741 [0.709, 0.773] | 0.737 | 0.632 |
+
+- The embeddings read fire ground better than LANDFIRE does; kNN and the head are even.
+- Fuel adds to GOES on events seen in 2+ scans and on the strongest first-scan class (0.597 to 0.752), and adds
+  nothing on single-scan or low-probability events. Fuel inside the box is a little stronger than the ring.
+- Under 10 % fuel in and around: 0.5 % of matched events, 3 % of unmatched (0 of 261 matched among 2+ scan events).
+- The gain over GOES alone is not yet tested as a paired difference. Unmatched is not the same as a false alarm
+  (ag and prescribed burns, fires missing from WFIGS).
+
+```bash
+uv run scripts/goes_ca_detections.py --year 2025    # ~15 min, 9.5 GB pulled
+uv run scripts/goes_events.py --year 2025
+uv run scripts/goes_fuel.py plan --year 2025 --max-events 10000   # every event, no sampling
+uv run scripts/goes_fuel.py grids --year 2025 --workers 32 --max-gb 8   # ~60 min at 32 workers, peak 2.3 GB
+uv run scripts/goes_fuel.py shares --year 2025      # ~4 min, peak 5.5 GB
+uv run scripts/goes_fuel_score.py --year 2025
+```
+
 ## Data
 
 All public, no credentials: AlphaEarth Foundations embeddings (tge-labs on Source Cooperative), LANDFIRE LF2024,

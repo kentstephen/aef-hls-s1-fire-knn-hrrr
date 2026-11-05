@@ -1,0 +1,874 @@
+{
+ "gain": {
+  "all events": {
+   "n": 3966,
+   "matched": 525,
+   "places": 1804,
+   "GOES alone": [
+    0.66,
+    0.628,
+    0.69
+   ],
+   "GOES + knn": [
+    0.746,
+    0.715,
+    0.774
+   ],
+   "gain GOES + knn over GOES alone": {
+    "gain": 0.086,
+    "ci": [
+     0.058,
+     0.113
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + head": [
+    0.744,
+    0.713,
+    0.773
+   ],
+   "gain GOES + head over GOES alone": {
+    "gain": 0.084,
+    "ci": [
+     0.058,
+     0.11
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + lf": [
+    0.718,
+    0.687,
+    0.746
+   ],
+   "gain GOES + lf over GOES alone": {
+    "gain": 0.057,
+    "ci": [
+     0.034,
+     0.081
+    ],
+    "share_above_0": 1.0
+   },
+   "knn in alone": [
+    0.642,
+    0.611,
+    0.672
+   ],
+   "gain knn in alone over GOES alone": {
+    "gain": -0.019,
+    "ci": [
+     -0.062,
+     0.027
+    ],
+    "share_above_0": 0.205
+   },
+   "head in alone": [
+    0.647,
+    0.616,
+    0.677
+   ],
+   "gain head in alone over GOES alone": {
+    "gain": -0.013,
+    "ci": [
+     -0.056,
+     0.032
+    ],
+    "share_above_0": 0.279
+   },
+   "lf in alone": [
+    0.573,
+    0.542,
+    0.602
+   ],
+   "gain lf in alone over GOES alone": {
+    "gain": -0.088,
+    "ci": [
+     -0.131,
+     -0.041
+    ],
+    "share_above_0": 0.0
+   },
+   "GOES + remoteness": [
+    0.765,
+    0.736,
+    0.792
+   ],
+   "GOES + remoteness + knn": [
+    0.808,
+    0.784,
+    0.832
+   ],
+   "gain GOES + remoteness + knn over GOES + remoteness": {
+    "gain": 0.043,
+    "ci": [
+     0.023,
+     0.063
+    ],
+    "share_above_0": 1.0
+   }
+  },
+  "events seen in 2+ scans": {
+   "n": 1627,
+   "matched": 347,
+   "places": 916,
+   "GOES alone": [
+    0.645,
+    0.603,
+    0.684
+   ],
+   "GOES + knn": [
+    0.768,
+    0.735,
+    0.8
+   ],
+   "gain GOES + knn over GOES alone": {
+    "gain": 0.123,
+    "ci": [
+     0.084,
+     0.162
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + head": [
+    0.77,
+    0.737,
+    0.802
+   ],
+   "gain GOES + head over GOES alone": {
+    "gain": 0.125,
+    "ci": [
+     0.085,
+     0.164
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + lf": [
+    0.734,
+    0.7,
+    0.769
+   ],
+   "gain GOES + lf over GOES alone": {
+    "gain": 0.089,
+    "ci": [
+     0.054,
+     0.124
+    ],
+    "share_above_0": 1.0
+   },
+   "knn in alone": [
+    0.714,
+    0.678,
+    0.748
+   ],
+   "gain knn in alone over GOES alone": {
+    "gain": 0.069,
+    "ci": [
+     0.015,
+     0.123
+    ],
+    "share_above_0": 0.996
+   },
+   "head in alone": [
+    0.718,
+    0.683,
+    0.754
+   ],
+   "gain head in alone over GOES alone": {
+    "gain": 0.073,
+    "ci": [
+     0.02,
+     0.127
+    ],
+    "share_above_0": 0.998
+   },
+   "lf in alone": [
+    0.63,
+    0.591,
+    0.667
+   ],
+   "gain lf in alone over GOES alone": {
+    "gain": -0.015,
+    "ci": [
+     -0.072,
+     0.044
+    ],
+    "share_above_0": 0.305
+   },
+   "GOES + remoteness": [
+    0.707,
+    0.672,
+    0.743
+   ],
+   "GOES + remoteness + knn": [
+    0.79,
+    0.759,
+    0.82
+   ],
+   "gain GOES + remoteness + knn over GOES + remoteness": {
+    "gain": 0.083,
+    "ci": [
+     0.052,
+     0.112
+    ],
+    "share_above_0": 1.0
+   }
+  },
+  "single-scan events": {
+   "n": 2339,
+   "matched": 178,
+   "places": 1376,
+   "GOES alone": [
+    0.595,
+    0.532,
+    0.661
+   ],
+   "GOES + knn": [
+    0.659,
+    0.609,
+    0.709
+   ],
+   "gain GOES + knn over GOES alone": {
+    "gain": 0.064,
+    "ci": [
+     0.014,
+     0.116
+    ],
+    "share_above_0": 0.993
+   },
+   "GOES + head": [
+    0.656,
+    0.607,
+    0.707
+   ],
+   "gain GOES + head over GOES alone": {
+    "gain": 0.061,
+    "ci": [
+     0.012,
+     0.111
+    ],
+    "share_above_0": 0.993
+   },
+   "GOES + lf": [
+    0.639,
+    0.587,
+    0.691
+   ],
+   "gain GOES + lf over GOES alone": {
+    "gain": 0.043,
+    "ci": [
+     0.0,
+     0.088
+    ],
+    "share_above_0": 0.975
+   },
+   "knn in alone": [
+    0.574,
+    0.526,
+    0.621
+   ],
+   "gain knn in alone over GOES alone": {
+    "gain": -0.021,
+    "ci": [
+     -0.107,
+     0.071
+    ],
+    "share_above_0": 0.291
+   },
+   "head in alone": [
+    0.579,
+    0.534,
+    0.624
+   ],
+   "gain head in alone over GOES alone": {
+    "gain": -0.016,
+    "ci": [
+     -0.099,
+     0.072
+    ],
+    "share_above_0": 0.327
+   },
+   "lf in alone": [
+    0.527,
+    0.481,
+    0.569
+   ],
+   "gain lf in alone over GOES alone": {
+    "gain": -0.069,
+    "ci": [
+     -0.153,
+     0.017
+    ],
+    "share_above_0": 0.056
+   },
+   "GOES + remoteness": [
+    0.786,
+    0.734,
+    0.834
+   ],
+   "GOES + remoteness + knn": [
+    0.806,
+    0.763,
+    0.847
+   ],
+   "gain GOES + remoteness + knn over GOES + remoteness": {
+    "gain": 0.02,
+    "ci": [
+     -0.0,
+     0.039
+    ],
+    "share_above_0": 0.973
+   }
+  },
+  "first-scan class 6": {
+   "n": 994,
+   "matched": 260,
+   "places": 635,
+   "GOES alone": [
+    0.7,
+    0.658,
+    0.742
+   ],
+   "GOES + knn": [
+    0.822,
+    0.782,
+    0.857
+   ],
+   "gain GOES + knn over GOES alone": {
+    "gain": 0.122,
+    "ci": [
+     0.082,
+     0.162
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + head": [
+    0.826,
+    0.786,
+    0.86
+   ],
+   "gain GOES + head over GOES alone": {
+    "gain": 0.125,
+    "ci": [
+     0.085,
+     0.165
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + lf": [
+    0.798,
+    0.755,
+    0.835
+   ],
+   "gain GOES + lf over GOES alone": {
+    "gain": 0.097,
+    "ci": [
+     0.058,
+     0.136
+    ],
+    "share_above_0": 1.0
+   },
+   "knn in alone": [
+    0.787,
+    0.748,
+    0.822
+   ],
+   "gain knn in alone over GOES alone": {
+    "gain": 0.086,
+    "ci": [
+     0.034,
+     0.137
+    ],
+    "share_above_0": 1.0
+   },
+   "head in alone": [
+    0.788,
+    0.75,
+    0.825
+   ],
+   "gain head in alone over GOES alone": {
+    "gain": 0.088,
+    "ci": [
+     0.036,
+     0.138
+    ],
+    "share_above_0": 1.0
+   },
+   "lf in alone": [
+    0.702,
+    0.659,
+    0.74
+   ],
+   "gain lf in alone over GOES alone": {
+    "gain": 0.002,
+    "ci": [
+     -0.057,
+     0.058
+    ],
+    "share_above_0": 0.51
+   },
+   "GOES + remoteness": [
+    0.717,
+    0.673,
+    0.757
+   ],
+   "GOES + remoteness + knn": [
+    0.835,
+    0.8,
+    0.865
+   ],
+   "gain GOES + remoteness + knn over GOES + remoteness": {
+    "gain": 0.117,
+    "ci": [
+     0.078,
+     0.159
+    ],
+    "share_above_0": 1.0
+   }
+  }
+ },
+ "labels": {
+  "perimeter vs unmatched": {
+   "n": 3615,
+   "matched": 174,
+   "places": 1640,
+   "GOES alone": [
+    0.602,
+    0.542,
+    0.663
+   ],
+   "GOES + knn": [
+    0.825,
+    0.79,
+    0.857
+   ],
+   "gain GOES + knn over GOES alone": {
+    "gain": 0.223,
+    "ci": [
+     0.164,
+     0.275
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + head": [
+    0.82,
+    0.781,
+    0.854
+   ],
+   "gain GOES + head over GOES alone": {
+    "gain": 0.218,
+    "ci": [
+     0.165,
+     0.267
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + lf": [
+    0.791,
+    0.749,
+    0.828
+   ],
+   "gain GOES + lf over GOES alone": {
+    "gain": 0.188,
+    "ci": [
+     0.141,
+     0.231
+    ],
+    "share_above_0": 1.0
+   },
+   "knn in alone": [
+    0.764,
+    0.726,
+    0.799
+   ],
+   "gain knn in alone over GOES alone": {
+    "gain": 0.162,
+    "ci": [
+     0.085,
+     0.229
+    ],
+    "share_above_0": 1.0
+   },
+   "head in alone": [
+    0.757,
+    0.717,
+    0.794
+   ],
+   "gain head in alone over GOES alone": {
+    "gain": 0.155,
+    "ci": [
+     0.081,
+     0.221
+    ],
+    "share_above_0": 1.0
+   },
+   "lf in alone": [
+    0.686,
+    0.648,
+    0.722
+   ],
+   "gain lf in alone over GOES alone": {
+    "gain": 0.084,
+    "ci": [
+     0.014,
+     0.15
+    ],
+    "share_above_0": 0.99
+   },
+   "GOES + remoteness": [
+    0.679,
+    0.631,
+    0.729
+   ],
+   "GOES + remoteness + knn": [
+    0.834,
+    0.797,
+    0.867
+   ],
+   "gain GOES + remoteness + knn over GOES + remoteness": {
+    "gain": 0.155,
+    "ci": [
+     0.112,
+     0.195
+    ],
+    "share_above_0": 1.0
+   }
+  },
+  "perimeter vs unmatched, 2+ scans": {
+   "n": 1410,
+   "matched": 130,
+   "places": 772,
+   "GOES alone": [
+    0.606,
+    0.538,
+    0.678
+   ],
+   "GOES + knn": [
+    0.828,
+    0.792,
+    0.863
+   ],
+   "gain GOES + knn over GOES alone": {
+    "gain": 0.222,
+    "ci": [
+     0.157,
+     0.284
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + head": [
+    0.827,
+    0.79,
+    0.865
+   ],
+   "gain GOES + head over GOES alone": {
+    "gain": 0.221,
+    "ci": [
+     0.159,
+     0.28
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + lf": [
+    0.792,
+    0.748,
+    0.834
+   ],
+   "gain GOES + lf over GOES alone": {
+    "gain": 0.186,
+    "ci": [
+     0.13,
+     0.239
+    ],
+    "share_above_0": 1.0
+   },
+   "knn in alone": [
+    0.796,
+    0.76,
+    0.833
+   ],
+   "gain knn in alone over GOES alone": {
+    "gain": 0.19,
+    "ci": [
+     0.113,
+     0.267
+    ],
+    "share_above_0": 1.0
+   },
+   "head in alone": [
+    0.79,
+    0.751,
+    0.831
+   ],
+   "gain head in alone over GOES alone": {
+    "gain": 0.184,
+    "ci": [
+     0.105,
+     0.26
+    ],
+    "share_above_0": 1.0
+   },
+   "lf in alone": [
+    0.719,
+    0.677,
+    0.762
+   ],
+   "gain lf in alone over GOES alone": {
+    "gain": 0.113,
+    "ci": [
+     0.031,
+     0.191
+    ],
+    "share_above_0": 0.995
+   },
+   "GOES + remoteness": [
+    0.665,
+    0.604,
+    0.725
+   ],
+   "GOES + remoteness + knn": [
+    0.836,
+    0.798,
+    0.873
+   ],
+   "gain GOES + remoteness + knn over GOES + remoteness": {
+    "gain": 0.171,
+    "ci": [
+     0.121,
+     0.222
+    ],
+    "share_above_0": 1.0
+   }
+  },
+  "start vs unmatched": {
+   "n": 3792,
+   "matched": 351,
+   "places": 1737,
+   "GOES alone": [
+    0.675,
+    0.639,
+    0.709
+   ],
+   "GOES + knn": [
+    0.713,
+    0.673,
+    0.749
+   ],
+   "gain GOES + knn over GOES alone": {
+    "gain": 0.038,
+    "ci": [
+     0.012,
+     0.063
+    ],
+    "share_above_0": 0.997
+   },
+   "GOES + head": [
+    0.715,
+    0.676,
+    0.75
+   ],
+   "gain GOES + head over GOES alone": {
+    "gain": 0.04,
+    "ci": [
+     0.014,
+     0.064
+    ],
+    "share_above_0": 0.998
+   },
+   "GOES + lf": [
+    0.696,
+    0.657,
+    0.733
+   ],
+   "gain GOES + lf over GOES alone": {
+    "gain": 0.021,
+    "ci": [
+     -0.003,
+     0.044
+    ],
+    "share_above_0": 0.961
+   },
+   "knn in alone": [
+    0.581,
+    0.547,
+    0.614
+   ],
+   "gain knn in alone over GOES alone": {
+    "gain": -0.094,
+    "ci": [
+     -0.14,
+     -0.047
+    ],
+    "share_above_0": 0.0
+   },
+   "head in alone": [
+    0.592,
+    0.558,
+    0.624
+   ],
+   "gain head in alone over GOES alone": {
+    "gain": -0.083,
+    "ci": [
+     -0.128,
+     -0.038
+    ],
+    "share_above_0": 0.0
+   },
+   "lf in alone": [
+    0.517,
+    0.484,
+    0.549
+   ],
+   "gain lf in alone over GOES alone": {
+    "gain": -0.158,
+    "ci": [
+     -0.205,
+     -0.11
+    ],
+    "share_above_0": 0.0
+   },
+   "GOES + remoteness": [
+    0.836,
+    0.814,
+    0.857
+   ],
+   "GOES + remoteness + knn": [
+    0.857,
+    0.836,
+    0.878
+   ],
+   "gain GOES + remoteness + knn over GOES + remoteness": {
+    "gain": 0.021,
+    "ci": [
+     0.009,
+     0.032
+    ],
+    "share_above_0": 1.0
+   }
+  },
+  "start vs unmatched, 2+ scans": {
+   "n": 1497,
+   "matched": 217,
+   "places": 839,
+   "GOES alone": [
+    0.669,
+    0.626,
+    0.71
+   ],
+   "GOES + knn": [
+    0.743,
+    0.702,
+    0.782
+   ],
+   "gain GOES + knn over GOES alone": {
+    "gain": 0.074,
+    "ci": [
+     0.04,
+     0.107
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + head": [
+    0.745,
+    0.705,
+    0.784
+   ],
+   "gain GOES + head over GOES alone": {
+    "gain": 0.076,
+    "ci": [
+     0.043,
+     0.108
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + lf": [
+    0.71,
+    0.669,
+    0.75
+   ],
+   "gain GOES + lf over GOES alone": {
+    "gain": 0.041,
+    "ci": [
+     0.015,
+     0.067
+    ],
+    "share_above_0": 0.999
+   },
+   "knn in alone": [
+    0.665,
+    0.625,
+    0.707
+   ],
+   "gain knn in alone over GOES alone": {
+    "gain": -0.004,
+    "ci": [
+     -0.059,
+     0.051
+    ],
+    "share_above_0": 0.44
+   },
+   "head in alone": [
+    0.675,
+    0.635,
+    0.718
+   ],
+   "gain head in alone over GOES alone": {
+    "gain": 0.007,
+    "ci": [
+     -0.047,
+     0.06
+    ],
+    "share_above_0": 0.591
+   },
+   "lf in alone": [
+    0.577,
+    0.537,
+    0.62
+   ],
+   "gain lf in alone over GOES alone": {
+    "gain": -0.091,
+    "ci": [
+     -0.148,
+     -0.034
+    ],
+    "share_above_0": 0.002
+   },
+   "GOES + remoteness": [
+    0.781,
+    0.745,
+    0.812
+   ],
+   "GOES + remoteness + knn": [
+    0.823,
+    0.791,
+    0.853
+   ],
+   "gain GOES + remoteness + knn over GOES + remoteness": {
+    "gain": 0.042,
+    "ci": [
+     0.02,
+     0.064
+    ],
+    "share_above_0": 1.0
+   }
+  }
+ },
+ "median fuel by label": {
+  "perimeter": {
+   "knn_in": 0.945,
+   "knn_around": 0.932,
+   "head_in": 0.928,
+   "lf_in": 0.944
+  },
+  "start": {
+   "knn_in": 0.841,
+   "knn_around": 0.815,
+   "head_in": 0.804,
+   "lf_in": 0.848
+  },
+  "unmatched": {
+   "knn_in": 0.716,
+   "knn_around": 0.697,
+   "head_in": 0.645,
+   "lf_in": 0.823
+  }
+ }
+}

@@ -91,44 +91,126 @@ uv run scripts/goes_fire_refs.py --fire Green --year 2025 build --from 2025-07-0
 
 ### GOES + fuel test (`scripts/goes_ca_detections.py`, `goes_events.py`, `goes_fuel.py`, `goes_fuel_score.py`)
 
-GOES finds the heat; the embeddings say what ground is under and around it. Every GOES-18 FDCC scan of 2025 (one per
-15 min) gives California's fire pixels, joined into 3,014 events (pixels touching on the same or the next day).
-An event is matched if a NIFC perimeter or WFIGS wildfire start lies near it (382), unmatched otherwise (2,632).
-For each event's first box, the fuel share inside the hot pixels ("in") and in the ring 1.5 GOES pixels out
-("around") is read three ways from the 10 m pixels of 2024: kNN on the AlphaEarth embeddings, the fuel head, and
-LANDFIRE. No COG overviews; 35,777 mosaic chunks.
+GOES finds the heat; the embeddings say what ground is under and around it. Every GOES-18 FDCC scan (one per 15 min)
+gives California's fire pixels, joined into events (pixels touching on the same or the next day). An event is
+matched if a NIFC perimeter or WFIGS wildfire start lies near it, unmatched otherwise. For each event's first box,
+the fuel share inside the hot pixels ("in") and in the ring 1.5 GOES pixels out ("around") is read three ways from
+the 10 m pixels of the year before: kNN on the AlphaEarth embeddings, the fuel head, and LANDFIRE. No COG overviews.
+Four years, 2023 to 2026 (2026 through Oct 27, where WFIGS ends): 13,795 events, 1,675 matched. The GOES-18 grid is
+the same over all four years.
 
-Results (`results/goes_fuel_2025.json`, AUC matched vs unmatched, 95 % intervals resampling 0.1 degree places):
+AUC matched vs unmatched (`results/goes_fuel_<year>.json`, pooled in `results/goes_fuel_check_2023_2024_2025_2026.json`;
+95 % intervals resample 0.1 degree places, gains are paired):
 
-| | all events | 2+ scans | single scan |
-|---|---|---|---|
-| kNN fuel in | 0.582 [0.544, 0.618] | 0.640 | 0.497 |
-| head fuel in | 0.585 [0.549, 0.621] | 0.645 | 0.491 |
-| LANDFIRE fuel in | 0.541 [0.505, 0.574] | 0.610 | 0.456 |
-| GOES alone (power, class, pixels) | 0.705 [0.672, 0.738] | 0.653 | 0.634 |
-| GOES + kNN fuel | 0.741 [0.709, 0.773] | 0.737 | 0.632 |
+| | matched / unmatched | kNN in | LANDFIRE in | GOES alone | GOES + kNN | gain |
+|---|---|---|---|---|---|---|
+| 2023 | 349 / 2,994 | 0.628 | 0.564 | 0.666 | 0.720 | +0.054 [0.026, 0.084] |
+| 2024 | 525 / 3,441 | 0.642 | 0.573 | 0.660 | 0.746 | +0.086 [0.058, 0.113] |
+| 2025 | 382 / 2,632 | 0.582 | 0.541 | 0.705 | 0.741 | +0.036 [0.013, 0.058] |
+| 2026 | 419 / 3,053 | 0.662 | 0.599 | 0.664 | 0.751 | +0.086 [0.057, 0.116] |
+| pooled | 1,675 / 12,120 | 0.630 | 0.570 | 0.666 | 0.738 | +0.072 [0.054, 0.090] |
+| pooled, 2+ scans | 1,124 / 4,335 | 0.693 | 0.635 | 0.648 | 0.757 | +0.108 [0.083, 0.134] |
+| pooled, single scan | 551 / 7,785 | 0.552 | 0.499 | 0.635 | 0.655 | +0.021 [-0.004, 0.047] |
+| pooled, first scan class 6 | 863 / 2,669 | 0.757 | 0.687 | 0.673 | 0.793 | +0.121 [0.088, 0.152] |
+| pooled, perimeter vs unmatched | 501 / 12,120 | 0.768 | 0.694 | 0.643 | 0.840 | +0.197 [0.166, 0.227] |
+| pooled, start vs unmatched | 1,174 / 12,120 | 0.571 | 0.517 | 0.680 | 0.711 | +0.032 [0.017, 0.046] |
 
-- The embeddings read fire ground better than LANDFIRE does; kNN and the head are even.
-- Fuel adds to GOES on events seen in 2+ scans and on the strongest first-scan class (0.597 to 0.752), and adds
-  nothing on single-scan or low-probability events. Fuel inside the box is a little stronger than the ring.
-- Under 10 % fuel in and around: 0.5 % of matched events, 3 % of unmatched (0 of 261 matched among 2+ scan events).
-- The gain over GOES alone is not yet tested as a paired difference. Unmatched is not the same as a false alarm
-  (ag and prescribed burns, fires missing from WFIGS).
+- Fuel adds to GOES every year. 2025, the first year run, is the weakest; whether that is the year or its 2024
+  embeddings is not measured.
+- The embeddings read fire ground better than LANDFIRE; kNN and the head are even (head gain +0.070 pooled).
+- The gain lives in events seen in 2+ scans, the strongest first-scan class, and fires that grew into a perimeter.
+  Single-scan events get little (+0.021, interval crosses 0).
+- Single-scan matched events are mostly small starts near people: 83 % starts, median 11.7 acres, 57 % within
+  0.5 km of a building (unmatched single scan 18 %). Away from roads the fuel signal is there: single-scan events over
+  0.5 km from any road, kNN in alone 0.732 (75 matched of 3,204); within 0.5 km of a road, 0.500.
+- Remoteness (km to the nearest road, major road and building, Overture) lifts GOES alone from 0.666 to 0.768:
+  WFIGS records fires where people are. Fuel still adds with remoteness held fixed: +0.038 [0.025, 0.050] pooled,
+  +0.076 on 2+ scans, +0.155 on perimeters.
+- Unmatched is not the same as a false alarm. Fuel and remoteness score how a fire gets into WFIGS as much as
+  whether it is a fire.
+
+#### Following the fire (`scripts/goes_fuel_track.py`, `results/goes_fuel_track_2023_2024_2025_2026.json`)
+
+Fuel per GOES cell, flat and with terrain parallax corrected (Mapterhorn DEM; median shift 0.21 GOES pixels, p90
+0.65). Terrain correction changes nothing (0.738 flat, 0.739 corrected). Scored at 0 to 24 h after the first scan:
+
+| hours after first scan | events still burning (matched) | GOES so far | + fuel | gain |
+|---|---|---|---|---|
+| 0 | 5,459 (1,124) | 0.648 | 0.757 | +0.109 [0.084, 0.134] |
+| 1 | 3,227 (703) | 0.763 | 0.806 | +0.043 [0.027, 0.059] |
+| 6 | 1,725 (311) | 0.766 | 0.832 | +0.065 [0.043, 0.090] |
+| 12 | 1,578 (265) | 0.773 | 0.849 | +0.075 [0.050, 0.100] |
+| 24 | 1,223 (207) | 0.780 | 0.843 | +0.063 [0.039, 0.087] |
+
+- GOES alone climbs fast in the first hour (more scans, more pixels); fuel keeps adding on fires that last.
+- Fuel ahead of the newest pixels adds nothing over fuel so far. Against final acres it tracks the pixel count
+  (1 h: Spearman 0.335 vs 0.300 for cells so far, 380 fires).
+
+#### Will it grow (`scripts/goes_growth.py`, `results/goes_growth_2023_2024_2025_2026.json`)
+
+Matched fires, first event per fire (1,305 fires), out of fold:
+
+| | Spearman with log acres | AUC past 100 ac | AUC past 1,000 ac | AUC perimeter vs start |
+|---|---|---|---|---|
+| GOES alone | 0.182 | 0.604 | 0.542 | 0.558 |
+| GOES + kNN fuel | 0.388 | 0.723 | 0.708 | 0.724 |
+| GOES + remoteness | 0.434 | 0.793 | 0.821 | 0.816 |
+| GOES + remoteness + kNN fuel | 0.479 | 0.805 | 0.828 | 0.827 |
+| GOES + HRRR weather | 0.210 | 0.602 | 0.581 | 0.589 |
+
+- Fuel adds +0.206 [0.152, 0.262] to GOES for final acres, but with remoteness held fixed only +0.045
+  [0.020, 0.070], and nothing past 1,000 acres. For growth, much of "fuel" is "far from roads and homes".
+- HRRR weather at the first scan adds almost nothing; only past 1,000 acres does it add (+0.033 over GOES + fuel).
+
+#### Inside "unmatched" (`scripts/goes_unmatched.py`, `results/goes_unmatched_<year>.json`)
+
+| | 2023 | 2024 | 2025 | 2026 |
+|---|---|---|---|---|
+| unmatched | 2,994 | 3,441 | 2,632 | 3,053 |
+| nothing else saw it | 1,963 | 2,193 | 1,753 | 2,167 |
+| VIIRS heat, no record | 362 | 327 | 300 | (no VIIRS) |
+| fixed hot spot (5+ events or VIIRS static) | 296 | 560 | 236 | 557 |
+| farmland (half the box or more) | 223 | 226 | 231 | 209 |
+| prescribed burn record (WFIGS Rx, FACTS) | 145 | 93 | 92 | 81 |
+| CAL FIRE incident | 5 | 42 | 20 | 39 |
+| near-zero fuel (kNN under 10 % in and around) | 68 | 120 | 80 | 130 |
+
+- Each source is checked against a chance rate (the same rules with event times moved by 45 and 90 days). Loosening
+  the WFIGS match finds few beyond chance (2023: 62 vs 39; 2025: 70 vs 58).
+- VIIRS heat with no record is mostly October to June (likely Rx and pile burns missing from WFIGS and FACTS).
+- Near-zero fuel is bare hot ground (Imperial Valley, Death Valley, dry lakes, mostly July and August), Sacramento
+  Valley rice (September to November), and industrial heat (landfills, refineries, cogeneration plants).
+- The FIRMS yearly S-NPP file is keyless for 2023 to 2025 only, so 2026 has no VIIRS column; 2023, 2024 and 2026 ran
+  without the OSM landfill / industry lookup (`--no-osm`).
 
 ```bash
-uv run scripts/goes_ca_detections.py --year 2025    # ~15 min, 9.5 GB pulled
-uv run scripts/goes_events.py --year 2025
-uv run scripts/goes_fuel.py plan --year 2025 --max-events 10000   # every event, no sampling
-uv run scripts/goes_fuel.py grids --year 2025 --workers 32 --max-gb 8   # ~60 min at 32 workers, peak 2.3 GB
-uv run scripts/goes_fuel.py shares --year 2025      # ~4 min, peak 5.5 GB
-uv run scripts/goes_fuel_score.py --year 2025
+Y=2025
+uv run scripts/goes_ca_detections.py --year $Y    # ~15 min, 9.5 GB pulled
+uv run scripts/goes_events.py --year $Y
+uv run scripts/goes_fuel.py plan --year $Y --max-events 10000   # every event, no sampling
+uv run scripts/goes_fuel_track.py pixels --year $Y
+uv run scripts/goes_fuel_track.py plan --year $Y   # chunks along each fire's later scans
+uv run scripts/goes_fuel.py grids --year $Y --workers 32 --max-gb 8 --extra-chunks data/goes/track_chunks_$Y.parquet
+uv run scripts/goes_fuel.py shares --year $Y      # ~4 min, peak 5.5 GB
+uv run scripts/goes_fuel_score.py --year $Y
+uv run scripts/goes_fuel_track.py cells --year $Y --threads 8
+uv run scripts/goes_fuel_track.py steps --year $Y
+uv run scripts/goes_unmatched.py --year $Y
+# pooled
+uv run scripts/goes_fuel_check.py overture        # roads and buildings, once
+uv run scripts/goes_fuel_check.py run --years 2023 2024 2025 2026 --distances
+uv run scripts/goes_fuel_track.py score --years 2023 2024 2025 2026
+uv run scripts/goes_growth.py --years 2023,2024,2025,2026
 ```
+
+Grids are network-bound at about 460 chunks a minute (~56 MB/s) however many runs share the line; a year takes
+1 to 4.5 hours, about 2.2 GB peak per run.
 
 ## Data
 
 All public, no credentials: AlphaEarth Foundations embeddings (tge-labs on Source Cooperative), LANDFIRE LF2024,
-NIFC WFIGS incident locations and perimeters, NOAA GOES-18 ABI on AWS, Overture Maps buildings, NAIP, the National
-Fuel Moisture Database, HLS and Sentinel-1 (for the moisture work), NOAA HRRR via dynamical.org (in the map's code,
-switched off).
+NIFC WFIGS incident locations and perimeters, NOAA GOES-18 ABI on AWS, Overture Maps buildings and roads, NAIP, the
+National Fuel Moisture Database, HLS and Sentinel-1 (for the moisture work), NOAA HRRR via dynamical.org, NASA FIRMS
+VIIRS S-NPP, CAL FIRE incidents, USFS FACTS prescribed burns, Mapterhorn terrain tiles.
 
 Python scripts run with `uv run` (dependencies inline in each script).

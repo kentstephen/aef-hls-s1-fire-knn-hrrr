@@ -1,0 +1,1143 @@
+{
+ "years": [
+  2023,
+  2024,
+  2025,
+  2026
+ ],
+ "matched_events": 1675,
+ "with_acres": 1553,
+ "fires": 1305,
+ "dedupe": "first event per fire (year, name, acres)",
+ "all": {
+  "n_fires": 1305,
+  "places": 799,
+  "acres_quartiles": [
+   0.1,
+   25.0,
+   162.0
+  ],
+  "Spearman with log acres, one reading": {
+   "knn in": [
+    0.39,
+    0.33,
+    0.447
+   ],
+   "knn around": [
+    0.377,
+    0.316,
+    0.437
+   ],
+   "head in": [
+    0.382,
+    0.323,
+    0.437
+   ],
+   "head around": [
+    0.371,
+    0.309,
+    0.428
+   ],
+   "lf in": [
+    0.355,
+    0.292,
+    0.416
+   ],
+   "lf around": [
+    0.351,
+    0.289,
+    0.412
+   ],
+   "first power (log)": [
+    0.217,
+    0.162,
+    0.27
+   ],
+   "first class": [
+    0.134,
+    0.08,
+    0.188
+   ],
+   "first pixels (log)": [
+    0.163,
+    0.107,
+    0.216
+   ],
+   "wind_t0": [
+    0.048,
+    -0.024,
+    0.122
+   ],
+   "gust_t0": [
+    0.052,
+    -0.018,
+    0.122
+   ],
+   "rh_t0": [
+    -0.074,
+    -0.136,
+    -0.015
+   ],
+   "temp_t0": [
+    0.041,
+    -0.018,
+    0.101
+   ],
+   "ffwi_t0": [
+    0.075,
+    -0.003,
+    0.152
+   ],
+   "gust_max_48h": [
+    -0.02,
+    -0.092,
+    0.049
+   ],
+   "rh_min_48h": [
+    -0.043,
+    -0.105,
+    0.017
+   ],
+   "ffwi_max_48h": [
+    0.014,
+    -0.068,
+    0.095
+   ],
+   "rain_7d": [
+    -0.004,
+    -0.062,
+    0.053
+   ],
+   "LEAK scans": [
+    0.547,
+    0.493,
+    0.598
+   ],
+   "LEAK px": [
+    0.55,
+    0.495,
+    0.6
+   ],
+   "LEAK power_max": [
+    0.547,
+    0.495,
+    0.595
+   ],
+   "LEAK distinct_px": [
+    0.501,
+    0.447,
+    0.555
+   ]
+  },
+  "Spearman with log acres, out of fold": {
+   "GOES alone": [
+    0.182,
+    0.125,
+    0.234
+   ],
+   "GOES + knn fuel": [
+    0.388,
+    0.332,
+    0.44
+   ],
+   "GOES + head fuel": [
+    0.386,
+    0.329,
+    0.439
+   ],
+   "GOES + lf fuel": [
+    0.365,
+    0.305,
+    0.422
+   ],
+   "kNN fuel alone": [
+    0.38,
+    0.319,
+    0.438
+   ],
+   "GOES + remoteness": [
+    0.434,
+    0.377,
+    0.484
+   ],
+   "GOES + remoteness + kNN fuel": [
+    0.479,
+    0.421,
+    0.529
+   ],
+   "GOES + weather": [
+    0.21,
+    0.156,
+    0.266
+   ],
+   "GOES + kNN fuel + weather": [
+    0.394,
+    0.34,
+    0.446
+   ],
+   "weather alone": [
+    0.076,
+    0.015,
+    0.135
+   ]
+  },
+  "paired gains, Spearman": {
+   "kNN fuel over GOES": {
+    "gain": 0.206,
+    "ci": [
+     0.152,
+     0.262
+    ],
+    "share_above_0": 1.0
+   },
+   "head fuel over GOES": {
+    "gain": 0.204,
+    "ci": [
+     0.149,
+     0.261
+    ],
+    "share_above_0": 1.0
+   },
+   "LANDFIRE over GOES": {
+    "gain": 0.183,
+    "ci": [
+     0.124,
+     0.241
+    ],
+    "share_above_0": 1.0
+   },
+   "kNN fuel over GOES + remoteness": {
+    "gain": 0.045,
+    "ci": [
+     0.02,
+     0.07
+    ],
+    "share_above_0": 1.0
+   },
+   "remoteness over GOES": {
+    "gain": 0.252,
+    "ci": [
+     0.189,
+     0.312
+    ],
+    "share_above_0": 1.0
+   },
+   "weather over GOES + kNN fuel": {
+    "gain": 0.006,
+    "ci": [
+     -0.015,
+     0.027
+    ],
+    "share_above_0": 0.737
+   },
+   "weather over GOES": {
+    "gain": 0.028,
+    "ci": [
+     -0.01,
+     0.066
+    ],
+    "share_above_0": 0.93
+   }
+  },
+  "AUC past 100 acres": {
+   "n_past": 392,
+   "GOES alone": [
+    0.604,
+    0.568,
+    0.64
+   ],
+   "GOES + knn fuel": [
+    0.723,
+    0.692,
+    0.752
+   ],
+   "GOES + head fuel": [
+    0.723,
+    0.694,
+    0.753
+   ],
+   "GOES + lf fuel": [
+    0.699,
+    0.668,
+    0.732
+   ],
+   "kNN fuel alone": [
+    0.711,
+    0.679,
+    0.741
+   ],
+   "GOES + remoteness": [
+    0.793,
+    0.766,
+    0.82
+   ],
+   "GOES + remoteness + kNN fuel": [
+    0.805,
+    0.778,
+    0.828
+   ],
+   "GOES + weather": [
+    0.602,
+    0.567,
+    0.638
+   ],
+   "GOES + kNN fuel + weather": [
+    0.725,
+    0.696,
+    0.754
+   ],
+   "weather alone": [
+    0.526,
+    0.49,
+    0.561
+   ],
+   "paired gains": {
+    "kNN fuel over GOES": {
+     "gain": 0.119,
+     "ci": [
+      0.085,
+      0.15
+     ],
+     "share_above_0": 1.0
+    },
+    "head fuel over GOES": {
+     "gain": 0.119,
+     "ci": [
+      0.085,
+      0.151
+     ],
+     "share_above_0": 1.0
+    },
+    "LANDFIRE over GOES": {
+     "gain": 0.095,
+     "ci": [
+      0.062,
+      0.127
+     ],
+     "share_above_0": 1.0
+    },
+    "kNN fuel over GOES + remoteness": {
+     "gain": 0.012,
+     "ci": [
+      0.001,
+      0.022
+     ],
+     "share_above_0": 0.984
+    },
+    "remoteness over GOES": {
+     "gain": 0.189,
+     "ci": [
+      0.15,
+      0.226
+     ],
+     "share_above_0": 1.0
+    },
+    "weather over GOES + kNN fuel": {
+     "gain": 0.002,
+     "ci": [
+      -0.012,
+      0.017
+     ],
+     "share_above_0": 0.632
+    },
+    "weather over GOES": {
+     "gain": -0.002,
+     "ci": [
+      -0.024,
+      0.02
+     ],
+     "share_above_0": 0.421
+    }
+   }
+  },
+  "AUC past 1,000 acres": {
+   "n_past": 152,
+   "GOES alone": [
+    0.542,
+    0.487,
+    0.597
+   ],
+   "GOES + knn fuel": [
+    0.708,
+    0.666,
+    0.747
+   ],
+   "GOES + head fuel": [
+    0.71,
+    0.668,
+    0.748
+   ],
+   "GOES + lf fuel": [
+    0.677,
+    0.633,
+    0.719
+   ],
+   "kNN fuel alone": [
+    0.721,
+    0.677,
+    0.763
+   ],
+   "GOES + remoteness": [
+    0.821,
+    0.787,
+    0.852
+   ],
+   "GOES + remoteness + kNN fuel": [
+    0.828,
+    0.795,
+    0.858
+   ],
+   "GOES + weather": [
+    0.581,
+    0.527,
+    0.636
+   ],
+   "GOES + kNN fuel + weather": [
+    0.741,
+    0.702,
+    0.779
+   ],
+   "weather alone": [
+    0.577,
+    0.524,
+    0.628
+   ],
+   "paired gains": {
+    "kNN fuel over GOES": {
+     "gain": 0.166,
+     "ci": [
+      0.106,
+      0.223
+     ],
+     "share_above_0": 1.0
+    },
+    "head fuel over GOES": {
+     "gain": 0.168,
+     "ci": [
+      0.108,
+      0.225
+     ],
+     "share_above_0": 1.0
+    },
+    "LANDFIRE over GOES": {
+     "gain": 0.135,
+     "ci": [
+      0.077,
+      0.189
+     ],
+     "share_above_0": 1.0
+    },
+    "kNN fuel over GOES + remoteness": {
+     "gain": 0.007,
+     "ci": [
+      -0.007,
+      0.019
+     ],
+     "share_above_0": 0.864
+    },
+    "remoteness over GOES": {
+     "gain": 0.279,
+     "ci": [
+      0.223,
+      0.333
+     ],
+     "share_above_0": 1.0
+    },
+    "weather over GOES + kNN fuel": {
+     "gain": 0.033,
+     "ci": [
+      0.003,
+      0.064
+     ],
+     "share_above_0": 0.986
+    },
+    "weather over GOES": {
+     "gain": 0.039,
+     "ci": [
+      -0.004,
+      0.083
+     ],
+     "share_above_0": 0.959
+    }
+   }
+  },
+  "AUC past 10,000 acres": {
+   "n_past": 39,
+   "GOES alone": [
+    0.557,
+    0.447,
+    0.665
+   ],
+   "GOES + knn fuel": [
+    0.695,
+    0.61,
+    0.774
+   ],
+   "GOES + head fuel": [
+    0.711,
+    0.629,
+    0.786
+   ],
+   "GOES + lf fuel": [
+    0.681,
+    0.593,
+    0.759
+   ],
+   "kNN fuel alone": [
+    0.708,
+    0.62,
+    0.785
+   ],
+   "GOES + remoteness": [
+    0.847,
+    0.78,
+    0.903
+   ],
+   "GOES + remoteness + kNN fuel": [
+    0.843,
+    0.782,
+    0.897
+   ],
+   "GOES + weather": [
+    0.602,
+    0.485,
+    0.716
+   ],
+   "GOES + kNN fuel + weather": [
+    0.748,
+    0.658,
+    0.826
+   ],
+   "weather alone": [
+    0.583,
+    0.481,
+    0.687
+   ],
+   "paired gains": {
+    "kNN fuel over GOES": {
+     "gain": 0.138,
+     "ci": [
+      0.03,
+      0.231
+     ],
+     "share_above_0": 0.991
+    },
+    "head fuel over GOES": {
+     "gain": 0.154,
+     "ci": [
+      0.039,
+      0.25
+     ],
+     "share_above_0": 0.995
+    },
+    "LANDFIRE over GOES": {
+     "gain": 0.124,
+     "ci": [
+      0.018,
+      0.213
+     ],
+     "share_above_0": 0.987
+    },
+    "kNN fuel over GOES + remoteness": {
+     "gain": -0.004,
+     "ci": [
+      -0.029,
+      0.014
+     ],
+     "share_above_0": 0.373
+    },
+    "remoteness over GOES": {
+     "gain": 0.29,
+     "ci": [
+      0.188,
+      0.388
+     ],
+     "share_above_0": 1.0
+    },
+    "weather over GOES + kNN fuel": {
+     "gain": 0.053,
+     "ci": [
+      -0.012,
+      0.126
+     ],
+     "share_above_0": 0.938
+    },
+    "weather over GOES": {
+     "gain": 0.045,
+     "ci": [
+      -0.021,
+      0.119
+     ],
+     "share_above_0": 0.915
+    }
+   }
+  },
+  "AUC perimeter vs start": {
+   "n_perimeter": 274,
+   "GOES alone": [
+    0.558,
+    0.515,
+    0.599
+   ],
+   "GOES + knn fuel": [
+    0.724,
+    0.69,
+    0.757
+   ],
+   "GOES + head fuel": [
+    0.721,
+    0.688,
+    0.754
+   ],
+   "GOES + lf fuel": [
+    0.706,
+    0.671,
+    0.74
+   ],
+   "kNN fuel alone": [
+    0.721,
+    0.686,
+    0.757
+   ],
+   "GOES + remoteness": [
+    0.816,
+    0.785,
+    0.844
+   ],
+   "GOES + remoteness + kNN fuel": [
+    0.827,
+    0.8,
+    0.853
+   ],
+   "GOES + weather": [
+    0.589,
+    0.551,
+    0.629
+   ],
+   "GOES + kNN fuel + weather": [
+    0.739,
+    0.706,
+    0.769
+   ],
+   "weather alone": [
+    0.559,
+    0.52,
+    0.6
+   ],
+   "paired gains": {
+    "kNN fuel over GOES": {
+     "gain": 0.166,
+     "ci": [
+      0.12,
+      0.208
+     ],
+     "share_above_0": 1.0
+    },
+    "head fuel over GOES": {
+     "gain": 0.163,
+     "ci": [
+      0.117,
+      0.206
+     ],
+     "share_above_0": 1.0
+    },
+    "LANDFIRE over GOES": {
+     "gain": 0.148,
+     "ci": [
+      0.104,
+      0.191
+     ],
+     "share_above_0": 1.0
+    },
+    "kNN fuel over GOES + remoteness": {
+     "gain": 0.011,
+     "ci": [
+      -0.0,
+      0.023
+     ],
+     "share_above_0": 0.97
+    },
+    "remoteness over GOES": {
+     "gain": 0.258,
+     "ci": [
+      0.207,
+      0.306
+     ],
+     "share_above_0": 1.0
+    },
+    "weather over GOES + kNN fuel": {
+     "gain": 0.015,
+     "ci": [
+      -0.003,
+      0.034
+     ],
+     "share_above_0": 0.953
+    },
+    "weather over GOES": {
+     "gain": 0.031,
+     "ci": [
+      -0.002,
+      0.063
+     ],
+     "share_above_0": 0.969
+    }
+   }
+  }
+ },
+ "starts only (no perimeter)": {
+  "n_fires": 1031,
+  "places": 630,
+  "acres_quartiles": [
+   0.0,
+   12.0,
+   46.1
+  ],
+  "Spearman with log acres, one reading": {
+   "knn in": [
+    0.266,
+    0.189,
+    0.339
+   ],
+   "knn around": [
+    0.255,
+    0.175,
+    0.334
+   ],
+   "head in": [
+    0.26,
+    0.186,
+    0.332
+   ],
+   "head around": [
+    0.245,
+    0.166,
+    0.323
+   ],
+   "lf in": [
+    0.239,
+    0.162,
+    0.318
+   ],
+   "lf around": [
+    0.24,
+    0.163,
+    0.322
+   ],
+   "first power (log)": [
+    0.209,
+    0.145,
+    0.271
+   ],
+   "first class": [
+    0.148,
+    0.085,
+    0.209
+   ],
+   "first pixels (log)": [
+    0.126,
+    0.061,
+    0.193
+   ],
+   "wind_t0": [
+    0.013,
+    -0.075,
+    0.104
+   ],
+   "gust_t0": [
+    -0.002,
+    -0.088,
+    0.085
+   ],
+   "rh_t0": [
+    -0.021,
+    -0.088,
+    0.047
+   ],
+   "temp_t0": [
+    0.057,
+    -0.012,
+    0.123
+   ],
+   "ffwi_t0": [
+    0.022,
+    -0.069,
+    0.114
+   ],
+   "gust_max_48h": [
+    -0.104,
+    -0.188,
+    -0.019
+   ],
+   "rh_min_48h": [
+    -0.0,
+    -0.071,
+    0.069
+   ],
+   "ffwi_max_48h": [
+    -0.078,
+    -0.168,
+    0.015
+   ],
+   "rain_7d": [
+    -0.081,
+    -0.139,
+    -0.022
+   ],
+   "LEAK scans": [
+    0.258,
+    0.19,
+    0.323
+   ],
+   "LEAK px": [
+    0.264,
+    0.198,
+    0.332
+   ],
+   "LEAK power_max": [
+    0.314,
+    0.247,
+    0.381
+   ],
+   "LEAK distinct_px": [
+    0.217,
+    0.147,
+    0.285
+   ]
+  },
+  "Spearman with log acres, out of fold": {
+   "GOES alone": [
+    0.167,
+    0.102,
+    0.23
+   ],
+   "GOES + knn fuel": [
+    0.275,
+    0.205,
+    0.342
+   ],
+   "GOES + head fuel": [
+    0.273,
+    0.201,
+    0.342
+   ],
+   "GOES + lf fuel": [
+    0.27,
+    0.197,
+    0.343
+   ],
+   "kNN fuel alone": [
+    0.255,
+    0.177,
+    0.33
+   ],
+   "GOES + remoteness": [
+    0.214,
+    0.15,
+    0.278
+   ],
+   "GOES + remoteness + kNN fuel": [
+    0.268,
+    0.195,
+    0.337
+   ],
+   "GOES + weather": [
+    0.236,
+    0.164,
+    0.302
+   ],
+   "GOES + kNN fuel + weather": [
+    0.314,
+    0.243,
+    0.387
+   ],
+   "weather alone": [
+    0.168,
+    0.096,
+    0.24
+   ]
+  },
+  "paired gains, Spearman": {
+   "kNN fuel over GOES": {
+    "gain": 0.108,
+    "ci": [
+     0.044,
+     0.176
+    ],
+    "share_above_0": 1.0
+   },
+   "head fuel over GOES": {
+    "gain": 0.106,
+    "ci": [
+     0.038,
+     0.176
+    ],
+    "share_above_0": 1.0
+   },
+   "LANDFIRE over GOES": {
+    "gain": 0.103,
+    "ci": [
+     0.033,
+     0.176
+    ],
+    "share_above_0": 0.998
+   },
+   "kNN fuel over GOES + remoteness": {
+    "gain": 0.054,
+    "ci": [
+     0.008,
+     0.106
+    ],
+    "share_above_0": 0.99
+   },
+   "remoteness over GOES": {
+    "gain": 0.047,
+    "ci": [
+     0.001,
+     0.095
+    ],
+    "share_above_0": 0.978
+   },
+   "weather over GOES + kNN fuel": {
+    "gain": 0.039,
+    "ci": [
+     0.0,
+     0.079
+    ],
+    "share_above_0": 0.976
+   },
+   "weather over GOES": {
+    "gain": 0.069,
+    "ci": [
+     0.008,
+     0.129
+    ],
+    "share_above_0": 0.989
+   }
+  },
+  "AUC past 100 acres": {
+   "n_past": 118,
+   "GOES alone": [
+    0.621,
+    0.564,
+    0.679
+   ],
+   "GOES + knn fuel": [
+    0.689,
+    0.64,
+    0.737
+   ],
+   "GOES + head fuel": [
+    0.695,
+    0.647,
+    0.741
+   ],
+   "GOES + lf fuel": [
+    0.66,
+    0.611,
+    0.711
+   ],
+   "kNN fuel alone": [
+    0.65,
+    0.601,
+    0.698
+   ],
+   "GOES + remoteness": [
+    0.677,
+    0.627,
+    0.728
+   ],
+   "GOES + remoteness + kNN fuel": [
+    0.705,
+    0.659,
+    0.751
+   ],
+   "GOES + weather": [
+    0.604,
+    0.545,
+    0.662
+   ],
+   "GOES + kNN fuel + weather": [
+    0.675,
+    0.626,
+    0.723
+   ],
+   "weather alone": [
+    0.488,
+    0.431,
+    0.544
+   ],
+   "paired gains": {
+    "kNN fuel over GOES": {
+     "gain": 0.068,
+     "ci": [
+      0.023,
+      0.11
+     ],
+     "share_above_0": 0.999
+    },
+    "head fuel over GOES": {
+     "gain": 0.074,
+     "ci": [
+      0.03,
+      0.118
+     ],
+     "share_above_0": 0.999
+    },
+    "LANDFIRE over GOES": {
+     "gain": 0.039,
+     "ci": [
+      0.002,
+      0.076
+     ],
+     "share_above_0": 0.98
+    },
+    "kNN fuel over GOES + remoteness": {
+     "gain": 0.028,
+     "ci": [
+      -0.0,
+      0.054
+     ],
+     "share_above_0": 0.974
+    },
+    "remoteness over GOES": {
+     "gain": 0.056,
+     "ci": [
+      0.017,
+      0.096
+     ],
+     "share_above_0": 0.996
+    },
+    "weather over GOES + kNN fuel": {
+     "gain": -0.014,
+     "ci": [
+      -0.038,
+      0.009
+     ],
+     "share_above_0": 0.115
+    },
+    "weather over GOES": {
+     "gain": -0.017,
+     "ci": [
+      -0.047,
+      0.01
+     ],
+     "share_above_0": 0.108
+    }
+   }
+  },
+  "AUC past 1,000 acres": {
+   "n_past": 16,
+   "GOES alone": [
+    0.61,
+    0.438,
+    0.76
+   ],
+   "GOES + knn fuel": [
+    0.597,
+    0.474,
+    0.719
+   ],
+   "GOES + head fuel": [
+    0.596,
+    0.476,
+    0.717
+   ],
+   "GOES + lf fuel": [
+    0.601,
+    0.477,
+    0.716
+   ],
+   "kNN fuel alone": [
+    0.56,
+    0.418,
+    0.696
+   ],
+   "GOES + remoteness": [
+    0.737,
+    0.659,
+    0.815
+   ],
+   "GOES + remoteness + kNN fuel": [
+    0.711,
+    0.622,
+    0.797
+   ],
+   "GOES + weather": [
+    0.649,
+    0.509,
+    0.772
+   ],
+   "GOES + kNN fuel + weather": [
+    0.659,
+    0.547,
+    0.761
+   ],
+   "weather alone": [
+    0.622,
+    0.474,
+    0.76
+   ],
+   "paired gains": {
+    "kNN fuel over GOES": {
+     "gain": -0.013,
+     "ci": [
+      -0.164,
+      0.134
+     ],
+     "share_above_0": 0.434
+    },
+    "head fuel over GOES": {
+     "gain": -0.014,
+     "ci": [
+      -0.181,
+      0.152
+     ],
+     "share_above_0": 0.436
+    },
+    "LANDFIRE over GOES": {
+     "gain": -0.009,
+     "ci": [
+      -0.138,
+      0.115
+     ],
+     "share_above_0": 0.457
+    },
+    "kNN fuel over GOES + remoteness": {
+     "gain": -0.026,
+     "ci": [
+      -0.067,
+      0.004
+     ],
+     "share_above_0": 0.059
+    },
+    "remoteness over GOES": {
+     "gain": 0.127,
+     "ci": [
+      0.002,
+      0.271
+     ],
+     "share_above_0": 0.98
+    },
+    "weather over GOES + kNN fuel": {
+     "gain": 0.062,
+     "ci": [
+      -0.066,
+      0.186
+     ],
+     "share_above_0": 0.84
+    },
+    "weather over GOES": {
+     "gain": 0.039,
+     "ci": [
+      -0.093,
+      0.166
+     ],
+     "share_above_0": 0.712
+    }
+   }
+  },
+  "AUC past 10,000 acres": {
+   "note": "too few: 0 past the cut"
+  }
+ }
+}

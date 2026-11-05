@@ -1,0 +1,570 @@
+{
+ "check vs goes_fuel shares": {
+  "knn_in": {
+   "max_abs_diff": 0.0,
+   "corr": 1.0
+  },
+  "knn_around": {
+   "max_abs_diff": 0.0,
+   "corr": 1.0
+  },
+  "head_in": {
+   "max_abs_diff": 0.0,
+   "corr": 1.0
+  },
+  "lf_in": {
+   "max_abs_diff": 0.0,
+   "corr": 1.0
+  }
+ },
+ "terrain shift (GOES px) at first boxes": {
+  "median": 0.2,
+  "p90": 0.62,
+  "share_over_half_px": 0.191
+ },
+ "first box, terrain vs flat": {
+  "GOES first scan": [
+   0.666,
+   0.646,
+   0.686
+  ],
+  "GOES + knn flat": [
+   0.738,
+   0.719,
+   0.756
+  ],
+  "gain GOES + knn flat over GOES first scan": {
+   "gain": 0.072,
+   "ci": [
+    0.054,
+    0.09
+   ],
+   "share_above_0": 1.0
+  },
+  "GOES + knn terrain": [
+   0.739,
+   0.72,
+   0.757
+  ],
+  "gain GOES + knn terrain over GOES first scan": {
+   "gain": 0.073,
+   "ci": [
+    0.055,
+    0.091
+   ],
+   "share_above_0": 1.0
+  },
+  "knn in flat alone": [
+   0.63,
+   0.608,
+   0.652
+  ],
+  "gain knn in flat alone over GOES first scan": {
+   "gain": -0.036,
+   "ci": [
+    -0.066,
+    -0.007
+   ],
+   "share_above_0": 0.011
+  },
+  "knn in terrain alone": [
+   0.629,
+   0.606,
+   0.651
+  ],
+  "gain knn in terrain alone over GOES first scan": {
+   "gain": -0.037,
+   "ci": [
+    -0.068,
+    -0.007
+   ],
+   "share_above_0": 0.009
+  }
+ },
+ "first box 2+ scans, terrain vs flat": {
+  "knn in flat": [
+   0.693,
+   0.663,
+   0.72
+  ],
+  "knn in terrain": [
+   0.692,
+   0.663,
+   0.72
+  ],
+  "gain knn in terrain over knn in flat": {
+   "gain": -0.001,
+   "ci": [
+    -0.005,
+    0.004
+   ],
+   "share_above_0": 0.382
+  },
+  "n": 5459,
+  "matched": 1124
+ },
+ "first box first box elevation over 1000 m, terrain vs flat": {
+  "knn in flat": [
+   0.559,
+   0.523,
+   0.595
+  ],
+  "knn in terrain": [
+   0.558,
+   0.521,
+   0.594
+  ],
+  "gain knn in terrain over knn in flat": {
+   "gain": -0.001,
+   "ci": [
+    -0.017,
+    0.015
+   ],
+   "share_above_0": 0.419
+  },
+  "n": 4489,
+  "matched": 352
+ },
+ "by time after first scan": {
+  "0 h, all events": {
+   "GOES so far": [
+    0.666,
+    0.646,
+    0.686
+   ],
+   "GOES + fuel in, around": [
+    0.739,
+    0.72,
+    0.757
+   ],
+   "gain GOES + fuel in, around over GOES so far": {
+    "gain": 0.073,
+    "ci": [
+     0.055,
+     0.091
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + fuel in, around, ahead": [
+    0.739,
+    0.72,
+    0.757
+   ],
+   "gain GOES + fuel in, around, ahead over GOES so far": {
+    "gain": 0.073,
+    "ci": [
+     0.055,
+     0.091
+    ],
+    "share_above_0": 1.0
+   },
+   "n": 13795,
+   "matched": 1675
+  },
+  "0 h, events still burning past this time": {
+   "GOES so far": [
+    0.648,
+    0.626,
+    0.671
+   ],
+   "GOES + fuel in, around": [
+    0.757,
+    0.734,
+    0.78
+   ],
+   "gain GOES + fuel in, around over GOES so far": {
+    "gain": 0.109,
+    "ci": [
+     0.084,
+     0.134
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + fuel in, around, ahead": [
+    0.757,
+    0.734,
+    0.78
+   ],
+   "gain GOES + fuel in, around, ahead over GOES so far": {
+    "gain": 0.109,
+    "ci": [
+     0.084,
+     0.134
+    ],
+    "share_above_0": 1.0
+   },
+   "n": 5459,
+   "matched": 1124
+  },
+  "1 h, all events": {
+   "GOES so far": [
+    0.753,
+    0.735,
+    0.769
+   ],
+   "GOES + fuel in, around": [
+    0.785,
+    0.768,
+    0.802
+   ],
+   "gain GOES + fuel in, around over GOES so far": {
+    "gain": 0.032,
+    "ci": [
+     0.021,
+     0.043
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + fuel in, around, ahead": [
+    0.786,
+    0.768,
+    0.802
+   ],
+   "gain GOES + fuel in, around, ahead over GOES so far": {
+    "gain": 0.033,
+    "ci": [
+     0.022,
+     0.044
+    ],
+    "share_above_0": 1.0
+   },
+   "n": 13795,
+   "matched": 1675
+  },
+  "1 h, events still burning past this time": {
+   "GOES so far": [
+    0.763,
+    0.736,
+    0.79
+   ],
+   "GOES + fuel in, around": [
+    0.806,
+    0.781,
+    0.829
+   ],
+   "gain GOES + fuel in, around over GOES so far": {
+    "gain": 0.043,
+    "ci": [
+     0.027,
+     0.059
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + fuel in, around, ahead": [
+    0.805,
+    0.779,
+    0.829
+   ],
+   "gain GOES + fuel in, around, ahead over GOES so far": {
+    "gain": 0.042,
+    "ci": [
+     0.026,
+     0.058
+    ],
+    "share_above_0": 1.0
+   },
+   "n": 3227,
+   "matched": 703
+  },
+  "3 h, all events": {
+   "GOES so far": [
+    0.753,
+    0.736,
+    0.77
+   ],
+   "GOES + fuel in, around": [
+    0.784,
+    0.766,
+    0.8
+   ],
+   "gain GOES + fuel in, around over GOES so far": {
+    "gain": 0.03,
+    "ci": [
+     0.019,
+     0.04
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + fuel in, around, ahead": [
+    0.784,
+    0.766,
+    0.801
+   ],
+   "gain GOES + fuel in, around, ahead over GOES so far": {
+    "gain": 0.03,
+    "ci": [
+     0.019,
+     0.04
+    ],
+    "share_above_0": 1.0
+   },
+   "n": 13795,
+   "matched": 1675
+  },
+  "3 h, events still burning past this time": {
+   "GOES so far": [
+    0.776,
+    0.743,
+    0.808
+   ],
+   "GOES + fuel in, around": [
+    0.822,
+    0.792,
+    0.851
+   ],
+   "gain GOES + fuel in, around over GOES so far": {
+    "gain": 0.046,
+    "ci": [
+     0.028,
+     0.065
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + fuel in, around, ahead": [
+    0.821,
+    0.792,
+    0.851
+   ],
+   "gain GOES + fuel in, around, ahead over GOES so far": {
+    "gain": 0.046,
+    "ci": [
+     0.028,
+     0.064
+    ],
+    "share_above_0": 1.0
+   },
+   "n": 2121,
+   "matched": 435
+  },
+  "6 h, all events": {
+   "GOES so far": [
+    0.754,
+    0.736,
+    0.77
+   ],
+   "GOES + fuel in, around": [
+    0.782,
+    0.765,
+    0.799
+   ],
+   "gain GOES + fuel in, around over GOES so far": {
+    "gain": 0.029,
+    "ci": [
+     0.018,
+     0.039
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + fuel in, around, ahead": [
+    0.782,
+    0.765,
+    0.799
+   ],
+   "gain GOES + fuel in, around, ahead over GOES so far": {
+    "gain": 0.029,
+    "ci": [
+     0.018,
+     0.039
+    ],
+    "share_above_0": 1.0
+   },
+   "n": 13795,
+   "matched": 1675
+  },
+  "6 h, events still burning past this time": {
+   "GOES so far": [
+    0.766,
+    0.728,
+    0.805
+   ],
+   "GOES + fuel in, around": [
+    0.832,
+    0.797,
+    0.862
+   ],
+   "gain GOES + fuel in, around over GOES so far": {
+    "gain": 0.065,
+    "ci": [
+     0.043,
+     0.09
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + fuel in, around, ahead": [
+    0.83,
+    0.794,
+    0.86
+   ],
+   "gain GOES + fuel in, around, ahead over GOES so far": {
+    "gain": 0.063,
+    "ci": [
+     0.039,
+     0.088
+    ],
+    "share_above_0": 1.0
+   },
+   "n": 1725,
+   "matched": 311
+  },
+  "12 h, all events": {
+   "GOES so far": [
+    0.754,
+    0.737,
+    0.771
+   ],
+   "GOES + fuel in, around": [
+    0.783,
+    0.766,
+    0.8
+   ],
+   "gain GOES + fuel in, around over GOES so far": {
+    "gain": 0.029,
+    "ci": [
+     0.018,
+     0.038
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + fuel in, around, ahead": [
+    0.782,
+    0.765,
+    0.799
+   ],
+   "gain GOES + fuel in, around, ahead over GOES so far": {
+    "gain": 0.028,
+    "ci": [
+     0.017,
+     0.038
+    ],
+    "share_above_0": 1.0
+   },
+   "n": 13795,
+   "matched": 1675
+  },
+  "12 h, events still burning past this time": {
+   "GOES so far": [
+    0.773,
+    0.728,
+    0.819
+   ],
+   "GOES + fuel in, around": [
+    0.849,
+    0.81,
+    0.882
+   ],
+   "gain GOES + fuel in, around over GOES so far": {
+    "gain": 0.075,
+    "ci": [
+     0.05,
+     0.1
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + fuel in, around, ahead": [
+    0.848,
+    0.811,
+    0.881
+   ],
+   "gain GOES + fuel in, around, ahead over GOES so far": {
+    "gain": 0.075,
+    "ci": [
+     0.05,
+     0.1
+    ],
+    "share_above_0": 1.0
+   },
+   "n": 1578,
+   "matched": 265
+  },
+  "24 h, all events": {
+   "GOES so far": [
+    0.756,
+    0.739,
+    0.772
+   ],
+   "GOES + fuel in, around": [
+    0.781,
+    0.764,
+    0.798
+   ],
+   "gain GOES + fuel in, around over GOES so far": {
+    "gain": 0.026,
+    "ci": [
+     0.015,
+     0.035
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + fuel in, around, ahead": [
+    0.782,
+    0.764,
+    0.798
+   ],
+   "gain GOES + fuel in, around, ahead over GOES so far": {
+    "gain": 0.026,
+    "ci": [
+     0.015,
+     0.035
+    ],
+    "share_above_0": 1.0
+   },
+   "n": 13795,
+   "matched": 1675
+  },
+  "24 h, events still burning past this time": {
+   "GOES so far": [
+    0.78,
+    0.732,
+    0.828
+   ],
+   "GOES + fuel in, around": [
+    0.843,
+    0.804,
+    0.881
+   ],
+   "gain GOES + fuel in, around over GOES so far": {
+    "gain": 0.063,
+    "ci": [
+     0.039,
+     0.087
+    ],
+    "share_above_0": 1.0
+   },
+   "GOES + fuel in, around, ahead": [
+    0.843,
+    0.805,
+    0.881
+   ],
+   "gain GOES + fuel in, around, ahead over GOES so far": {
+    "gain": 0.063,
+    "ci": [
+     0.039,
+     0.087
+    ],
+    "share_above_0": 1.0
+   },
+   "n": 1223,
+   "matched": 207
+  }
+ },
+ "moving into fuel (matched, Spearman with final acres)": {
+  "1 h": {
+   "n_fires": 380,
+   "fuel_ahead": 0.335,
+   "p": 0.0,
+   "cells_so_far_for_reference": 0.3
+  },
+  "3 h": {
+   "n_fires": 91,
+   "fuel_ahead": -0.065,
+   "p": 0.5383,
+   "cells_so_far_for_reference": 0.423
+  },
+  "6 h": {
+   "n_fires": 27,
+   "fuel_ahead": 0.463,
+   "p": 0.0151,
+   "cells_so_far_for_reference": 0.662
+  }
+ }
+}

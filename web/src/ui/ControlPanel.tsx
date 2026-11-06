@@ -409,7 +409,7 @@ export function ControlPanel(p: ControlPanelProps) {
         </button>
       </div>
       {min && p.weatherOn ? <p className="pn-stamp">{timeTag}</p> : null}
-      {min ? <p className="pn-stamp">Embeddings {p.years.emb}{p.fuelOnly ? "" : ` · Sentinel-2 ${p.years.img}${p.years.holding || p.years.imgOn ? " (shown)" : ""}`}</p> : null}
+      {min ? <p className="pn-stamp">Embeddings {p.years.emb}{p.fuelOnly ? (p.paint === "tint" ? ` · Sentinel-2 ${p.years.img}` : "") : ` · Sentinel-2 ${p.years.img}${p.years.holding || p.years.imgOn ? " (shown)" : ""}`}</p> : null}
       {min && (p.fuel === "ignition" || p.fuel === "counties" || (p.fuel === "lit" && !p.weatherOn)) ? (
         <div className="pn-legend">
           <div className="ramp" role="img" aria-label={`${p.groundRamp} ramp`} style={{ backgroundImage: rampGradient(rampStops(p.groundRamp)) }} />
@@ -446,7 +446,7 @@ export function ControlPanel(p: ControlPanelProps) {
               {p.years.embOptions.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
           </label>
-          <span className="muted small">the fuel model reads {p.years.emb - 2} to {p.years.emb} · <kbd>[</kbd> <kbd>]</kbd> step · hold <kbd>Space</kbd> for Sentinel-2 · <kbd>P</kbd> side by side · <kbd>I</kbd> imagery or colors · <kbd>C</kbd> imagery colors · <kbd>B</kbd> burned areas</span>
+          <span className="muted small">the fuel model reads {p.years.emb - 2} to {p.years.emb} · <kbd>[</kbd> <kbd>]</kbd> step · hold <kbd>Space</kbd> for Sentinel-2 · <kbd>P</kbd> side by side · <kbd>I</kbd> colors, imagery, tint · <kbd>C</kbd> imagery colors · <kbd>B</kbd> burned areas</span>
         </div>
         {/* the imagery is off for now
         <div className="row">

@@ -1515,9 +1515,9 @@ export default function App() {
       >
         <DeckGlOverlay layers={deckLayers as never} interleaved onDeviceInitialized={setDevice} overlayRef={overlayRef} />
       </MaplibreMap>
-      {pair || showImg || paintOn || tintOn ? (
+      {pair || showImg || paintOn ? (
         <div className="pair-tag" style={{ position: "absolute", top: 12, right: 12 }}>
-          {showImg ? `Sentinel-2 ${imgYear}` : paintOn || tintOn ? `Fuel from the ${embYear} embeddings · Sentinel-2 ${imgYear}, ${tintOn ? "gray" : S2_COMPS.find((c) => c.id === comp)!.label}` : `Fuel from the ${embYear} embeddings`}
+          {showImg ? `Sentinel-2 ${imgYear}` : paintOn ? `Fuel from the ${embYear} embeddings · Sentinel-2 ${imgYear}, ${S2_COMPS.find((c) => c.id === comp)!.label}` : `Fuel from the ${embYear} embeddings`}
         </div>
       ) : null}
       </div>

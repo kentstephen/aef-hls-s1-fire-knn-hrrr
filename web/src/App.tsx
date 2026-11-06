@@ -165,6 +165,12 @@ async function loadMapStyle(): Promise<StyleSpecification | string> {
   }
 }
 
+/** Credits for the data drawn over the CARTO basemap (CARTO's and OpenStreetMap's come from the style). */
+const ATTRIBUTION = [
+  "Embeddings: AlphaEarth Foundations, Google and Google DeepMind",
+  "Sentinel-2 mosaic: Earth Genome",
+];
+
 const pacificHour = (t: number) => new Date(t).toLocaleString("en-US", { timeZone: "America/Los_Angeles", month: "short", day: "numeric", hour: "numeric", timeZoneName: "short" });
 
 /** An event in a line: when GOES first and last saw it (Pacific time, the fires' own), scans and pixels. */
@@ -1491,13 +1497,17 @@ export default function App() {
         initialViewState={START_VIEW}
         hash
         mapStyle={mapStyle}
-        attributionControl={false}
+        // the credits (CARTO, OpenStreetMap and the data on the map) behind the small (i) button
+        attributionControl={{ compact: true, customAttribution: ATTRIBUTION }}
         // a flat, north-up map: no tilt or turn from a two-finger trackpad drag, right drag or touch
         maxPitch={0}
         dragRotate={false}
         pitchWithRotate={false}
         touchPitch={false}
         onLoad={(e) => {
+          // the credits start folded to the (i) button (MapLibre opens a compact one at first)
+          const attrib = e.target.getContainer().querySelector(".maplibregl-ctrl-attrib.maplibregl-compact-show");
+          if (attrib) { attrib.classList.remove("maplibregl-compact-show"); attrib.setAttribute("open", ""); }
           setZoom(e.target.getZoom());
           hideBasemapBuildings(e.target);
           addHillshade(e.target, relief);

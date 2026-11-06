@@ -44,7 +44,7 @@ export type ColormapChoiceId = (typeof COLORMAP_CHOICES)[number]["id"];
 /** What the land cover layer draws: the ground lit by the hour's FFWI, the classes themselves, or nothing. */
 export type FuelChoice = "ignition" | "counties" | "lit" | "cover" | "off";
 /** How the fuel is drawn: the ramp's colors, or the Sentinel-2 imagery showing through on the fuel (or the reverse). */
-export type FuelPaint = "colors" | "imagery";
+export type FuelPaint = "colors" | "imagery" | "tint";
 
 export type CountyRow = { id: string; name: string; state: string; share: number; rate: number; starts: number; bbox: [number, number, number, number] };
 /** How the ignition head meets the ramp. */
@@ -546,38 +546,40 @@ export function ControlPanel(p: ControlPanelProps) {
             <div className="row">
               <Seg
                 value={p.paint}
-                options={[{ id: "colors", label: "Colors" }, { id: "imagery", label: "Imagery" }]}
+                options={[{ id: "colors", label: "Colors" }, { id: "imagery", label: "Imagery" }, { id: "tint", label: "Tint" }]}
                 onChange={(v) => p.onPaintChange(v as FuelPaint)}
               />
               <Help label="Imagery">
                 Imagery: the Sentinel-2 yearly mosaic (Earth Genome) drawn with the fuel head's chance of fuel as its
                 opacity: faint below the hide line, in full from the ramp top up. Hold Space for the whole picture in
-                true color, or P to see it beside this one. <kbd>I</kbd> switches colors and imagery, <kbd>C</kbd> steps
+                true color, or P to see it beside this one. Tint: the imagery whole, its colors shifted by the fuel's
+                ramp, so the ground keeps its detail. <kbd>I</kbd> steps colors, imagery and tint, <kbd>C</kbd> steps
                 the imagery's colors.
               </Help>
             </div>
-            {p.paint === "imagery" ? (
+            {p.paint !== "colors" ? (
               <div className="row">
                 <Seg value={p.comp} options={S2_COMPS.map((c) => ({ id: c.id, label: c.label }))} onChange={(v) => p.onCompChange(v as S2Comp)} />
               </div>
             ) : null}
-            {p.paint === "colors" ? (
+            {p.paint !== "imagery" ? (
               <div className="row">
                 <Seg value={p.groundRamp} options={GROUND_RAMPS.map((r) => ({ id: r.id, label: r.label }))} onChange={p.onGroundRampChange} />
               </div>
             ) : null}
-            {p.paint === "colors" ? (
+            {p.paint !== "imagery" ? (
               <div className="row">
                 <Check checked={p.stretch} onChange={p.onStretchChange} label="Stretch to the view" />
                 <Help label="Stretch">
-                  The colors spread over the values in view, so each part of the ramp holds about as many pixels: the
-                  foothills at 95 to 99% get a stretch of their own instead of one flat top color. A color then means a
+                  The colors spread over the values in view, half way to each part of the ramp holding as many pixels:
+                  the foothills at 95 to 99% get more of the ramp instead of one flat top color, and close values stay
+                  close. A color then means a
                   place among this view's values, not a fixed chance; the legend gives the chance at the ramp's ends and
                   middle. Off: the ramp runs from the hide line to the ramp top.
                 </Help>
               </div>
             ) : null}
-            {p.paint === "colors" && p.stretch ? null : (
+            {p.paint !== "imagery" && p.stretch ? null : (
             <div className="row">
               <Seg
                 value={p.ignScale === "logit" ? "logit" : "probability"}
@@ -590,7 +592,7 @@ export function ControlPanel(p: ControlPanelProps) {
               </Help>
             </div>
             )}
-            {p.paint === "colors" ? (
+            {p.paint !== "imagery" ? (
               <>
                 <div className="ramp" role="img" aria-label={`${p.groundRamp} ramp`} style={{ backgroundImage: rampGradient(rampStops(p.groundRamp)) }} />
                 <p className="muted small">
@@ -610,7 +612,7 @@ export function ControlPanel(p: ControlPanelProps) {
             <Field label={`Hide below ${Math.round(p.pHide * 100)}%`}>
               <Slider min={0} max={0.99} step={0.01} value={p.pHide} onChange={p.onPHideChange} label="Hide below" onReset={() => p.onPHideChange(p.fuelOnly ? 0 : 0.5)} />
             </Field>
-            {p.paint === "colors" && p.stretch ? null : (
+            {p.paint !== "imagery" && p.stretch ? null : (
               <Field label={`Ramp top ${Math.round(p.pMax * 100)}%`}>
                 <Slider min={0.05} max={1} step={0.01} value={p.pMax} onChange={p.onPMaxChange} label="Ramp top" onReset={() => p.onPMaxChange(1)} />
               </Field>

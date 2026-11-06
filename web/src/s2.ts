@@ -138,6 +138,27 @@ const S2Look = {
   getUniforms: (q: { gamma?: number }) => ({ gamma: q.gamma ?? 1 }),
 } as const satisfies ShaderModule<{ gamma: number }>;
 
+/**
+ * The imagery as shade for the fuel's tint: its luminance, lifted to lo + gain x luminance (capped at 1), so the
+ * fuel's colors multiplied by it stay as they are where the ground is bright and darken a little where it is dark.
+ */
+const S2Gray = {
+  name: "s2Gray",
+  fs: `uniform s2GrayUniforms {
+  float lo;
+  float gain;
+} s2Gray;
+`,
+  inject: {
+    "fs:DECKGL_FILTER_COLOR": `
+  float s2l = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
+  color.rgb = vec3(clamp(s2Gray.lo + s2Gray.gain * s2l, 0.0, 1.0));
+`,
+  },
+  uniformTypes: { lo: "f32", gain: "f32" },
+  getUniforms: (q: { lo?: number; gain?: number }) => ({ lo: q.lo ?? 0, gain: q.gain ?? 1 }),
+} as const satisfies ShaderModule<{ lo: number; gain: number }>;
+
 /** As S2Look, then back from sqrt to raw units (over 10,000) and each band over its stretch, lo to hi. */
 const S2Stretch = {
   name: "s2Stretch",
@@ -341,8 +362,10 @@ export class S2Imagery {
    * The year's layers under the view: every batch's fill first, its yearly footprints over them. comp: true color
    * or a band stack; extensions (a mask) go on every footprint's layer.
    */
-  layers(o: { year: number; view: [number, number, number, number]; visible: boolean; prefix: string; beforeId?: string; comp?: S2Comp; extensions?: Record<string, unknown> }) {
+  layers(o: { year: number; view: [number, number, number, number]; visible: boolean; prefix: string; beforeId?: string; comp?: S2Comp; extensions?: Record<string, unknown>; shade?: { lo: number; gain: number } }) {
     const comp = o.comp ?? "tci";
+    // the imagery as shade, last (the fuel's tint goes over it)
+    const gray = o.shade ? [{ module: S2Gray, props: o.shade }] : [];
     const e = this.years.get(o.year);
     if (!e) return [];
     this.pool ??= new DecoderPool({ size: Math.min(6, navigator.hardwareConcurrency || 4), createWorker: () => new GeoTiffWorker() });
@@ -387,6 +410,7 @@ export class S2Imagery {
                           module: S2Stretch,
                           props: { lo: COMP_BANDS[comp].map((b) => BAND_RANGE[b]![0] / 10000), hi: COMP_BANDS[comp].map((b) => BAND_RANGE[b]![1] / 10000) },
                         },
+                        ...gray,
                       ],
                     }),
                   } as never)
@@ -421,7 +445,7 @@ export class S2Imagery {
                     };
                   },
                   renderTile: (d: { texture: unknown }) => ({
-                    renderPipeline: [{ module: CreateTexture, props: { textureName: d.texture } }, { module: S2Look, props: { gamma: 1 } }],
+                    renderPipeline: [{ module: CreateTexture, props: { textureName: d.texture } }, { module: S2Look, props: { gamma: 1 } }, ...gray],
                   }),
                 } as never),
         } as never),

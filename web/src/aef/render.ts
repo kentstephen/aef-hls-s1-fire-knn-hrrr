@@ -67,6 +67,12 @@ export type FuelLightProps = {
   /** 1 = the fuel colored by stretchTex (each fuel byte's place on the ramp in this view). */
   stretch: number;
   stretchTex: Texture;
+  /**
+   * The fuel as a tint on the imagery under it (fuel alone): above 0, the ramp's color multiplied onto the imagery's
+   * shade (layers.ts), so the colors are the Colors pane's and the imagery adds its light and dark; the value is the
+   * tint's strength.
+   */
+  tint: number;
   /** The season mask per tile pixel (r8, 0..1). */
   seasonTex: Texture;
 };
@@ -111,6 +117,7 @@ uniform ${MODULE_NAME}Uniforms {
   float solid;
   float veil;
   float stretch;
+  float tint;
 } ${MODULE_NAME};
 `,
   inject: {
@@ -320,6 +327,12 @@ float fuelHash(vec2 p) {
           float mk = texture(seasonTex, geometry.uv).r;
           float sm = ${MODULE_NAME}.seasonDim > 0.0 ? mix(${MODULE_NAME}.seasonDim, 1.0, mk) : 1.0;
           vec3 rc = texture(rampTex, vec2(tp, 0.5)).rgb;
+          if (${MODULE_NAME}.tint > 0.0) {
+            // the ramp's own color, multiplied onto the imagery's shade (layers.ts): the Colors pane's colors,
+            // darkened where the ground is dark
+            color = vec4(mix(vec3(1.0), rc, ${MODULE_NAME}.tint), 1.0);
+            return;
+          }
           // gray outside the mask: the ramp's own lightness, no hue; the color comes in with the mask
           if (${MODULE_NAME}.seasonGray > 0.5) rc = mix(vec3(dot(rc, vec3(0.299, 0.587, 0.114))), rc, mk);
           color = vec4(rc, (${MODULE_NAME}.solid > 0.5 ? 1.0 : min(1.0, 0.35 + tp)) * sm);
@@ -354,7 +367,7 @@ float fuelHash(vec2 p) {
       }
     `,
   },
-  uniformTypes: { mode: "f32", layerIndex: "f32", hideBelow: "f32", rescaleMax: "f32", glowHours: "f32", grain: "f32", pHide: "f32", pMax: "f32", scale: "f32", zLo: "f32", zHi: "f32", useWeather: "f32", standingAlpha: "f32", wxGate: "f32", fieldAlpha: "f32", seasonDim: "f32", seasonGray: "f32", solid: "f32", veil: "f32", stretch: "f32" },
+  uniformTypes: { mode: "f32", layerIndex: "f32", hideBelow: "f32", rescaleMax: "f32", glowHours: "f32", grain: "f32", pHide: "f32", pMax: "f32", scale: "f32", zLo: "f32", zHi: "f32", useWeather: "f32", standingAlpha: "f32", wxGate: "f32", fieldAlpha: "f32", seasonDim: "f32", seasonGray: "f32", solid: "f32", veil: "f32", stretch: "f32", tint: "f32" },
   getUniforms: (p: Partial<FuelLightProps>) => ({
     mode: p.mode ?? 0,
     layerIndex: p.layerIndex ?? 0,
@@ -376,6 +389,7 @@ float fuelHash(vec2 p) {
     solid: p.solid ?? 0,
     veil: p.veil ?? 0,
     stretch: p.stretch ?? 0,
+    tint: p.tint ?? 0,
     stretchTex: p.stretchTex,
     seasonTex: p.seasonTex,
     classTex: p.classTex,

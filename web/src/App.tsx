@@ -83,7 +83,14 @@ const MAP_STYLE_URL = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/sty
 const BEFORE_ID = "aeroway-runway";
 /** The basemap's first label layer: the imagery under the fuel draws below it, so place names stay on top. */
 const LABEL_ID = "waterway_label";
-const PAINTS: FuelPaint[] = ["colors", "imagery"];
+/** The tint's strength on the imagery (0 none, 1 the ramp's color in full). */
+const TINT = 1;
+/**
+ * The imagery under the tint as shade: its luminance as lo + gain x luminance, capped at 1. The fuel's colors are
+ * multiplied by it, so bright ground keeps the Colors pane's colors and the darkest ground takes them down to lo.
+ */
+const TINT_SHADE = { lo: 0.45, gain: 1.2 };
+const PAINTS: FuelPaint[] = ["colors", "imagery", "tint"];
 /** How long the window's dates hold still before its weather starts loading. */
 const WINDOW_SETTLE_MS = 700;
 /** 100 ms a frame: a week in 17 s. */
@@ -182,6 +189,11 @@ export default function App() {
   const [stretchMarks, setStretchMarks] = useState<[number, number, number] | null>(null);
   /** C: the painted imagery's colors (true color or a band stack); the pair's left and Space stay true color. */
   const [comp, setComp] = useState<S2Comp>("live");
+  // each paint opens on its own imagery colors: the tint on true color, the imagery on the live, dry, burned stack
+  useEffect(() => {
+    if (paint === "tint") setComp("tci");
+    else if (paint === "imagery") setComp("live");
+  }, [paint]);
   /** The imagery painted on the fuel is masked to the fuel's loaded tiles, so ground not read yet stays bare map. */
   const maskExt = useMemo(() => new MaskExtension(), []);
   /** Space held: the imagery in place of the fuel. */
@@ -1078,7 +1090,9 @@ export default function App() {
     }, 400);
   }, [aefLayers, view, aefVersion, stretchOn, embYear]);
   /** The fuel painted with the imagery: the fuel alone (no weather), in either of the imagery paints. */
-  const paintOn = paint !== "colors" && fuel === "lit" && !(WEATHER_ON && useWeather);
+  const paintOn = paint === "imagery" && fuel === "lit" && !(WEATHER_ON && useWeather);
+  /** The fuel as a tint on the imagery: the imagery under, the fuel's ramp shifting its color. */
+  const tintOn = paint === "tint" && fuel === "lit" && !(WEATHER_ON && useWeather);
   const [s2Version, setS2Version] = useState(0);
   const s2 = useMemo(() => new S2Imagery(() => setS2Version((v) => v + 1)), []);
   // the year's footprints under the view, looked for as the view settles
@@ -1206,6 +1220,9 @@ export default function App() {
         year: imgYear, view, visible: !showImg && zoom >= MOSAIC_MIN_ZOOM, prefix: "R-", beforeId: LABEL_ID, comp,
         extensions: { extensions: [maskExt], maskId: aefLayers.fineId(), maskByInstance: false },
       }));
+    // the imagery under the tint: whole, under the labels, the fuel drawn over it
+    if (view && tintOn)
+      out.push(...s2.layers({ year: imgYear, view, visible: !showImg, prefix: "T-", beforeId: LABEL_ID, comp, shade: TINT_SHADE }));
     if (showRaster && source && getTileData && colormapTexture) {
       out.push(
         new ZarrLayer<zarr.Readable, "float32", FfwiTileData>({
@@ -1256,6 +1273,7 @@ export default function App() {
           solid: boxesOn || FUEL_ONLY,
           veil: paintOn ? 1 : 0,
           stretch: stretchOn && !paintOn,
+          tint: tintOn ? TINT : 0,
           operation: paintOn ? "mask+draw" : "draw",
           // a picked fire: its whole area read, so it can be seen whole from zoom 10 (nothing outside it is read)
           only: boxesOn && boxPicked && reach ? { bbox: reach.bbox(), minZoom: MOSAIC_MIN_ZOOM - 1 } : undefined,
@@ -1373,7 +1391,7 @@ export default function App() {
     glowHours, grain, light, contourLines, pHide, pMax, ignScale, zLo, zHi, rankRamp, useWeather, standingAlpha, wxGate, fieldAlpha,
     timeIdx, weatherSrc, weatherKey, timeMode, countyTable, counties, countyVersion, cacheVersion, weekVersion, timeDepth, zHideCounty, wxGate,
     seasonOn, seasonData, seasonJoin, seasonPerims, seasonDay, seasonReach,
-    s2, s2Version, imgYear, showImg, view, burnAreas, burnOn, burnPick, paintOn, paint, comp, maskExt, stretchOn,
+    s2, s2Version, imgYear, showImg, view, burnAreas, burnOn, burnPick, paintOn, paint, comp, maskExt, stretchOn, tintOn,
     goesOn, goesDoc, goesNow, goesSeen, goesPerim, goesHour, goesRead,
     boxesOn, boxEvents, boxPick, flyToBox, boxPicked, reachLines, boxNowEdges, boxNow, reach,
   ]);
@@ -1497,9 +1515,9 @@ export default function App() {
       >
         <DeckGlOverlay layers={deckLayers as never} interleaved onDeviceInitialized={setDevice} overlayRef={overlayRef} />
       </MaplibreMap>
-      {pair || showImg || paintOn ? (
+      {pair || showImg || paintOn || tintOn ? (
         <div className="pair-tag" style={{ position: "absolute", top: 12, right: 12 }}>
-          {showImg ? `Sentinel-2 ${imgYear}` : paintOn ? `Fuel from the ${embYear} embeddings · Sentinel-2 ${imgYear}, ${S2_COMPS.find((c) => c.id === comp)!.label}` : `Fuel from the ${embYear} embeddings`}
+          {showImg ? `Sentinel-2 ${imgYear}` : paintOn || tintOn ? `Fuel from the ${embYear} embeddings · Sentinel-2 ${imgYear}, ${tintOn ? "gray" : S2_COMPS.find((c) => c.id === comp)!.label}` : `Fuel from the ${embYear} embeddings`}
         </div>
       ) : null}
       </div>
@@ -1816,7 +1834,9 @@ export default function App() {
           <div style={{ fontWeight: 600 }}>
             {hoverInfo.ground && Number.isFinite(hoverInfo.ground.fuel)
               ? `chance of fuel ${Math.round(hoverInfo.ground.fuel * 100)}%`
-              : "no fuel reading here (zoom in past " + MOSAIC_MIN_ZOOM + ")"}
+              : zoom < MOSAIC_MIN_ZOOM
+                ? `no fuel reading here (zoom in past ${MOSAIC_MIN_ZOOM})`
+                : "no fuel reading here"}
           </div>
           {burnOn && burnAreas
             ? burnAreasAt(burnAreas, hover.lon, hover.lat).map((b, i) => (

@@ -106,6 +106,8 @@ export type AefLayerOpts = {
   veil?: number;
   /** The fuel alone: colored by its place among the view's values (fuelStretch), not by P(fuel) itself. */
   stretch?: boolean;
+  /** The fuel as a tint on the imagery under it, at this strength (0 = off): render.ts tint. */
+  tint?: number;
   /** "mask+draw": the layer is also the imagery's mask (its loaded tiles), as well as drawn. */
   operation?: "draw" | "mask+draw";
   opacity: number;
@@ -220,10 +222,14 @@ export class AefLayers {
    * The view's stretch: every fuel byte's place on the ramp, so the view's own values spread over the whole ramp
    * (histogram equalization). From the current year's 10 m tiles under the view, every second pixel each way. The
    * histogram is clipped at CLIP times an even share first (the excess spread over every value), so a value
-   * crowded with pixels gets more of the ramp but not all of it. Null when no tile under the view is in.
+   * crowded with pixels gets more of the ramp but not all of it, and the result is mixed with P(fuel)'s place on a
+   * log-odds ramp (0.2 % to 99.6 %; EQ the equalized share), so neighboring values stay neighbors on the ramp
+   * instead of jumping apart and the crowded top (90 to 99 %) still spreads. Null when no
+   * tile under the view is in.
    */
   fuelStretch(view: [number, number, number, number]): Uint8Array | null {
-    const CLIP = 12;
+    const CLIP = 4;
+    const EQ = 0.5;
     const hist = new Float64Array(256);
     let total = 0;
     const [vw, vs, ve, vn] = view;
@@ -249,9 +255,13 @@ export class AefLayers {
     for (let v = 1; v < 256; v++) if (hist[v]! > cap) { excess += hist[v]! - cap; hist[v] = cap; }
     for (let v = 1; v < 256; v++) hist[v]! += excess / 255;
     const lut = new Uint8Array(256);
+    const zLo = Math.log(0.002 / 0.998);
+    const zHi = Math.log(0.996 / 0.004);
     let acc = 0;
     for (let v = 1; v < 256; v++) {
-      lut[v] = Math.round((255 * (acc + hist[v]! / 2)) / total);
+      const p = Math.min(0.996, Math.max(0.002, (v - 1) / 254));
+      const odds = (Math.log(p / (1 - p)) - zLo) / (zHi - zLo);
+      lut[v] = Math.round(255 * (EQ * ((acc + hist[v]! / 2) / total) + (1 - EQ) * odds));
       acc += hist[v]!;
     }
     return lut;
@@ -525,6 +535,7 @@ export class AefLayers {
       solid: o.solid ? 1 : 0,
       veil: o.veil ?? 0,
       stretch: o.stretch && this.stretchTex ? 1 : 0,
+      tint: o.tint ?? 0,
       stretchTex: this.stretchTex ?? this.noMask!,
       seasonTex: d.seasonTex ?? this.noMask!,
     });
@@ -543,7 +554,7 @@ export class AefLayers {
     }
     // debug hook for the headless probe (this instance is the one deck draws from)
     (globalThis as unknown as { __aef?: unknown }).__aef = { layers: this, cache: this.cache };
-    const key = `${opts.mode}|${opts.ramp}|${opts.teacher}|${opts.leadTimeIdx}|${opts.hideBelow}|${opts.rescaleMax}|${opts.pHide}|${opts.pMax}|${opts.scale}|${opts.zLo}|${opts.zHi}|${opts.useWeather}|${opts.standingAlpha}|${opts.wxGate}|${opts.fieldAlpha}|${opts.glowHours}|${opts.grain}|${opts.seasonDim ?? 0}|${opts.seasonGray ? 1 : 0}|${opts.solid ? 1 : 0}|${opts.veil ?? 0}|${opts.stretch ? 1 : 0}`;
+    const key = `${opts.mode}|${opts.ramp}|${opts.teacher}|${opts.leadTimeIdx}|${opts.hideBelow}|${opts.rescaleMax}|${opts.pHide}|${opts.pMax}|${opts.scale}|${opts.zLo}|${opts.zHi}|${opts.useWeather}|${opts.standingAlpha}|${opts.wxGate}|${opts.fieldAlpha}|${opts.glowHours}|${opts.grain}|${opts.seasonDim ?? 0}|${opts.seasonGray ? 1 : 0}|${opts.solid ? 1 : 0}|${opts.veil ?? 0}|${opts.stretch ? 1 : 0}|${opts.tint ?? 0}`;
     if (key !== this.lastKey) {
       this.lastKey = key;
       this.version++;
@@ -556,7 +567,10 @@ export class AefLayers {
       updateTriggers: { renderTile: [v] },
       onTileUnload: this.onUnload,
       beforeId: opts.beforeId,
-      parameters: opts.light && opts.mode !== "cover"
+      // the tint: out = fuel x imagery shade (a multiply), the alpha under kept
+      parameters: (opts.tint ?? 0) > 0
+        ? { blend: true, blendColorOperation: "add", blendColorSrcFactor: "dst", blendColorDstFactor: "zero", blendAlphaOperation: "add", blendAlphaSrcFactor: "zero", blendAlphaDstFactor: "one" }
+        : opts.light && opts.mode !== "cover"
         ? { blend: true, blendColorOperation: "add", blendColorSrcFactor: "src-alpha", blendColorDstFactor: "one", blendAlphaOperation: "add", blendAlphaSrcFactor: "one", blendAlphaDstFactor: "one-minus-src-alpha" }
         : {},
     };

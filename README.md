@@ -70,6 +70,52 @@ bootstrap over fires.
 `results/risk_backtest.json`, `results/risk_backtest_starts.json`. Needs the fire test's data and
 `fire_test_grids.py --need <parquet> --no-lf`; the steps are in the script's docstring.
 
+### The agency comparison (`scripts/agency_compare.py`)
+
+The backtest's fires, starts and controls, scored again with three agency maps beside the value:
+
+- USFS Wildfire Risk to Communities burn probability (2024 edition, 30 m, simulated at 270 m)
+- USFS Wildfire Hazard Potential (2023 edition, 270 m, continuous)
+- CAL FIRE Fire Hazard Severity Zones (State Responsibility Area zones in force April 2024, Local zones recommended
+  2024 to 2025)
+
+Each is cut to the backtest's 10 m chunk grid. Every layer is scored on the same pixels as the value. The CAL FIRE
+zones are scored only on State and Local ground (federal land is never zoned).
+
+Both USFS layers describe the landscape at the end of 2020, so fires from 2021 on are after them. The 2020 fires
+are already in their fuels, and there they score lower: burn probability 0.508 across the line for 2020 to 2022,
+0.559 for 2023 to 2026. The CAL FIRE zones were drafted in 2022 (State) and 2024 (Local). The rows below are fires
+from 2021 on.
+
+| Burned ground vs | Value | Fuel alone | USFS burn probability | USFS hazard potential | CAL FIRE zones |
+| --- | --- | --- | --- | --- | --- |
+| unburned ground across the line (155 fires) | 0.594 [0.572, 0.618] | 0.570 | 0.563 [0.535, 0.589] | 0.542 | |
+| the same, State and Local ground only (106 fires) | 0.604 [0.572, 0.638] | 0.583 | 0.580 [0.538, 0.626] | | 0.530 [0.515, 0.547] |
+| a chunk 5 to 10 km away (152 fires) | 0.572 [0.531, 0.613] | 0.565 | 0.521 [0.459, 0.588] | 0.494 | |
+| a chunk 20 to 30 km away (154 fires) | 0.635 [0.588, 0.682] | 0.597 | 0.626 [0.561, 0.695] | 0.575 | |
+
+- Across the line, value minus burn probability on the same fires: +0.031 [-0.001, +0.065] from 2021 on;
+  +0.062 [+0.031, +0.093] over all years, the 2020 fires included. Value minus the CAL FIRE zones: +0.074
+  [+0.040, +0.111]. Value minus hazard potential: +0.052 [+0.029, +0.079].
+- Across the line is a 10 m test, and a map simulated at 270 m, or a zone map, can't separate ground a few hundred
+  meters apart. Against a chunk 20 to 30 km away, burn probability scores the same as the value (difference +0.008
+  [-0.051, +0.068]).
+- Start points: no map does better than chance against ground nearby or 5 to 30 km away. Within 100 m, burn
+  probability 0.50 to 0.51, CAL FIRE zones 0.49 to 0.51, the value 0.44 to 0.46 (lower where starts sit on roads).
+- Agreement (Spearman, 2,039 chunks of about 2.3 km): value and burn probability 0.63, value and CAL FIRE zone 0.65,
+  burn probability and CAL FIRE zone 0.72. The value's median by zone: unzoned 13, moderate 55, high 60, very high
+  61, federal ground 63. It separates zoned from unzoned ground, but hardly high from very high.
+- Where they disagree most, by chunk rank:
+  - The value is high and burn probability low on the wet north coast (Humboldt, Mendocino: full fuel, few fires
+    on record) and on the 2020 fires (burned before the USFS landscape date).
+  - Burn probability is high and the value low in Southern California grass and chaparral (San Diego border,
+    Cajon Pass, the San Gabriel foothills), where P(fuel) is 0.4 to 0.6. Those places are CAL FIRE very high too.
+  - The value has no wind or fire weather; both agency maps model them, and USFS also models where fires have
+    started and how far they ran.
+
+`results/agency_compare.json`. Needs the backtest's data; `uv run scripts/agency_compare.py fetch` reads the
+layers per chunk (5 minutes), then `score`.
+
 ### Live fuel moisture (`scripts/make_samples.py`, `sample_*.py`, `fit_knn.py`)
 
 The repo's first question: does AlphaEarth help predict live fuel moisture (National Fuel Moisture Database field
@@ -269,7 +315,9 @@ All public, no credentials: AlphaEarth Foundations embeddings (tge-labs on Sourc
 NIFC WFIGS incident locations and perimeters, NIFC InterAgency Fire Perimeter History, NOAA GOES-18 ABI on AWS,
 Overture Maps (buildings, roads, water, land use, infrastructure), CARTO's dark base map, NAIP, the National Fuel
 Moisture Database, HLS and Sentinel-1 (for the moisture work), NOAA HRRR via dynamical.org, NASA FIRMS VIIRS S-NPP,
-CAL FIRE incidents, USFS FACTS prescribed burns, Mapterhorn terrain tiles.
+CAL FIRE incidents, USFS FACTS prescribed burns, Mapterhorn terrain tiles, USFS Wildfire Risk to Communities burn
+probability and Wildfire Hazard Potential (imagery.geoplatform.gov), CAL FIRE Fire Hazard Severity Zones and
+Responsibility Areas.
 
 Python scripts run with `uv run` (dependencies inline in each script).
 

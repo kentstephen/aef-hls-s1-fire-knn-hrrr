@@ -4,15 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MapRef } from "react-map-gl/maplibre";
 import { Map as MaplibreMap } from "react-map-gl/maplibre";
 import { AefPool } from "../aef/pool.js";
-import { type Bbox, BUILDINGS_MIN_ZOOM, createBuildings } from "../buildings.js";
 import { DeckGlOverlay } from "../lib/deckgl-overlay.js";
 import { type BurnArea, burnAreaLayer, loadCaBurnAreas } from "../perimeters.js";
 import { CONT_RADIUS_M, EMB_YEAR, type PointFactors, RiskFactors } from "./factors.js";
 import { FireHistory } from "./history.js";
-import { BUILDING_RGB, KIND_COLORS, type OvertureFeature, overtureLayers, riskMapStyle } from "./overture.js";
+import { BUILDINGS_MIN_ZOOM, KIND_COLORS, type OvertureFeature, overtureLayers, riskMapStyle } from "./overture.js";
 import { FACE_SLOPE, SLOPE_FULL, TIME_FULL, viridisCss, VIRIDIS_GRADIENT } from "./score.js";
-import { FILL_ALPHA, MIN_LINE_PX } from "./shade.js";
-import type * as arrow from "apache-arrow";
 import "./risk.css";
 
 /**
@@ -21,8 +18,8 @@ import "./risk.css";
  * and drawn in viridis. Clicking a spot lists the parts behind its value. Burned areas (2020 on) frame the map, B
  * toggles them. An exploration, not a forecast.
  *
- * The basemap is Overture's (overture.ts, buildings.ts), colored by what each feature is; the risk under a feature
- * is on its hover and its card. CARTO's roads and buildings sit under the picture, its water and labels over it.
+ * The basemap is Overture's (overture.ts), colored by what each feature is; the risk under a feature
+ * is on its hover and its card. CARTO sits under the picture (seen only where it is not drawn yet), its labels on top.
  */
 
 /** Near Cohasset, on the Park Fire's west edge. */
@@ -30,7 +27,8 @@ const START_VIEW = { longitude: -121.82, latitude: 39.98, zoom: 13 };
 /** Below this the view holds too many chunks to read on demand. */
 const MIN_ZOOM = 12;
 const SETTLE_MS = 400;
-const OPACITY = 0.85;
+/** Opaque, so CARTO under it never shows through where the picture is drawn. */
+const OPACITY = 1;
 const NOW_YEAR = new Date().getFullYear();
 
 const COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
@@ -40,20 +38,17 @@ const pct = (v: number | null) => (v === null ? "no data" : `${Math.round(v * 10
 /** A feature under the pointer: what it is, its name, and every field it carries. */
 type Inspect = { title: string; name: string | null; fields: [string, string][] };
 
-const THEME: Record<string, string> = { "ov-roads": "road or rail", "ov-infrastructure": "infrastructure", "ov-land-use": "land use", "risk-buildings": "building" };
+const THEME: Record<string, string> = { "ov-water": "water", "ov-roads": "road or rail", "ov-infrastructure": "infrastructure", "ov-land-use": "land use", "ov-buildings": "building" };
 
 function describe(info: PickingInfo): Inspect | null {
   const o = info.object as unknown;
   const id = info.layer?.id ?? "";
   const theme = Object.keys(THEME).find((k) => id.startsWith(k));
   if (!o || !theme) return null;
-  const raw: Record<string, unknown> =
-    theme === "risk-buildings"
-      ? ((o as { toJSON?: () => Record<string, unknown> }).toJSON?.() ?? (o as Record<string, unknown>))
-      : (o as OvertureFeature).properties;
+  const raw: Record<string, unknown> = (o as OvertureFeature).properties;
   const fields: [string, string][] = [];
   for (const [k, v] of Object.entries(raw)) {
-    if (v == null || v === "" || k === "geometry" || k === "cx" || k === "cy") continue;
+    if (v == null || v === "" || k === "geometry" || k === "cx" || k === "cy" || k.startsWith("__")) continue;
     const text = typeof v === "string" ? v : typeof v === "number" ? String(Math.round(v * 100) / 100) : JSON.stringify(v);
     fields.push([k, text.length > 140 ? `${text.slice(0, 140)}…` : text]);
   }
@@ -82,8 +77,6 @@ export default function Risk() {
   /** CARTO trimmed to water and labels, and the layers deck.gl's go under. */
   const [style, setStyle] = useState<Awaited<ReturnType<typeof riskMapStyle>> | null>(null);
   useEffect(() => { void riskMapStyle().then(setStyle); }, []);
-  /** The settled view. */
-  const [view, setView] = useState<Bbox | null>(null);
 
   // ---- burned areas, 2020 on: the framing, and the recent half of the fire history
   useEffect(() => {
@@ -110,7 +103,6 @@ export default function Risk() {
     setZoom(map.getZoom());
     if (map.getZoom() < MIN_ZOOM) { setProgress(null); return; }
     const b = map.getBounds();
-    setView([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]);
     const ac = (readAc.current = new AbortController());
     void f.load([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()], (done, total) => {
       if (ac.signal.aborted) return;
@@ -147,25 +139,6 @@ export default function Risk() {
     return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("resize", onSize); document.removeEventListener("fullscreenchange", onSize); };
   }, []);
 
-  // ---- Overture buildings (GeoParquet through DuckDB to GeoArrow) from zoom 14, for the settled view
-  const buildingsRef = useRef<ReturnType<typeof createBuildings> | null>(null);
-  const [buildingsApi, setBuildingsApi] = useState<Awaited<ReturnType<typeof createBuildings>> | null>(null);
-  const [bTable, setBTable] = useState<arrow.Table | null>(null);
-  const buildingsZoom = zoom >= BUILDINGS_MIN_ZOOM;
-  useEffect(() => {
-    if (!view || !buildingsZoom) return;
-    const ac = new AbortController();
-    buildingsRef.current ??= createBuildings();
-    buildingsRef.current
-      .then(async (b) => {
-        setBuildingsApi(b);
-        const t = await b.load(view, ac.signal);
-        if (!ac.signal.aborted) setBTable(t);
-      })
-      .catch((e) => { if ((e as Error).name !== "AbortError") console.warn("buildings:", e); });
-    return () => ac.abort();
-  }, [view, buildingsZoom]);
-
   const layers = useMemo(() => [
     ...[...(factorsRef.current?.chunks.values() ?? [])].filter((c) => c.image).map((c) =>
       new BitmapLayer({
@@ -176,16 +149,13 @@ export default function Risk() {
         textureParameters: { minFilter: "nearest", magFilter: "nearest" },
         beforeId: style?.groundBefore,
       } as never)),
-    ...overtureLayers({ beforeId: style?.linesBefore, visible: zoom >= MIN_ZOOM }),
-    ...(buildingsApi && bTable && buildingsZoom
-      ? buildingsApi.layer({ table: bTable, id: "risk-buildings", lineWidthMinPixels: MIN_LINE_PX, fillColor: [...BUILDING_RGB, FILL_ALPHA], getLineColor: [...BUILDING_RGB, 255], extraProps: { pickable: true }, beforeId: style?.linesBefore })
-      : []),
+    ...overtureLayers({ beforeId: style?.linesBefore, zoom }),
     areas ? burnAreaLayer({ areas, visible: burnOn, beforeId: style?.linesBefore }) : null,
     picked
       ? new ScatterplotLayer({ id: "risk-spot", data: [picked], getPosition: (d: { lon: number; lat: number }) => [d.lon, d.lat], getRadius: 5, radiusUnits: "pixels", getFillColor: [255, 255, 255, 255] })
       : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [areas, burnOn, picked, drawVersion, style, zoom >= MIN_ZOOM, buildingsApi, bTable, buildingsZoom]);
+  ], [areas, burnOn, picked, drawVersion, style, zoom >= MIN_ZOOM, zoom >= BUILDINGS_MIN_ZOOM]);
 
   const f = pickedF;
   return (

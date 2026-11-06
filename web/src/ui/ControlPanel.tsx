@@ -197,9 +197,6 @@ export type ControlPanelProps = {
   weatherOn: boolean;
   /** The fuel alone: the season, fire and building rows hidden. */
   fuelOnly?: boolean;
-  /** Buildings: how far out (m) the burnable ground counts. */
-  buildingReach: number;
-  onBuildingReachChange: (m: number) => void;
   season: SeasonPanel;
   goes: GoesPanel;
   years: YearsPanel;
@@ -460,7 +457,7 @@ export function ControlPanel(p: ControlPanelProps) {
       <p className="muted small" style={{ marginTop: 6 }}>
         Data: <A href="https://source.coop/tge-labs/aef">AlphaEarth Foundations</A> (tge-labs on Source Cooperative) ·{" "}
         {/* <A href="https://www.earthgenome.org/">Earth Genome</A> Sentinel-2 mosaics (CC BY 4.0) ·{" "} */}
-        {p.fuelOnly ? null : <><A href="https://data-nifc.opendata.arcgis.com/">NIFC WFIGS</A> fire starts and outlines · Overture Maps buildings ·{" "}</>}
+        {p.fuelOnly ? null : <><A href="https://data-nifc.opendata.arcgis.com/">NIFC WFIGS</A> fire starts and outlines ·{" "}</>}
         {/* the weather sources, while the weather is off:
         <A href="https://dynamical.org/catalog/noaa-hrrr-forecast-48-hour/">NOAA HRRR 48 h</A> via{" "}
         <A href="https://dynamical.org">dynamical.org</A> ({s.backend === "icechunk" ? "Icechunk" : s.backend === "zarr-v3" ? "Zarr v3" : "opening"}) ·{" "}
@@ -553,15 +550,6 @@ export function ControlPanel(p: ControlPanelProps) {
             <Field label={`Ramp top ${Math.round(p.pMax * 100)}%`}>
               <Slider min={0.05} max={1} step={0.01} value={p.pMax} onChange={p.onPMaxChange} label="Ramp top" onReset={() => p.onPMaxChange(1)} />
             </Field>
-            {p.fuelOnly ? null : <>
-            <p className="muted small">
-              Buildings (zoom 14 in): each outline takes the color of the most burnable ground within {p.buildingReach} m of it.
-              Dark gray: nothing above the hide line that close.
-            </p>
-            <Field label={`Building reach ${p.buildingReach} m${p.buildingReach === 30 ? " (about 100 ft, CAL FIRE defensible space)" : ""}`}>
-              <Slider min={0} max={150} step={5} value={p.buildingReach} onChange={p.onBuildingReachChange} label="Building reach" onReset={() => p.onBuildingReachChange(30)} />
-            </Field>
-            </>}
           </>
         ) : null}
         <p className="muted small">Reading: {reader}{s.aefReading > 0 ? ` · ${s.aefReading} tiles in flight` : ""}</p>

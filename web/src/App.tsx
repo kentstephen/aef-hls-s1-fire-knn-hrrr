@@ -61,10 +61,6 @@ import { cacheSource } from "./aef/weather.js";
 import { CONUS_MEAN } from "./aef/calibration.js";
 import { CountyTable, countyLayer, loadCounties, unitsGrid, type CountyFeature } from "./counties.js";
 import { DeckGlOverlay } from "./lib/deckgl-overlay.js";
-import type * as arrow from "apache-arrow";
-import { BUILDINGS_MIN_ZOOM, createBuildings } from "./buildings.js";
-import { buildingExposure, exposureColors } from "./building-exposure.js";
-import { rampStops, rampStripe } from "./aef/ramp.js";
 import { ControlPanel, loadingSummary, type ColormapChoiceId, type FuelChoice, type IgnScale, type Status, type TimeMode } from "./ui/ControlPanel.js";
 
 /**
@@ -114,9 +110,6 @@ const START_DAYS = 3;
 /** Terrain under the ground: AWS Terrain Tiles (Mapzen Terrarium), public, 256 px, to zoom 15. */
 const DEM_TILES = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png";
 const HILLSHADE_ID = "aef-hillshade";
-/** A building with no burnable ground near it. */
-const BUILDING_GRAY: [number, number, number] = [69, 69, 77];
-
 /** CARTO's own building footprints off (a backstop: loadMapStyle drops them first); the buildings are Overture's. */
 function hideBasemapBuildings(map: import("maplibre-gl").Map) {
   for (const l of map.getStyle().layers) {
@@ -767,48 +760,6 @@ export default function App() {
     mapRef.current?.getMap().fitBounds([[bbox[0], bbox[1]], [bbox[2], bbox[3]]], { padding: 80, duration: 900 });
   }, []);
 
-  // ---- Overture buildings (buildings.ts: DuckDB-WASM via haybarn, GeoArrow outlines), from zoom 14 in. For now
-  // every outline is the dark gray of "not in danger"; the GPU join to the ground under each outline is next
-  const buildingsRef = useRef<ReturnType<typeof createBuildings> | null>(null);
-  const [bTable, setBTable] = useState<arrow.Table | null>(null);
-  const [buildingsApi, setBuildingsApi] = useState<Awaited<ReturnType<typeof createBuildings>> | null>(null);
-  // the load starts over only when the view settles (moveend), not on every zoom step while moving: the first
-  // query takes ~30 s and each restart cancels it
-  const buildingsZoom = !FUEL_ONLY && zoom >= BUILDINGS_MIN_ZOOM;
-  useEffect(() => {
-    if (!view || !buildingsZoom) return;
-    buildingsRef.current ??= createBuildings();
-    const ac = new AbortController();
-    buildingsRef.current
-      .then(async (b) => {
-        setBuildingsApi(b);
-        const t = await b.load(view, ac.signal);
-        if (!ac.signal.aborted) setBTable(t);
-      })
-      .catch((e) => {
-        if ((e as Error).name !== "AbortError") console.warn("buildings:", e);
-      });
-    return () => ac.abort();
-  }, [view, buildingsZoom]);
-
-  // ---- each building's outline from the burnable ground near it (building-exposure.ts): the highest P(fuel)
-  // within the reach, nearer ground counting more; dark gray under the hide line. Recomputed a moment after the
-  // buildings, the ground tiles, the reach or the ramp change.
-  const [buildingReach, setBuildingReach] = useState(30);
-  const [bColors, setBColors] = useState<{ colors: Uint8Array[]; key: number } | null>(null);
-  useEffect(() => {
-    if (!bTable || !buildingsApi || !aefLayers) return;
-    const t = window.setTimeout(() => {
-      const tiles = aefLayers.fineTiles();
-      const stripe = rampStripe(rampStops(groundRamp));
-      const colors = bTable.batches.map((b) =>
-        exposureColors(buildingExposure(buildingsApi.ringsOf(b), tiles, buildingReach), pHide, pMax, stripe, BUILDING_GRAY, ignScale === "logit"),
-      );
-      setBColors((c) => ({ colors, key: (c?.key ?? 0) + 1 }));
-    }, 250);
-    return () => clearTimeout(t);
-  }, [bTable, buildingsApi, aefLayers, aefVersion, buildingReach, pHide, pMax, groundRamp, ignScale]);
-
   // ---- the fire season (season.ts): the year's California starts and burn perimeters, read from NIFC when the
   // view opens, over the fuel of the year before. A start whose 30 m circle holds fuel above the hide line lights
   // the ground in that circle; the burns light the ground inside them; the rest of the fuel stays dim.
@@ -1267,17 +1218,6 @@ export default function App() {
     // the burned areas over the fuel; the imagery stays bare
     if (burnAreas) out.push(burnAreaLayer({ areas: burnAreas, visible: burnOn && !showImg, beforeId: BEFORE_ID }));
     if (burnPick) out.push(selectedBurnLayer({ area: burnPick.f, visible: burnOn && !showImg, beforeId: BEFORE_ID }));
-    if (!FUEL_ONLY && buildingsApi && bTable && zoom >= BUILDINGS_MIN_ZOOM && !showImg) {
-      const cs = bColors && bColors.colors.length === bTable.batches.length ? bColors : null;
-      out.push(
-        ...buildingsApi.layer({
-          table: bTable,
-          getLineColor: cs ? (_b, bi) => cs.colors[bi]! : [...BUILDING_GRAY, 255],
-          colorKey: cs?.key ?? 0,
-          beforeId: BEFORE_ID,
-        }),
-      );
-    }
     if (seasonOn && seasonData && seasonJoin && !showImg) {
       out.push(
         ...seasonLayers({
@@ -1383,7 +1323,7 @@ export default function App() {
     leadTimeIdx, colormapIndex, hideBelow, rescaleMax, tauHours, aefLayers, aefVersion, fuel, teacher, fuelOpacity, groundRamp, zoom,
     glowHours, grain, light, contourLines, pHide, pMax, ignScale, zLo, zHi, rankRamp, useWeather, standingAlpha, wxGate, fieldAlpha,
     timeIdx, weatherSrc, weatherKey, timeMode, countyTable, counties, countyVersion, cacheVersion, weekVersion, timeDepth, zHideCounty, wxGate,
-    buildingsApi, bTable, bColors, seasonOn, seasonData, seasonJoin, seasonPerims, seasonDay, seasonReach,
+    seasonOn, seasonData, seasonJoin, seasonPerims, seasonDay, seasonReach,
     s2, s2Version, imgYear, showImg, view, burnAreas, burnOn, burnPick,
     goesOn, goesDoc, goesNow, goesSeen, goesPerim, goesHour, goesRead,
     boxesOn, boxEvents, boxPick, flyToBox, boxPicked, reachLines, boxNowEdges, boxNow, reach,
@@ -1698,8 +1638,6 @@ export default function App() {
         status={status}
         weatherOn={WEATHER_ON}
         fuelOnly={FUEL_ONLY}
-        buildingReach={buildingReach}
-        onBuildingReachChange={setBuildingReach}
         years={{
           emb: embYear,
           embOptions: EMB_YEARS,

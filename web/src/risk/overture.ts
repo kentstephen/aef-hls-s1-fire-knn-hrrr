@@ -5,39 +5,39 @@ import { parse } from "@loaders.gl/core";
 import { MVTLoader } from "@loaders.gl/mvt";
 import type { StyleSpecification } from "maplibre-gl";
 import { PMTiles } from "pmtiles";
-import { RELEASE } from "../buildings.js";
-import { MIN_LINE_PX } from "./shade.js";
+import { FILL_ALPHA, MIN_LINE_PX } from "./shade.js";
 
 /**
  * Overture's map over the risk picture, CARTO's under it (riskMapStyle): roads and rail from the
- * transportation PMTiles, land use (parks among it) and infrastructure (power lines among it) from the base
- * PMTiles, read by range from Overture's bucket and parsed here so deck.gl draws them, each colored by what it is
- * (KIND_COLORS). Buildings come from the GeoParquet instead (buildings.ts).
+ * transportation PMTiles, water, land use (parks among it) and infrastructure (power lines among it) from the base
+ * PMTiles, buildings from the buildings PMTiles, read by range from Overture's bucket and parsed here so deck.gl
+ * draws them, each colored by what it is (KIND_COLORS).
  */
+
+const RELEASE = "2026-10-21.0";
 
 const OVERTURE = `https://overturemaps-extras-us-west-2.s3.us-west-2.amazonaws.com/tiles/${RELEASE}`;
 const MAP_STYLE_URL = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
 /** Read from this zoom in, the zoom the risk is read from. */
 export const OVERTURE_MIN_ZOOM = 12;
+/** The deepest zoom of each archive (from their headers, release 2026-10-21.0). */
+const BASE_DEEPEST = 13;
+const TRANSPORTATION_DEEPEST = 14;
+const BUILDINGS_DEEPEST = 14;
+/** Buildings drawn from this zoom in (the rest from OVERTURE_MIN_ZOOM). */
+export const BUILDINGS_MIN_ZOOM = 14;
 
 /**
- * CARTO's dark matter in three bands, with deck.gl's layers between them: its roads, buildings and land under the
- * risk picture, shown only zoomed out past where the picture and Overture are drawn (context for finding a town),
- * its water over the picture, and its labels on top of everything. Overture's features go between the water and
- * the labels.
+ * CARTO's dark matter in two bands, with deck.gl's layers between them: everything but its labels under the risk
+ * picture, at every zoom, so it shows only where the picture is not drawn (not read yet, or no embedding there) and
+ * never over the data; its labels on top of everything. Water over the picture is Overture's (overtureLayers).
  */
 export async function riskMapStyle(): Promise<{ style: StyleSpecification | string; groundBefore?: string; linesBefore?: string }> {
   try {
     const style = (await (await fetch(MAP_STYLE_URL)).json()) as StyleSpecification;
-    const isWater = (l: StyleSpecification["layers"][number]) => l.type !== "symbol" && "source-layer" in l && (l["source-layer"] === "water" || l["source-layer"] === "waterway");
-    // CARTO's roads, buildings and land only below the zoom the risk and Overture are drawn from
-    const under = style.layers
-      .filter((l) => l.type !== "symbol" && !isWater(l))
-      .map((l) => (l.type === "background" ? l : { ...l, maxzoom: Math.min(l.maxzoom ?? 24, OVERTURE_MIN_ZOOM) }));
-    const water = style.layers.filter(isWater);
     const labels = style.layers.filter((l) => l.type === "symbol");
-    style.layers = [...under, ...water, ...labels];
-    return { style, groundBefore: water[0]?.id ?? labels[0]?.id, linesBefore: labels[0]?.id };
+    style.layers = [...style.layers.filter((l) => l.type !== "symbol"), ...labels];
+    return { style, groundBefore: labels[0]?.id, linesBefore: labels[0]?.id };
   } catch {
     return { style: MAP_STYLE_URL };
   }
@@ -98,7 +98,7 @@ function outlineOf(f: Feature, x: number, y: number, z: number): Feature | null 
     if (run.length > 1) lines.push(run);
   }
   if (!lines.length) return null;
-  return { ...f, geometry: { type: "MultiLineString", coordinates: lines } };
+  return { ...f, properties: { ...f.properties, __outline: true }, geometry: { type: "MultiLineString", coordinates: lines } };
 }
 
 /** Road widths by Overture class, in pixels. */
@@ -113,47 +113,66 @@ type RGB = [number, number, number];
  * these is in viridis, so they stand off the ground, and none is told apart by red against green.
  */
 export const KIND_COLORS: { name: string; rgb: RGB }[] = [
-  { name: "Roads and rail", rgb: [240, 240, 240] },
+  // asphalt: a cool gray, darker and bluer than the buildings' warm light gray
+  { name: "Roads and rail", rgb: [134, 139, 147] },
   { name: "Buildings", rgb: [200, 191, 174] },
   { name: "Power lines and infrastructure", rgb: [255, 154, 31] },
   // outline only, no fill (big areas); brown, apart from the cyan burned areas and from viridis
   { name: "Parks and protected land", rgb: [185, 135, 85] },
+  // lakes filled, streams as lines; a saturated blue, apart from viridis' grayish blues
+  { name: "Water", rgb: [52, 128, 255] },
 ];
-const [ROADS, BUILDINGS, INFRA, PARKS] = KIND_COLORS.map((k) => k.rgb) as [RGB, RGB, RGB, RGB];
+const [ROADS, BUILDINGS, INFRA, PARKS, WATER] = KIND_COLORS.map((k) => k.rgb) as [RGB, RGB, RGB, RGB, RGB];
 /** Land use other than parks, off (it cluttered the map); its color if it comes back. */
 const OTHER_LAND_USE = false;
 const LAND_USE: RGB = [138, 138, 146];
-export const BUILDING_RGB = BUILDINGS;
 const PARK_SUBTYPES = new Set(["park", "protected", "recreation"]);
 
-type Common = { beforeId?: string; visible: boolean };
+/** zoom: the map's; each layer shows from its own first zoom. */
+type Common = { beforeId?: string; zoom: number };
 
 export type OvertureFeature = Feature;
 
-/** How a feature is drawn: line width in pixels and color, or null to leave it out. */
-type Style = (f: Feature) => { w: number; c: RGB } | null;
+/**
+ * How a feature is drawn: line width in pixels and color, or null to leave it out. fill: a polygon is filled at this
+ * alpha (0 to 255); its outline is drawn too unless the style leaves out features marked __outline.
+ */
+type Style = (f: Feature) => { w: number; c: RGB; fill?: number } | null;
+/** A fill alpha too faint to see, so an unfilled area still picks from anywhere inside it. */
+const PICK_ONLY = 1;
 
 /**
- * zoomOffset: tiles this many zooms deeper than the map's (a layer Overture only tiles from a deeper zoom).
- * Polygons are outlines only here (only buildings are filled, buildings.ts).
+ * Always the archive's deepest tiles (`deepest`), from the zoom the risk is read from on: Overture's shallower tiles
+ * leave out small features, so reading them would bring each layer in at its own zoom. The zoom offset reaches the
+ * deepest zoom at OVERTURE_MIN_ZOOM and past it deck.gl holds the tiles at the deepest.
+ * Polygons are outlines here, unless their style fills them (water); buildings are filled too (buildings.ts).
  */
-function overtureLayer(id: string, name: string, layers: string[], minZoom: number, maxZoom: number, o: Common, style: Style,
-  { zoomOffset = 0 }: { zoomOffset?: number } = {}) {
+function overtureLayer(id: string, name: string, layers: string[], deepest: number, o: Common, style: Style, showFrom = OVERTURE_MIN_ZOOM) {
   return new TileLayer<Feature[]>({
     id,
-    minZoom,
-    maxZoom,
-    zoomOffset,
+    minZoom: deepest,
+    maxZoom: deepest,
+    zoomOffset: deepest - OVERTURE_MIN_ZOOM,
     tileSize: 512,
     maxCacheSize: 200,
-    visible: o.visible,
+    visible: o.zoom >= showFrom,
     getTileData: ({ index, signal }: { index: { x: number; y: number; z: number }; signal?: AbortSignal }) => tileFeatures(name, layers, index.x, index.y, index.z, signal),
     renderSubLayers: (p: { id: string; data: Feature[] | null }) => {
       const data = (p.data ?? []).filter((f: Feature) => style(f) !== null);
-      // polygons come as their outlines (tileFeatures); the polygons themselves are left out (unfilled, and their own
-      // stroke would draw the tile's cut)
-      const lines = data.filter((f) => !f.geometry.type.endsWith("Polygon"));
+      // polygons come twice (tileFeatures): as themselves, drawn only where filled (unstroked: their stroke would
+      // draw the tile's cut), and as their outlines, drawn only where not filled
+      const isPoly = (f: Feature) => f.geometry.type.endsWith("Polygon");
+      const filled = data.filter((f) => isPoly(f) && style(f)!.fill !== undefined);
+      const lines = data.filter((f) => !isPoly(f));
       return [
+        new GeoJsonLayer({
+          id: `${p.id}-fill`,
+          data: filled as never,
+          filled: true,
+          stroked: false,
+          getFillColor: (f: Feature) => [...style(f)!.c, style(f)!.fill!],
+          pickable: true,
+        } as never),
         new GeoJsonLayer({
           id: `${p.id}-line`,
           data: lines as never,
@@ -176,26 +195,30 @@ function overtureLayer(id: string, name: string, layers: string[], minZoom: numb
   } as never);
 }
 
-/** Parks and protected land, roads and rail, then infrastructure (power lines among it) on top. */
+/** Parks and protected land, water, buildings, roads and rail, then infrastructure (power lines among it) on top. */
 export function overtureLayers(o: Common): Layer[] {
   return [
-    overtureLayer("ov-land-use", "base", ["land_use"], OVERTURE_MIN_ZOOM, 13, o, (f) =>
-      PARK_SUBTYPES.has(String(f.properties.subtype ?? "")) ? { w: 1.4, c: PARKS } : OTHER_LAND_USE ? { w: 1.2, c: LAND_USE } : null),
-    // Overture's tiles drop roads below zoom 14 to stay small, so the map reads the zoom 14 tiles from zoom 12 on
-    overtureLayer("ov-roads", "transportation", ["segment"], OVERTURE_MIN_ZOOM, 14, o, (f) => {
+    // outlined; the fill is there only so the pointer anywhere inside picks the area (its hover and card)
+    overtureLayer("ov-land-use", "base", ["land_use"], BASE_DEEPEST, o, (f) =>
+      PARK_SUBTYPES.has(String(f.properties.subtype ?? "")) ? { w: 1.4, c: PARKS, fill: PICK_ONLY } : OTHER_LAND_USE ? { w: 1.2, c: LAND_USE, fill: PICK_ONLY } : null),
+    // lakes and wide rivers filled (their outlines left out), streams and canals as lines
+    overtureLayer("ov-water", "base", ["water"], BASE_DEEPEST, o, (f) =>
+      f.geometry.type.endsWith("Polygon") ? { w: 0, c: WATER, fill: 255 } : f.properties.__outline ? null : { w: 1.6, c: WATER }),
+    // filled faintly, outlined in the same color
+    overtureLayer("ov-buildings", "buildings", ["building"], BUILDINGS_DEEPEST, o, () => ({ w: 1, c: BUILDINGS, fill: FILL_ALPHA }), BUILDINGS_MIN_ZOOM),
+    overtureLayer("ov-roads", "transportation", ["segment"], TRANSPORTATION_DEEPEST, o, (f) => {
       const sub = String(f.properties.subtype ?? "");
       if (sub === "rail") return { w: 1.6, c: ROADS };
       if (sub !== "road") return null;
       return { w: ROAD_W[String(f.properties.class ?? "")] ?? 1.1, c: ROADS };
-    }, { zoomOffset: 2 }),
-    // every infrastructure feature (power lines and poles, bridges, pipelines, towers, ...); Overture only tiles
-    // this layer at zoom 13, so the map at zoom 12 (where the risk starts) reads the zoom 13 tiles
-    overtureLayer("ov-infrastructure", "base", ["infrastructure"], 13, 13, o, (f) => {
+    }),
+    // every infrastructure feature (power lines and poles, bridges, pipelines, towers, ...)
+    overtureLayer("ov-infrastructure", "base", ["infrastructure"], BASE_DEEPEST, o, (f) => {
       const c = String(f.properties.class ?? "");
       if (c === "power_line") return { w: 2.6, c: INFRA };
       if (c === "minor_line") return { w: 2, c: INFRA };
       if (f.geometry.type.endsWith("LineString")) return { w: 2, c: INFRA };
       return { w: f.geometry.type.endsWith("Point") ? 1.5 : 1.4, c: INFRA };
-    }, { zoomOffset: 1 }),
+    }),
   ] as unknown as Layer[];
 }

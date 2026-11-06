@@ -102,6 +102,12 @@ export type AefLayerOpts = {
   seasonGray?: boolean;
   /** Every fuel pixel drawn fully opaque (no fade-in at the low end of the ramp). */
   solid?: boolean;
+  /** The imagery under the fuel: 0 off, 1 shown through on the fuel (render.ts veil). */
+  veil?: number;
+  /** The fuel alone: colored by its place among the view's values (fuelStretch), not by P(fuel) itself. */
+  stretch?: boolean;
+  /** "mask+draw": the layer is also the imagery's mask (its loaded tiles), as well as drawn. */
+  operation?: "draw" | "mask+draw";
   opacity: number;
   beforeId?: string;
   visible: boolean;
@@ -161,6 +167,9 @@ export class AefLayers {
   private fuelYear = AEF_YEAR;
   /** A 1 x 1 empty season mask for tiles that have none yet. */
   private noMask: Texture | null = null;
+  /** The view's stretch: each fuel byte's place on the ramp (256 x 1), from fuelStretch. */
+  private stretchTex: Texture | null = null;
+  private stretchLut: Uint8Array | null = null;
 
   constructor(
     private pool: AefPool,
@@ -205,6 +214,70 @@ export class AefLayers {
     t.seasonKey = key;
     if (old) later(old);
     return true;
+  }
+
+  /**
+   * The view's stretch: every fuel byte's place on the ramp, so the view's own values spread over the whole ramp
+   * (histogram equalization). From the current year's 10 m tiles under the view, every second pixel each way. The
+   * histogram is clipped at CLIP times an even share first (the excess spread over every value), so a value
+   * crowded with pixels gets more of the ramp but not all of it. Null when no tile under the view is in.
+   */
+  fuelStretch(view: [number, number, number, number]): Uint8Array | null {
+    const CLIP = 12;
+    const hist = new Float64Array(256);
+    let total = 0;
+    const [vw, vs, ve, vn] = view;
+    for (const t of this.fineTiles()) {
+      const [w, s, e, n] = t.bbox;
+      if (e < vw || w > ve || n < vs || s > vn) continue;
+      const x0 = Math.max(0, Math.floor(((vw - w) / (e - w)) * t.width));
+      const x1 = Math.min(t.width, Math.ceil(((ve - w) / (e - w)) * t.width));
+      const y0 = Math.max(0, Math.floor(((n - vn) / (n - s)) * t.height));
+      const y1 = Math.min(t.height, Math.ceil(((n - vs) / (n - s)) * t.height));
+      const f = t.classes.fuel;
+      for (let y = y0; y < y1; y += 2)
+        for (let x = x0; x < x1; x += 2) {
+          const v = f[y * t.width + x]!;
+          if (v === 0) continue;
+          hist[v]++;
+          total++;
+        }
+    }
+    if (total < 1000) return null;
+    const cap = (CLIP * total) / 255;
+    let excess = 0;
+    for (let v = 1; v < 256; v++) if (hist[v]! > cap) { excess += hist[v]! - cap; hist[v] = cap; }
+    for (let v = 1; v < 256; v++) hist[v]! += excess / 255;
+    const lut = new Uint8Array(256);
+    let acc = 0;
+    for (let v = 1; v < 256; v++) {
+      lut[v] = Math.round((255 * (acc + hist[v]! / 2)) / total);
+      acc += hist[v]!;
+    }
+    return lut;
+  }
+
+  /** Use a stretch (or none): drawn again only when it changed. */
+  setStretch(lut: Uint8Array | null) {
+    const same = lut && this.stretchLut && lut.every((v, i) => v === this.stretchLut![i]);
+    if (same || (!lut && !this.stretchLut)) return;
+    this.stretchLut = lut;
+    if (this.stretchTex) later(this.stretchTex);
+    this.stretchTex = lut && this.device
+      ? forgetData(this.device.createTexture({ format: "r8unorm", width: 256, height: 1, mipLevels: 1, data: lut,
+          sampler: { minFilter: "linear", magFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge" } }))
+      : null;
+    this.version++;
+    this.redraw();
+  }
+
+  /** The P(fuel) at a place on the stretched ramp (0 to 1), for the legend; null without a stretch. */
+  stretchAt(t: number): number | null {
+    const lut = this.stretchLut;
+    if (!lut) return null;
+    const want = t * 255;
+    for (let v = 1; v < 256; v++) if (lut[v]! >= want) return (v - 1) / 254;
+    return 1;
   }
 
   /** Masks changed: draw again. */
@@ -316,6 +389,20 @@ export class AefLayers {
         data: plane,
         sampler: { minFilter: "nearest", magFilter: "nearest", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge" },
       }));
+    // the fuel smooth: filtered between pixels and averaged down (mipmaps) when several fall on one screen pixel,
+    // so a zoomed-out view reads as a picture, not the woven pattern nearest sampling makes of the 10 m grid
+    const smooth = (plane: Uint8Array) => {
+      const t = device.createTexture({
+        format: "r8unorm",
+        width,
+        height,
+        mipLevels: Math.floor(Math.log2(Math.max(width, height))) + 1,
+        data: plane,
+        sampler: { minFilter: "linear", magFilter: "linear", mipmapFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge" },
+      });
+      (t as unknown as { generateMipmapsWebGL?: () => void }).generateMipmapsWebGL?.();
+      return forgetData(t);
+    };
     const grid = makeGrid(extentM, toLonLat);
     const w = weatherTexture(device, grid, this.source);
     const corners = [toLonLat(0, 0), toLonLat(1, 0), toLonLat(0, 1), toLonLat(1, 1)];
@@ -329,7 +416,7 @@ export class AefLayers {
       classes,
       classTex: { nlcd: tex(classes.nlcd), esri: tex(classes.esri) },
       groundTex: tex(classes.ign),
-      fuelTex: tex(classes.fuel),
+      fuelTex: smooth(classes.fuel),
       grid,
       ffwiTex: w.tex,
       weatherKey: this.weatherKey,
@@ -436,6 +523,9 @@ export class AefLayers {
       seasonDim: o.seasonDim ?? 0,
       seasonGray: o.seasonGray ? 1 : 0,
       solid: o.solid ? 1 : 0,
+      veil: o.veil ?? 0,
+      stretch: o.stretch && this.stretchTex ? 1 : 0,
+      stretchTex: this.stretchTex ?? this.noMask!,
       seasonTex: d.seasonTex ?? this.noMask!,
     });
   };
@@ -453,7 +543,7 @@ export class AefLayers {
     }
     // debug hook for the headless probe (this instance is the one deck draws from)
     (globalThis as unknown as { __aef?: unknown }).__aef = { layers: this, cache: this.cache };
-    const key = `${opts.mode}|${opts.ramp}|${opts.teacher}|${opts.leadTimeIdx}|${opts.hideBelow}|${opts.rescaleMax}|${opts.pHide}|${opts.pMax}|${opts.scale}|${opts.zLo}|${opts.zHi}|${opts.useWeather}|${opts.standingAlpha}|${opts.wxGate}|${opts.fieldAlpha}|${opts.glowHours}|${opts.grain}|${opts.seasonDim ?? 0}|${opts.seasonGray ? 1 : 0}|${opts.solid ? 1 : 0}`;
+    const key = `${opts.mode}|${opts.ramp}|${opts.teacher}|${opts.leadTimeIdx}|${opts.hideBelow}|${opts.rescaleMax}|${opts.pHide}|${opts.pMax}|${opts.scale}|${opts.zLo}|${opts.zHi}|${opts.useWeather}|${opts.standingAlpha}|${opts.wxGate}|${opts.fieldAlpha}|${opts.glowHours}|${opts.grain}|${opts.seasonDim ?? 0}|${opts.seasonGray ? 1 : 0}|${opts.solid ? 1 : 0}|${opts.veil ?? 0}|${opts.stretch ? 1 : 0}`;
     if (key !== this.lastKey) {
       this.lastKey = key;
       this.version++;
@@ -494,8 +584,14 @@ export class AefLayers {
       maxRequests: 6,
       maxCacheSize: 400,
       ...common,
+      operation: opts.operation ?? "draw",
     } as never);
     return [fine];
+  }
+
+  /** The 10 m layer's id (the imagery's mask, by id): it changes with the fuel's year. */
+  fineId(): string {
+    return `aef-zarr-${this.fuelYear}`;
   }
 
   /**

@@ -8,6 +8,7 @@ import { useState } from "react";
 import { type Teacher } from "../aef/head.js";
 import { MOSAIC_MIN_ZOOM } from "../aef/mosaic.js";
 import { GROUND_RAMPS, rampGradient, rampStops, type GroundRamp } from "../aef/ramp.js";
+import { type S2Comp, S2_COMPS } from "../s2.js";
 import type { WindMode } from "../ffwi/compute.js";
 import {
   dateFromInitTimeIdx,
@@ -42,6 +43,8 @@ export type ColormapChoiceId = (typeof COLORMAP_CHOICES)[number]["id"];
 
 /** What the land cover layer draws: the ground lit by the hour's FFWI, the classes themselves, or nothing. */
 export type FuelChoice = "ignition" | "counties" | "lit" | "cover" | "off";
+/** How the fuel is drawn: the ramp's colors, or the Sentinel-2 imagery showing through on the fuel (or the reverse). */
+export type FuelPaint = "colors" | "imagery";
 
 export type CountyRow = { id: string; name: string; state: string; share: number; rate: number; starts: number; bbox: [number, number, number, number] };
 /** How the ignition head meets the ramp. */
@@ -197,6 +200,16 @@ export type ControlPanelProps = {
   weatherOn: boolean;
   /** The fuel alone: the season, fire and building rows hidden. */
   fuelOnly?: boolean;
+  /** How the fuel is drawn (I): the ramp's colors, or the imagery through the fuel or the non-fuel. */
+  paint: FuelPaint;
+  onPaintChange: (v: FuelPaint) => void;
+  /** The painted imagery's colors (C). */
+  comp: S2Comp;
+  onCompChange: (v: S2Comp) => void;
+  /** The fuel's colors stretched to the view, and the P(fuel) at the ramp's bottom, middle and top. */
+  stretch: boolean;
+  onStretchChange: (on: boolean) => void;
+  stretchMarks: [number, number, number] | null;
   season: SeasonPanel;
   goes: GoesPanel;
   years: YearsPanel;
@@ -359,7 +372,9 @@ export function ControlPanel(p: ControlPanelProps) {
   const onLatestDay = latestDay !== null && weekEnd.getTime() === latestDay.getTime();
   /** The ramp's two ends and what they are, for the collapsed card's legend. */
   const legendEnds: [string, string, string] =
-    p.fuel === "lit" && !p.weatherOn
+    p.fuel === "lit" && !p.weatherOn && p.stretchMarks
+      ? [`${Math.round(p.stretchMarks[0] * 100)}%`, `${Math.round(p.stretchMarks[2] * 100)}%`, `stretched, middle ${Math.round(p.stretchMarks[1] * 100)}%`]
+      : p.fuel === "lit" && !p.weatherOn
       ? [`${Math.round(p.pHide * 100)}%`, `${Math.round(p.pMax * 100)}%`, p.ignScale === "logit" ? "chance of fuel (log-odds)" : "chance of fuel"]
       : p.fuel === "counties"
       ? ["0%", "100%", "ignition risk by county"]
@@ -431,7 +446,7 @@ export function ControlPanel(p: ControlPanelProps) {
               {p.years.embOptions.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
           </label>
-          <span className="muted small">the fuel model reads {p.years.emb - 2} to {p.years.emb} · <kbd>[</kbd> <kbd>]</kbd> step · hold <kbd>Space</kbd> for Sentinel-2 · <kbd>B</kbd> burned areas</span>
+          <span className="muted small">the fuel model reads {p.years.emb - 2} to {p.years.emb} · <kbd>[</kbd> <kbd>]</kbd> step · hold <kbd>Space</kbd> for Sentinel-2 · <kbd>P</kbd> side by side · <kbd>I</kbd> imagery or colors · <kbd>C</kbd> imagery colors · <kbd>B</kbd> burned areas</span>
         </div>
         {/* the imagery is off for now
         <div className="row">
@@ -456,7 +471,7 @@ export function ControlPanel(p: ControlPanelProps) {
       {p.burnHist}
       <p className="muted small" style={{ marginTop: 6 }}>
         Data: <A href="https://source.coop/tge-labs/aef">AlphaEarth Foundations</A> (tge-labs on Source Cooperative) ·{" "}
-        {/* <A href="https://www.earthgenome.org/">Earth Genome</A> Sentinel-2 mosaics (CC BY 4.0) ·{" "} */}
+        <A href="https://www.earthgenome.org/">Earth Genome</A> Sentinel-2 mosaics (CC BY 4.0) ·{" "}
         {p.fuelOnly ? null : <><A href="https://data-nifc.opendata.arcgis.com/">NIFC WFIGS</A> fire starts and outlines ·{" "}</>}
         {/* the weather sources, while the weather is off:
         <A href="https://dynamical.org/catalog/noaa-hrrr-forecast-48-hour/">NOAA HRRR 48 h</A> via{" "}
@@ -529,8 +544,40 @@ export function ControlPanel(p: ControlPanelProps) {
         {p.fuel === "lit" && !p.weatherOn ? (
           <>
             <div className="row">
-              <Seg value={p.groundRamp} options={GROUND_RAMPS.map((r) => ({ id: r.id, label: r.label }))} onChange={p.onGroundRampChange} />
+              <Seg
+                value={p.paint}
+                options={[{ id: "colors", label: "Colors" }, { id: "imagery", label: "Imagery" }]}
+                onChange={(v) => p.onPaintChange(v as FuelPaint)}
+              />
+              <Help label="Imagery">
+                Imagery: the Sentinel-2 yearly mosaic (Earth Genome) drawn with the fuel head's chance of fuel as its
+                opacity: faint below the hide line, in full from the ramp top up. Hold Space for the whole picture in
+                true color, or P to see it beside this one. <kbd>I</kbd> switches colors and imagery, <kbd>C</kbd> steps
+                the imagery's colors.
+              </Help>
             </div>
+            {p.paint === "imagery" ? (
+              <div className="row">
+                <Seg value={p.comp} options={S2_COMPS.map((c) => ({ id: c.id, label: c.label }))} onChange={(v) => p.onCompChange(v as S2Comp)} />
+              </div>
+            ) : null}
+            {p.paint === "colors" ? (
+              <div className="row">
+                <Seg value={p.groundRamp} options={GROUND_RAMPS.map((r) => ({ id: r.id, label: r.label }))} onChange={p.onGroundRampChange} />
+              </div>
+            ) : null}
+            {p.paint === "colors" ? (
+              <div className="row">
+                <Check checked={p.stretch} onChange={p.onStretchChange} label="Stretch to the view" />
+                <Help label="Stretch">
+                  The colors spread over the values in view, so each part of the ramp holds about as many pixels: the
+                  foothills at 95 to 99% get a stretch of their own instead of one flat top color. A color then means a
+                  place among this view's values, not a fixed chance; the legend gives the chance at the ramp's ends and
+                  middle. Off: the ramp runs from the hide line to the ramp top.
+                </Help>
+              </div>
+            ) : null}
+            {p.paint === "colors" && p.stretch ? null : (
             <div className="row">
               <Seg
                 value={p.ignScale === "logit" ? "logit" : "probability"}
@@ -542,14 +589,32 @@ export function ControlPanel(p: ControlPanelProps) {
                 Log-odds: each step of the ramp is the same change in odds, so the top end (90%, 96%, 99%) spreads out.
               </Help>
             </div>
-            <div className="ramp" role="img" aria-label={`${p.groundRamp} ramp`} style={{ backgroundImage: rampGradient(rampStops(p.groundRamp)) }} />
-            <p className="muted small">The fuel head's chance the ground is burnable fuel, {Math.round(p.pHide * 100)}% (invisible) to {Math.round(p.pMax * 100)}% (ramp top). No weather.</p>
+            )}
+            {p.paint === "colors" ? (
+              <>
+                <div className="ramp" role="img" aria-label={`${p.groundRamp} ramp`} style={{ backgroundImage: rampGradient(rampStops(p.groundRamp)) }} />
+                <p className="muted small">
+                  {p.stretch && p.stretchMarks
+                    ? `The fuel head's chance the ground is burnable fuel, stretched to the view: ${Math.round(p.stretchMarks[0] * 100)}% at the dark end, ${Math.round(p.stretchMarks[1] * 100)}% in the middle, ${Math.round(p.stretchMarks[2] * 100)}% at the top. No weather.`
+                    : `The fuel head's chance the ground is burnable fuel, ${Math.round(p.pHide * 100)}% (invisible) to ${Math.round(p.pMax * 100)}% (ramp top). No weather.`}
+                </p>
+              </>
+            ) : (
+              <p className="muted small">
+                Sentinel-2 {p.years.img}, {S2_COMPS.find((c) => c.id === p.comp)!.bands}: {S2_COMPS.find((c) => c.id === p.comp)!.about} Its
+                opacity is the fuel head's chance the ground is fuel: faint below {Math.round(p.pHide * 100)}%, full from{" "}
+                {Math.round(p.pMax * 100)}%.
+                {p.years.img !== p.years.emb ? ` The imagery starts in ${p.years.img}, the nearest year to the embeddings' ${p.years.emb}.` : ""}
+              </p>
+            )}
             <Field label={`Hide below ${Math.round(p.pHide * 100)}%`}>
-              <Slider min={0} max={0.99} step={0.01} value={p.pHide} onChange={p.onPHideChange} label="Hide below" onReset={() => p.onPHideChange(0.5)} />
+              <Slider min={0} max={0.99} step={0.01} value={p.pHide} onChange={p.onPHideChange} label="Hide below" onReset={() => p.onPHideChange(p.fuelOnly ? 0 : 0.5)} />
             </Field>
-            <Field label={`Ramp top ${Math.round(p.pMax * 100)}%`}>
-              <Slider min={0.05} max={1} step={0.01} value={p.pMax} onChange={p.onPMaxChange} label="Ramp top" onReset={() => p.onPMaxChange(1)} />
-            </Field>
+            {p.paint === "colors" && p.stretch ? null : (
+              <Field label={`Ramp top ${Math.round(p.pMax * 100)}%`}>
+                <Slider min={0.05} max={1} step={0.01} value={p.pMax} onChange={p.onPMaxChange} label="Ramp top" onReset={() => p.onPMaxChange(1)} />
+              </Field>
+            )}
           </>
         ) : null}
         <p className="muted small">Reading: {reader}{s.aefReading > 0 ? ` · ${s.aefReading} tiles in flight` : ""}</p>

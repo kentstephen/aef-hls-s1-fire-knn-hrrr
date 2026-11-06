@@ -57,11 +57,25 @@ export type FuelLightProps = {
   seasonGray: number;
   /** 1 = every fuel pixel at full alpha. */
   solid: number;
+  /**
+   * The imagery under the fuel (fuel alone, no weather): 0 = off (the ramp's colors); 1 = a cover in the basemap's
+   * color over it, fading out from the hide line to the ramp top, so the imagery shows in full on the fuel and
+   * faintly (VEIL_FLOOR) on the rest. Every pixel of a tile is drawn, even where nothing covers, so the layer
+   * as a mask marks the whole tile.
+   */
+  veil: number;
+  /** 1 = the fuel colored by stretchTex (each fuel byte's place on the ramp in this view). */
+  stretch: number;
+  stretchTex: Texture;
   /** The season mask per tile pixel (r8, 0..1). */
   seasonTex: Texture;
 };
 
 const MODULE_NAME = "fuelLight";
+/** The cover over the imagery: CARTO Dark Matter's background (#0e0e0e), so covered ground looks like bare map. */
+const VEIL_RGB = "0.0549, 0.0549, 0.0549";
+/** How much of the imagery shows on ground that is not fuel. */
+const VEIL_FLOOR = "0.15";
 
 /**
  * Per fragment: the pixel's class (r8, nearest) -> its column in the lookup texture (row 0 rgb the
@@ -95,6 +109,8 @@ uniform ${MODULE_NAME}Uniforms {
   float seasonDim;
   float seasonGray;
   float solid;
+  float veil;
+  float stretch;
 } ${MODULE_NAME};
 `,
   inject: {
@@ -107,6 +123,7 @@ uniform sampler2DArray ffwiTex;
 uniform sampler2D lutTex;
 uniform sampler2D rampTex;
 uniform sampler2D seasonTex;
+uniform sampler2D stretchTex;
 
 const float WX_NAN = intBitsToFloat(0x7fc00000);
 /** A node outside the HRRR grid holds -Infinity at every hour: no weather here, ever. */
@@ -261,6 +278,26 @@ float fuelHash(vec2 p) {
         // the fuel weight: the fuel head's P(fuel) (fuel/head.ts) in place of the land cover class's weight;
         // no fuel plane (the COG overviews) draws nothing
         float fb = texture(fuelTex, geometry.uv).r * 255.0;
+        if (${MODULE_NAME}.veil > 0.5 && ${MODULE_NAME}.useWeather < 0.5) {
+          // the imagery under: how much of it shows here (0 to 1), the fuel's place on the ramp; the cover over it
+          // is the basemap's own color. No embedding: covered as non-fuel
+          float show = 0.0;
+          if (fb >= 0.5) {
+            float fv = (fb - 1.0) / 254.0;
+            if (fv >= ${MODULE_NAME}.pHide) {
+              if (${MODULE_NAME}.scale > 0.5) {
+                float h0 = clamp(${MODULE_NAME}.pHide, 0.002, 0.996);
+                float h1 = clamp(${MODULE_NAME}.pMax, 0.002, 0.996);
+                float pv = clamp(fv, 0.002, 0.996);
+                show = clamp((log(pv / (1.0 - pv)) - log(h0 / (1.0 - h0))) / max(log(h1 / (1.0 - h1)) - log(h0 / (1.0 - h0)), 0.01), 0.0, 1.0);
+              } else {
+                show = clamp((fv - ${MODULE_NAME}.pHide) / max(${MODULE_NAME}.pMax - ${MODULE_NAME}.pHide, 0.0001), 0.0, 1.0);
+              }
+            }
+          }
+          color = vec4(vec3(${VEIL_RGB}), (1.0 - show) * (1.0 - ${VEIL_FLOOR}));
+          return;
+        }
         if (fb < 0.5) discard;
         float fw = (fb - 1.0) / 254.0;
         if (${MODULE_NAME}.useWeather < 0.5) {
@@ -277,6 +314,8 @@ float fuelHash(vec2 p) {
           } else {
             tp = clamp((fw - ${MODULE_NAME}.pHide) / max(${MODULE_NAME}.pMax - ${MODULE_NAME}.pHide, 0.0001), 0.0, 1.0);
           }
+          // stretched to the view: the byte's place among the view's values, read between texels as the fuel is
+          if (${MODULE_NAME}.stretch > 0.5) tp = texture(stretchTex, vec2((fb + 0.5) / 256.0, 0.5)).r;
           // the season view: dim except where the tile's mask says a fire touched it
           float mk = texture(seasonTex, geometry.uv).r;
           float sm = ${MODULE_NAME}.seasonDim > 0.0 ? mix(${MODULE_NAME}.seasonDim, 1.0, mk) : 1.0;
@@ -315,7 +354,7 @@ float fuelHash(vec2 p) {
       }
     `,
   },
-  uniformTypes: { mode: "f32", layerIndex: "f32", hideBelow: "f32", rescaleMax: "f32", glowHours: "f32", grain: "f32", pHide: "f32", pMax: "f32", scale: "f32", zLo: "f32", zHi: "f32", useWeather: "f32", standingAlpha: "f32", wxGate: "f32", fieldAlpha: "f32", seasonDim: "f32", seasonGray: "f32", solid: "f32" },
+  uniformTypes: { mode: "f32", layerIndex: "f32", hideBelow: "f32", rescaleMax: "f32", glowHours: "f32", grain: "f32", pHide: "f32", pMax: "f32", scale: "f32", zLo: "f32", zHi: "f32", useWeather: "f32", standingAlpha: "f32", wxGate: "f32", fieldAlpha: "f32", seasonDim: "f32", seasonGray: "f32", solid: "f32", veil: "f32", stretch: "f32" },
   getUniforms: (p: Partial<FuelLightProps>) => ({
     mode: p.mode ?? 0,
     layerIndex: p.layerIndex ?? 0,
@@ -335,6 +374,9 @@ float fuelHash(vec2 p) {
     seasonDim: p.seasonDim ?? 0,
     seasonGray: p.seasonGray ?? 0,
     solid: p.solid ?? 0,
+    veil: p.veil ?? 0,
+    stretch: p.stretch ?? 0,
+    stretchTex: p.stretchTex,
     seasonTex: p.seasonTex,
     classTex: p.classTex,
     groundTex: p.groundTex,

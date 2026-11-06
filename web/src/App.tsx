@@ -5,6 +5,7 @@ import {
 } from "@developmentseed/deck.gl-raster/gpu-modules";
 import colormapsPngUrl from "@developmentseed/deck.gl-raster/gpu-modules/colormaps.png";
 import { ZarrLayer } from "@developmentseed/deck.gl-zarr";
+import { MaskExtension } from "@deck.gl/extensions";
 import { PathLayer, PolygonLayer } from "@deck.gl/layers";
 import type { Device, Texture } from "@luma.gl/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -29,7 +30,7 @@ import {
   daysIn, type FirePick, fireRecord, fuelNear, goesMask, loadSeasonPerimeters, loadSeasonStarts, SEASON_YEAR, seasonLayers, seasonMask,
   type SeasonPerimeter, type SeasonStarts,
 } from "./season.js";
-import { S2_YEARS, S2Imagery } from "./s2.js";
+import { type S2Comp, S2_COMPS, S2_YEARS, S2Imagery } from "./s2.js";
 import { byHour, type FirePixel, type GoesDoc, goesLayers, loadGoesDoc, loadGoesPerimeter, readGoesFire } from "./goes.js";
 import { fireOutline, goesBoxLayers, type GoesEvent, goesEvents, ringBox } from "./goesboxes.js";
 import { FireReach } from "./reach.js";
@@ -61,7 +62,7 @@ import { cacheSource } from "./aef/weather.js";
 import { CONUS_MEAN } from "./aef/calibration.js";
 import { CountyTable, countyLayer, loadCounties, unitsGrid, type CountyFeature } from "./counties.js";
 import { DeckGlOverlay } from "./lib/deckgl-overlay.js";
-import { ControlPanel, loadingSummary, type ColormapChoiceId, type FuelChoice, type IgnScale, type Status, type TimeMode } from "./ui/ControlPanel.js";
+import { ControlPanel, loadingSummary, type ColormapChoiceId, type FuelChoice, type FuelPaint, type IgnScale, type Status, type TimeMode } from "./ui/ControlPanel.js";
 
 /**
  * The HRRR weather off for now: no forecast is read, nothing plays, and the ground is the fuel head's P(fuel) alone.
@@ -80,6 +81,9 @@ const EMB_YEARS = YEARS.filter((y) => y - 2 >= YEARS[0]!);
 const MAP_STYLE_URL = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
 /** First basemap layer above water in CARTO styles; data goes under roads/labels. */
 const BEFORE_ID = "aeroway-runway";
+/** The basemap's first label layer: the imagery under the fuel draws below it, so place names stay on top. */
+const LABEL_ID = "waterway_label";
+const PAINTS: FuelPaint[] = ["colors", "imagery"];
 /** How long the window's dates hold still before its weather starts loading. */
 const WINDOW_SETTLE_MS = 700;
 /** 100 ms a frame: a week in 17 s. */
@@ -168,6 +172,18 @@ export default function App() {
   /** The pair's left map (P): the imagery beside the fuel, moving together. */
   const leftRef = useRef<MapRef>(null);
   const [pair, setPair] = useState(false);
+  const pairRef = useRef(pair);
+  pairRef.current = pair;
+  /** I: how the fuel is drawn (the ramp's colors, or the imagery through it). */
+  const [paint, setPaint] = useState<FuelPaint>("colors");
+  /** The fuel's colors stretched to the view's own values (histogram equalization), or P(fuel) as it is. */
+  const [stretchOn, setStretchOn] = useState(true);
+  /** The P(fuel) at the stretched ramp's bottom, middle and top, for the legend. */
+  const [stretchMarks, setStretchMarks] = useState<[number, number, number] | null>(null);
+  /** C: the painted imagery's colors (true color or a band stack); the pair's left and Space stay true color. */
+  const [comp, setComp] = useState<S2Comp>("live");
+  /** The imagery painted on the fuel is masked to the fuel's loaded tiles, so ground not read yet stays bare map. */
+  const maskExt = useMemo(() => new MaskExtension(), []);
   /** Space held: the imagery in place of the fuel. */
   const [holding, setHolding] = useState(false);
   const holdingRef = useRef(false);
@@ -332,10 +348,11 @@ export default function App() {
   }, [isPlaying, frameDurationMs]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      // Space held: the imagery; P (side by side) is off; [ ] step the embeddings' year
-      // const pairKey = e.key === "p" || e.key === "P";
+      // Space held: the imagery; P the imagery beside the map; [ ] step the embeddings' year; I how the fuel is drawn
+      const pairKey = e.key === "p" || e.key === "P";
       const space = e.code === "Space" || e.key === " ";
-      const pairKey = false;
+      const paintKey = e.key === "i" || e.key === "I";
+      const compKey = e.key === "c" || e.key === "C";
       const yearKey = e.key === "[" ? -1 : e.key === "]" ? 1 : 0;
       const seasonKey = !FUEL_ONLY && (e.key === "s" || e.key === "S");
       const full = e.key === "f" || e.key === "F";
@@ -345,7 +362,7 @@ export default function App() {
       const burn = e.key === "b" || e.key === "B";
       if (e.key === "Escape" && burnPickRef.current) { setBurnPick(null); return; }
       if (e.key === "Escape" && boxPickRef.current !== null) { backOutRef.current(); return; }
-      if (!space && !pairKey && !yearKey && !seasonKey && !full && !labels && !pick && !ground && !burn) return;
+      if (!space && !pairKey && !paintKey && !compKey && !yearKey && !seasonKey && !full && !labels && !pick && !ground && !burn) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement | null;
       const tag = el?.tagName;
@@ -359,8 +376,13 @@ export default function App() {
       // if (space && goesOnRef.current) toggleGoesPlayRef.current();
       // else if (space && seasonOnRef.current) toggleSeasonPlayRef.current();
       // else if (space) setIsPlaying((p) => !p);
-      if (space) { if (!e.repeat) setHolding(true); }
+      // Space is for the single map; the pair already shows the whole picture on its left
+      if (space) { if (!e.repeat && !pairRef.current) setHolding(true); }
       else if (pairKey) { if (!e.repeat) setPair((v) => !v); }
+      // I: the fuel in the ramp's colors, the imagery through the fuel, the imagery through the non-fuel
+      else if (paintKey) { if (!e.repeat) setPaint((v) => PAINTS[(PAINTS.indexOf(v) + 1) % PAINTS.length]!); }
+      // C: the painted imagery's colors
+      else if (compKey) { if (!e.repeat) setComp((v) => S2_COMPS[(S2_COMPS.findIndex((c) => c.id === v) + 1) % S2_COMPS.length]!.id); }
       // [ and ]: the embeddings a year back or forward
       else if (yearKey) stepEmbYearRef.current(yearKey);
       // B: the burned areas on or off
@@ -441,7 +463,8 @@ export default function App() {
   }, [tauHours]);
   const [fuel, setFuelState] = useState<FuelChoice>("lit");
   /** Ignition mode: hidden below this probability, ramp top at pMax. */
-  const [pHide, setPHide] = useState(0.5);
+  // the fuel alone fills every pixel with a color (nothing hidden, no fade): low P(fuel) at the ramp's dark end
+  const [pHide, setPHide] = useState(FUEL_ONLY ? 0 : 0.5);
   const [pMax, setPMax] = useState(WEATHER_ON ? 0.95 : 1);
   /** How the ignition logit meets the ramp: probability, logit, or rank among the pixels in view this hour. */
   const [ignScale, setIgnScale] = useState<IgnScale>("logit");
@@ -1041,6 +1064,21 @@ export default function App() {
   /** The imagery kept on in place of the fuel (the panel's box), as holding Space does for a moment. */
   const [imgOn, setImgOn] = useState(false);
   const showImg = holding || imgOn;
+  // the stretch follows the view and the tiles coming in, at most every 400 ms
+  const stretchTimer = useRef<number | null>(null);
+  useEffect(() => {
+    if (!aefLayers) return;
+    if (!stretchOn || !view) { aefLayers.setStretch(null); setStretchMarks(null); return; }
+    if (stretchTimer.current !== null) return;
+    stretchTimer.current = window.setTimeout(() => {
+      stretchTimer.current = null;
+      aefLayers.setStretch(aefLayers.fuelStretch(view));
+      const at = [0, 0.5, 1].map((t) => aefLayers.stretchAt(t));
+      setStretchMarks(at.every((v) => v !== null) ? (at as [number, number, number]) : null);
+    }, 400);
+  }, [aefLayers, view, aefVersion, stretchOn, embYear]);
+  /** The fuel painted with the imagery: the fuel alone (no weather), in either of the imagery paints. */
+  const paintOn = paint !== "colors" && fuel === "lit" && !(WEATHER_ON && useWeather);
   const [s2Version, setS2Version] = useState(0);
   const s2 = useMemo(() => new S2Imagery(() => setS2Version((v) => v + 1)), []);
   // the year's footprints under the view, looked for as the view settles
@@ -1161,6 +1199,13 @@ export default function App() {
     const out: unknown[] = [];
     // the imagery bare: over the basemap's streets and labels (no beforeId puts it on top), nothing drawn over it
     if (view) out.push(...s2.layers({ year: imgYear, view, visible: showImg, prefix: "" }));
+    // the fuel painted with the imagery: its own layers in the chosen colors, under the labels, the fuel's cover over
+    // them, masked to the fuel's loaded tiles (from the zoom the fuel is read at)
+    if (view && paintOn && aefLayers)
+      out.push(...s2.layers({
+        year: imgYear, view, visible: !showImg && zoom >= MOSAIC_MIN_ZOOM, prefix: "R-", beforeId: LABEL_ID, comp,
+        extensions: { extensions: [maskExt], maskId: aefLayers.fineId(), maskByInstance: false },
+      }));
     if (showRaster && source && getTileData && colormapTexture) {
       out.push(
         new ZarrLayer<zarr.Readable, "float32", FfwiTileData>({
@@ -1209,15 +1254,19 @@ export default function App() {
           seasonGray: false,
           // every fuel pixel at full strength (the GOES view and the fuel alone)
           solid: boxesOn || FUEL_ONLY,
+          veil: paintOn ? 1 : 0,
+          stretch: stretchOn && !paintOn,
+          operation: paintOn ? "mask+draw" : "draw",
           // a picked fire: its whole area read, so it can be seen whole from zoom 10 (nothing outside it is read)
           only: boxesOn && boxPicked && reach ? { bbox: reach.bbox(), minZoom: MOSAIC_MIN_ZOOM - 1 } : undefined,
-          beforeId: BEFORE_ID,
+          // the fuel alone over every basemap feature but the labels
+          beforeId: paintOn || FUEL_ONLY ? LABEL_ID : BEFORE_ID,
         }),
       );
     }
     // the burned areas over the fuel; the imagery stays bare
-    if (burnAreas) out.push(burnAreaLayer({ areas: burnAreas, visible: burnOn && !showImg, beforeId: BEFORE_ID }));
-    if (burnPick) out.push(selectedBurnLayer({ area: burnPick.f, visible: burnOn && !showImg, beforeId: BEFORE_ID }));
+    if (burnAreas) out.push(burnAreaLayer({ areas: burnAreas, visible: burnOn && !showImg, beforeId: paintOn || FUEL_ONLY ? LABEL_ID : BEFORE_ID }));
+    if (burnPick) out.push(selectedBurnLayer({ area: burnPick.f, visible: burnOn && !showImg, beforeId: paintOn || FUEL_ONLY ? LABEL_ID : BEFORE_ID }));
     if (seasonOn && seasonData && seasonJoin && !showImg) {
       out.push(
         ...seasonLayers({
@@ -1324,7 +1373,7 @@ export default function App() {
     glowHours, grain, light, contourLines, pHide, pMax, ignScale, zLo, zHi, rankRamp, useWeather, standingAlpha, wxGate, fieldAlpha,
     timeIdx, weatherSrc, weatherKey, timeMode, countyTable, counties, countyVersion, cacheVersion, weekVersion, timeDepth, zHideCounty, wxGate,
     seasonOn, seasonData, seasonJoin, seasonPerims, seasonDay, seasonReach,
-    s2, s2Version, imgYear, showImg, view, burnAreas, burnOn, burnPick,
+    s2, s2Version, imgYear, showImg, view, burnAreas, burnOn, burnPick, paintOn, paint, comp, maskExt, stretchOn,
     goesOn, goesDoc, goesNow, goesSeen, goesPerim, goesHour, goesRead,
     boxesOn, boxEvents, boxPick, flyToBox, boxPicked, reachLines, boxNowEdges, boxNow, reach,
   ]);
@@ -1448,9 +1497,9 @@ export default function App() {
       >
         <DeckGlOverlay layers={deckLayers as never} interleaved onDeviceInitialized={setDevice} overlayRef={overlayRef} />
       </MaplibreMap>
-      {pair || showImg ? (
+      {pair || showImg || paintOn ? (
         <div className="pair-tag" style={{ position: "absolute", top: 12, right: 12 }}>
-          {showImg ? `Sentinel-2 ${imgYear}` : `Fuel from the ${embYear} embeddings`}
+          {showImg ? `Sentinel-2 ${imgYear}` : paintOn ? `Fuel from the ${embYear} embeddings · Sentinel-2 ${imgYear}, ${S2_COMPS.find((c) => c.id === comp)!.label}` : `Fuel from the ${embYear} embeddings`}
         </div>
       ) : null}
       </div>
@@ -1638,6 +1687,13 @@ export default function App() {
         status={status}
         weatherOn={WEATHER_ON}
         fuelOnly={FUEL_ONLY}
+        paint={paint}
+        onPaintChange={setPaint}
+        comp={comp}
+        onCompChange={setComp}
+        stretch={stretchOn}
+        onStretchChange={setStretchOn}
+        stretchMarks={stretchOn && !paintOn ? stretchMarks : null}
         years={{
           emb: embYear,
           embOptions: EMB_YEARS,

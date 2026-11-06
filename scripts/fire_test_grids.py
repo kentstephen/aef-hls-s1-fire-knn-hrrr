@@ -15,6 +15,7 @@ if the process passes --max-gb.
 
     uv run scripts/fire_test_grids.py --check     # the numpy head against the export's own probe pixels
     uv run scripts/fire_test_grids.py [--workers 8] [--max-gb 4]
+    uv run scripts/fire_test_grids.py --need data/risk_backtest/grids_needed.parquet --no-lf   # the risk backtest's
 """
 import argparse
 import json
@@ -129,13 +130,15 @@ def main():
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--max-gb", type=float, default=4.0)
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--need", type=Path, default=D / "grids_needed.parquet", help="(cy, cx, emb_year) to make")
+    ap.add_argument("--no-lf", action="store_true", help="skip the LANDFIRE chunk")
     a = ap.parse_args()
     head = Head()
     if a.check:
         return check(head)
     GRIDS.mkdir(parents=True, exist_ok=True)
     LFD.mkdir(parents=True, exist_ok=True)
-    need = pd.read_parquet(D / "grids_needed.parquet")
+    need = pd.read_parquet(a.need)
     todo = [r for r in need.itertuples() if not (GRIDS / f"{r.cy}_{r.cx}_{r.emb_year}.npz").exists()]
     print(f"{len(todo)} grids to make ({len(need) - len(todo)} done)", flush=True)
     arr = open_aef()
@@ -147,7 +150,7 @@ def main():
         q = np.where(np.isnan(p), 255, np.round(np.nan_to_num(p) * 254)).astype(np.uint8)
         np.savez_compressed(GRIDS / f"{r.cy}_{r.cx}_{r.emb_year}.npz", p=q)
         lf = LFD / f"{r.cy}_{r.cx}.npz"
-        if not lf.exists():
+        if not a.no_lf and not lf.exists():
             try:
                 np.savez_compressed(lf, fbfm=landfire(r.cy, r.cx))
             except Exception as e:  # LANDFIRE's service can fail; the baseline is then missing for this chunk

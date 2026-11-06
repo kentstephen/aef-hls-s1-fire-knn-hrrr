@@ -42,6 +42,34 @@ can differ by kilometers.
 
 `results/fire_test.json`, `results/fire_test_2025.json`.
 
+### The risk backtest (`scripts/risk_backtest.py`)
+
+The fire risk map's value (below) recomputed in Python, from what was known the year before each fire: fuel from
+that year's embeddings, slope and facing from Mapterhorn, fires on record only from earlier years (leak check: 0).
+The Python value matches the map's click card at the two spots compared. Same 200 fires and 600 starts as the fire
+test; controls are all of the fire's own year, so only the ground differs. AUC per fire, mean over fires, 95 %
+bootstrap over fires.
+
+| Burned ground vs | Value | Fuel alone | Slope | Fuel within 500 m | Facing | Years since a fire |
+| --- | --- | --- | --- | --- | --- | --- |
+| unburned ground across the line | 0.599 [0.579, 0.620] | 0.575 [0.559, 0.592] | 0.571 | 0.576 | 0.518 | 0.495 |
+| a chunk 5 to 10 km away, no fire that year | 0.586 [0.551, 0.624] | 0.575 [0.542, 0.607] | 0.561 | 0.538 | 0.515 | 0.487 |
+| a chunk 20 to 30 km away, no fire that year | 0.652 [0.614, 0.691] | 0.610 [0.574, 0.645] | 0.583 | 0.595 | 0.524 | 0.512 |
+
+- Across the line, value minus fuel on the same fires: +0.024 [+0.007, +0.040]. The value is above fuel alone in
+  every fire year, 2020 to 2026 (by 0.02 to 0.04; each year's interval is wide).
+- Slope and fuel nearby carry the gain; facing adds little and years since the last fire nothing. The four parts
+  without fuel, averaged, score 0.578; multiplying by fuel adds 0.021 over that average.
+- Older years of embeddings (2017 to the year before the fire) add nothing here: mean and lowest P(fuel) over the
+  years score as one year does (0.577, 0.578), and the year-to-year embedding change (largest, total, last three
+  years, years since the largest) sits at 0.49 to 0.53.
+- Start points: the value scores 0.33 at the point and 0.46 within 100 m (fuel alone 0.31, 0.44), the same
+  pattern as the fire test. Starts land on roads and town edges, where the value is low, so it says where fire
+  spreads, not where it starts.
+
+`results/risk_backtest.json`, `results/risk_backtest_starts.json`. Needs the fire test's data and
+`fire_test_grids.py --need <parquet> --no-lf`; the steps are in the script's docstring.
+
 ### Live fuel moisture (`scripts/make_samples.py`, `sample_*.py`, `fit_knn.py`)
 
 The repo's first question: does AlphaEarth help predict live fuel moisture (National Fuel Moisture Database field
@@ -51,7 +79,7 @@ with modest skill overall (R2 0.2 to 0.5). `results/knn_aef_*.json`.
 ### The web map (`web/`)
 
 React, MapLibre and deck.gl. Nothing is precomputed but the model weights and small file indexes; the embeddings,
-the fire records and the Sentinel-2 imagery are read from their public stores when the view opens. Two pages:
+the fire records and the Sentinel-2 imagery are read from their public stores when the view opens. Three pages:
 
 **GOES triage** (the default page, `web/src/triage/`): map left, table right. Every fire GOES-West saw over
 California in the Park Fire week (Jul 22 to Aug 2, 2024) fills the table as its scans are read, ranked by a
@@ -83,6 +111,21 @@ whole week is tens of GB; the bottom rows may never fill.
   software GPU (SwiftShader), about 20 times slower, so time it headed.
 - Behind `FUEL_ONLY` in `App.tsx` (off while it is true): the 2025 season of starts and burns, Overture buildings
   colored by nearby fuel, GOES-West fires as boxes, one fire hour by hour.
+
+**The fire risk map** (`?app=risk`, `web/src/risk/`): where fuel is ready to burn, and why. From zoom 12, a value
+per 10 m pixel for the area in view, drawn in viridis:
+
+    value = fuel x (fuel within 500 m + slope + facing + years since a fire) / 4
+
+- Fuel is the fuel head on the embeddings; fuel within 500 m the share of fuel around the pixel. Slope (full at 30
+  degrees) and facing (south-west most, in step with slope up to 10 degrees) come from Mapterhorn's GLO-30 tiles,
+  cleaned with a 5 x 5 median (drops single-cell tree and building spikes) and a Gaussian, then blended to 10 m.
+  Years since a fire (full at 20) come from NIFC's all-years perimeter history before 2020 and WFIGS from 2020.
+- Clicking a spot lists the parts behind its value. Overture draws over the picture by kind: roads, water, power
+  lines and infrastructure, parks and protected land (hover anywhere inside for its name and the value there), and
+  from zoom 14 buildings. CARTO's base map sits under the picture, so it shows only where the value has not loaded;
+  its labels stay on top.
+- Checked against past fires in the risk backtest above.
 
 ```bash
 npm --prefix web install
@@ -223,9 +266,10 @@ Grids are network-bound at about 460 chunks a minute (~56 MB/s) however many run
 ## Data
 
 All public, no credentials: AlphaEarth Foundations embeddings (tge-labs on Source Cooperative), LANDFIRE LF2024,
-NIFC WFIGS incident locations and perimeters, NOAA GOES-18 ABI on AWS, Overture Maps buildings and roads, NAIP, the
-National Fuel Moisture Database, HLS and Sentinel-1 (for the moisture work), NOAA HRRR via dynamical.org, NASA FIRMS
-VIIRS S-NPP, CAL FIRE incidents, USFS FACTS prescribed burns, Mapterhorn terrain tiles.
+NIFC WFIGS incident locations and perimeters, NIFC InterAgency Fire Perimeter History, NOAA GOES-18 ABI on AWS,
+Overture Maps (buildings, roads, water, land use, infrastructure), CARTO's dark base map, NAIP, the National Fuel
+Moisture Database, HLS and Sentinel-1 (for the moisture work), NOAA HRRR via dynamical.org, NASA FIRMS VIIRS S-NPP,
+CAL FIRE incidents, USFS FACTS prescribed burns, Mapterhorn terrain tiles.
 
 Python scripts run with `uv run` (dependencies inline in each script).
 

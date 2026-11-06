@@ -54,6 +54,18 @@ export const MAGMA_STOPS = [
   "#feca8d", "#fed395", "#fdda9c", "#fde3a5", "#fcecae", "#fcf6b8", "#fcfdbf", "#fcfdc8", "#fdfed0", "#fefed9",
 ];
 
+/**
+ * Bamako (Crameri Scientific colour maps, cmcrameri) as 50 stops over its full range: dark teal, moss green,
+ * olive, ochre, pale sand. No red; lightness rises the whole way.
+ */
+export const BAMAKO_STOPS = [
+  "#003b47", "#023c46", "#053e45", "#073f43", "#0a4142", "#0d4340", "#0f443e", "#12463c", "#15483a", "#194a38",
+  "#1c4d36", "#204f34", "#235132", "#27542f", "#2c572c", "#305a2a", "#355c27", "#395f24", "#3f6321", "#44661e",
+  "#49691a", "#4e6d17", "#537014", "#5a7410", "#5f780d", "#657c09", "#6a7f05", "#718302", "#788501", "#7f8700",
+  "#858800", "#8c8a00", "#948c01", "#9b8e04", "#a1920b", "#a89713", "#b09d1d", "#b7a225", "#bea82e", "#c5ad37",
+  "#cbb341", "#d3b94f", "#d9bf5b", "#dec567", "#e4ca73", "#ead181", "#f0d68c", "#f5db97", "#fae0a3", "#ffe5ad",
+];
+
 export function hexToRgb(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
@@ -116,13 +128,14 @@ export function evenLightness(stops: readonly string[]): string[] {
   return out;
 }
 
-export type GroundRamp = "viridis" | "inferno" | "magma" | "solar" | "fire";
+export type GroundRamp = "viridis" | "inferno" | "magma" | "solar" | "fire" | "bamako";
 export const GROUND_RAMPS: { id: GroundRamp; label: string; stops: readonly string[] }[] = [
   { id: "inferno", label: "Inferno", stops: evenLightness(INFERNO_STOPS) },
   { id: "viridis", label: "Viridis", stops: evenLightness(VIRIDIS_STOPS) },
   { id: "magma", label: "Magma", stops: evenLightness(MAGMA_STOPS) },
   { id: "solar", label: "Solar", stops: evenLightness(SOLAR_STOPS) },
   { id: "fire", label: "Fire", stops: evenLightness(FIRE_STOPS) },
+  { id: "bamako", label: "Bamako", stops: evenLightness(BAMAKO_STOPS) },
 ];
 export const rampStops = (id: GroundRamp): readonly string[] => GROUND_RAMPS.find((r) => r.id === id)!.stops;
 

@@ -42,6 +42,30 @@ can differ by kilometers.
 
 `results/fire_test.json`, `results/fire_test_2025.json`.
 
+### What P(fuel) measures, and what it does not
+
+P(fuel) answers one question: is this ground burnable land (any FBFM40 burnable model) or not (urban and roads,
+snow and ice, farmland, water, bare, codes 91 to 99). It is a map of land type, not of fuel load, dryness or
+readiness to burn.
+
+It barely moves across a fire. The Park Fire (July 2024), averaged inside its outline in the map's fire bars
+(near Cohasset, zoom 14, 12 mosaic chunks): 94, 94, 95, 96, 94, 95, 91 % for 2019 to 2025. Zoomed out
+(151 chunks): 95, 96, 97, 97, 96, 96, 94 %.
+
+That follows from the labels. LANDFIRE has no "burned" class: after a fire it changes the fuel model (timber to
+grass-shrub, say) but keeps it burnable, so by the definition the head learned, a burned slope is still fuel. The
+yearly embedding of a burned hillside also still looks like wildland. Summing the six burnable kinds into one
+number throws away the part a fire changes.
+
+What this means:
+- On grass, high P(fuel) a year after a fire is close to right: grass is fuel again the next season.
+- On timber, it hides most of what matters: less load and a different kind of fuel for decades.
+- The map's strength is drawing the line between wildland and everything else at 10 m, each year. Its edge over
+  LANDFIRE in the fire test comes from that line, not from knowing which wildland is more dangerous.
+- Not checked: whether the head's kinds (rather than P(fuel)) shift after timber fires such as Caldor or Dixie
+  (2021). If they do, the model holds the fuel change and only the map's single number hides it. A fuel load from
+  the kinds (Scott and Burgan loads per kind) is another way in; not built.
+
 ### The risk backtest (`scripts/risk_backtest.py`)
 
 The fire risk map's value (below) recomputed in Python, from what was known the year before each fire: fuel from

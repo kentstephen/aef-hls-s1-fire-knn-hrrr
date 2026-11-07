@@ -45,6 +45,7 @@ const scoreVolume = async (e: Int8Array, n: number) => {
 type Job =
   | { type: "classify"; id: number; data: Int8Array; n: number }
   | { type: "zarr"; id: number; timeIdx: number; py0: number; px0: number; h: number; w: number; fuelYearIdx?: number[]; value?: "pfuel" | "volume"; lean?: boolean }
+  | { type: "raw"; id: number; years: number[]; py0: number; px0: number; h: number; w: number }
   | { type: "abort"; id: number };
 
 let mosaic: Promise<AefArray> | null = null;
@@ -153,6 +154,24 @@ self.onmessage = async (ev: MessageEvent<Job>) => {
   }
   const ac = new AbortController();
   running.set(m.id, ac);
+  if (m.type === "raw") {
+    // the chunk's raw int8 blocks for the years asked, one after another, for a GPU pass on the page (replay-gpu.ts)
+    try {
+      if (!mosaic) mosaic = openAefMosaic().then((o) => o.arr);
+      mosaic.catch(() => (mosaic = null));
+      const arr = await mosaic;
+      const got = await Promise.all(m.years.map((t) => chunkYear(arr, t, m.py0, m.px0, m.h, m.w, ac.signal, false)));
+      const n = NUM_BANDS * m.h * m.w;
+      const out = new Int8Array(n * got.length);
+      got.forEach((d, i) => out.set(d, i * n));
+      postMessage({ id: m.id, raw: out }, { transfer: [out.buffer] });
+    } catch (e) {
+      fail(m.id, e);
+    } finally {
+      running.delete(m.id);
+    }
+    return;
+  }
   try {
     if (!mosaic) mosaic = openAefMosaic().then((o) => o.arr);
     mosaic.catch(() => (mosaic = null));

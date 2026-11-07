@@ -25,7 +25,9 @@ import { BURN_MASK_ID, type BurnArea, burnAreaLayer, burnAreasAt, burnGrid, burn
 // import { BurnHist, type YearHist } from "./fuel/burnHist.js";
 // import { FireHist } from "./ui/FireHist.js";
 import { binView, viewGrid, type ViewHist as ViewHistData } from "./fuel/viewHist.js";
-import { beforeAlpha, COOL_H, HOT_H, LEAD_H, Replay, REPLAY_FIRES } from "./replay.js";
+import { COOL_H, HOT_H, LEAD_H, Replay, REPLAY_FIRES } from "./replay.js";
+import { FFWI_GATE, fieldLayer, ReplayWeather } from "./replay-wx.js";
+import { ReplayTiles } from "./replay-gpu.js";
 import { REPLAY_SPEEDS, ReplayCard } from "./ui/ReplayCard.js";
 import { HEADS, NO_CLASS, type Teacher } from "./aef/head.js";
 import { AefLayers, type FuelValue } from "./aef/layers.js";
@@ -82,13 +84,24 @@ const WEATHER_ON = false;
 const FUEL_ONLY = true;
 /** ?app=replay: one fire played back over its ground (replay.ts), the year before's fuel to the year after's. */
 const REPLAY = new URLSearchParams(location.search).get("app") === "replay" ? REPLAY_FIRES.park! : null;
+/** The replay with GOES (burning, the after year) or the fuel and the weather alone: off while the weather view is worked out. */
+const REPLAY_GOES = false;
+/** The unburned fuel's opacity where the hour's Fosberg is under the line, and the field's around the fire. */
+const REPLAY_BASE_ALPHA = 0.45;
+const REPLAY_FIELD_ALPHA = 0.5;
 /** The replay's whole fire in view, clear of the panel on the left. */
 const REPLAY_PAD = { top: 30, bottom: 30, left: 440, right: 30 };
 /** NIFC names come in capitals ("PARK"). */
 const titleCase = (s: string) => s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 /** The embeddings' years the fuel can be read for: the fuel model reads each year with the two before it. */
 const EMB_YEARS = YEARS.filter((y) => y - 2 >= YEARS[0]!);
-const MAP_STYLE_URL = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
+/** CARTO's basemaps. The fuel map is on Dark Matter (its imagery cover is that map's background). */
+export const BASEMAPS = {
+  positron: { label: "Positron", url: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json" },
+  voyager: { label: "Voyager", url: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json" },
+  dark: { label: "Dark", url: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json" },
+} as const;
+export type Basemap = keyof typeof BASEMAPS;
 /** First basemap layer above water in CARTO styles; data goes under roads/labels. */
 const BEFORE_ID = "aeroway-runway";
 /** The basemap's first label layer: the imagery under the fuel draws below it, so place names stay on top. */
@@ -165,13 +178,13 @@ function addHillshade(map: import("maplibre-gl").Map, on: boolean) {
 }
 
 /** The CARTO style without its own building footprints, so they never draw (the buildings are Overture's). */
-async function loadMapStyle(): Promise<StyleSpecification | string> {
+async function loadMapStyle(url: string): Promise<StyleSpecification | string> {
   try {
-    const style = (await (await fetch(MAP_STYLE_URL)).json()) as StyleSpecification;
+    const style = (await (await fetch(url)).json()) as StyleSpecification;
     style.layers = style.layers.filter((l) => !("source-layer" in l && l["source-layer"] === "buildings"));
     return style;
   } catch {
-    return MAP_STYLE_URL;
+    return url;
   }
 }
 
@@ -210,6 +223,8 @@ export default function App() {
   /** The replay's clock, hours from the fire's discovery hour. */
   const [replayHour, setReplayHour] = useState(-LEAD_H);
   const toggleReplayRef = useRef<() => void>(() => {});
+  /** Bumps as the replay's GPU tiles come in (at most every 300 ms). */
+  const [replayTileVersion, setReplayTileVersion] = useState(0);
   /** M: the fuel only inside the burned areas (a GPU mask from their outlines). */
   const [burnMask, setBurnMask] = useState(false);
   /** The P(fuel) at the stretched ramp's bottom, middle and top, for the legend. */
@@ -237,9 +252,13 @@ export default function App() {
   const backOutRef = useRef<() => void>(() => {});
   const stepImgYear = (d: number) => stepImgYearRef.current(d);
   const [mapStyle, setMapStyle] = useState<StyleSpecification | string | null>(null);
+  /** The basemap: the replay opens on Positron (light) and can switch; the fuel map stays on Dark Matter. */
+  const [basemap, setBasemap] = useState<Basemap>(REPLAY ? "positron" : "dark");
   useEffect(() => {
-    void loadMapStyle().then(setMapStyle);
-  }, []);
+    let gone = false;
+    void loadMapStyle(BASEMAPS[basemap].url).then((s) => { if (!gone) setMapStyle(s); });
+    return () => { gone = true; };
+  }, [basemap]);
   /** Whether the cursor picks (the tooltip); Q toggles it. */
   const pickRef = useRef(true);
   const cacheRef = useRef(new FfwiTileCache());
@@ -1148,8 +1167,10 @@ export default function App() {
       return;
     }
     const g = viewGrid(view);
-    const mask = burnMask && burnAreas ? burnGrid(burnAreas, view, g.gw, g.gh) : null;
-    const { counts, off, unread } = aefLayers.fuelOnGrid(g, mask, REPLAY ? { hour: replayHour, hotH: HOT_H, coolH: COOL_H } : undefined);
+    const mask = burnMask && burnAreas && !REPLAY ? burnGrid(burnAreas, view, g.gw, g.gh) : null;
+    const { counts, off, unread } = REPLAY
+      ? replayTiles ? { ...replayTiles.onGrid(g, view, replayHour, HOT_H, COOL_H, REPLAY_GOES), off: 0 } : { counts: new Float64Array(256), off: 0, unread: 0 }
+      : aefLayers.fuelOnGrid(g, mask);
     // the replay reads only inside its outline: the rest of the view is never read, so "not read yet" says nothing there
     setViewHist(binView(counts, off, REPLAY ? 0 : unread, g.gw * g.gh, {
       pHide,
@@ -1165,19 +1186,19 @@ export default function App() {
       viewHistTimer.current = null;
       viewHistRun.current();
     }, 400);
-  }, [aefLayers, view, zoom, aefVersion, stretchOn, stretchMarks, pHide, pMax, ignScale, burnMask, burnAreas, fuelValue, embYear, groundRamp, paintOn, fuel, useWeather, replayHour]);
+  }, [aefLayers, view, zoom, aefVersion, stretchOn, stretchMarks, pHide, pMax, ignScale, burnMask, burnAreas, fuelValue, embYear, groundRamp, paintOn, fuel, useWeather, replayHour, replayTileVersion]);
   // ---- the replay (?app=replay): the fire's GOES scans read once, each tile's arrival hours laid on it, the clock played
   const [replay, setReplay] = useState<Replay | null>(null);
   const [replayVersion, setReplayVersion] = useState(0);
+  /** The fire weather that lights the unburned fuel (replay-wx.ts), once read. */
+  const [replayWx, setReplayWx] = useState<ReplayWeather | null>(null);
   const [replayPlaying, setReplayPlaying] = useState(false);
   const [replaySpeed, setReplaySpeed] = useState(REPLAY_SPEEDS[1]!);
   useEffect(() => {
     if (!REPLAY) return;
-    // the volume of the year after, with the year before's beside it (v0): two years read per tile
-    aefLayers?.setFuelYears([REPLAY.before, REPLAY.after]);
     setFuelValue("volume");
     setBurnOn(false);
-  }, [aefLayers]);
+  }, []);
   useEffect(() => {
     if (!REPLAY || !burnAreas) return;
     const year = (f: BurnArea) => (f.properties.attr_FireDiscoveryDateTime == null ? null : new Date(f.properties.attr_FireDiscoveryDateTime).getUTCFullYear());
@@ -1187,16 +1208,19 @@ export default function App() {
     if (!area) { setError(`replay: no ${REPLAY.name} ${REPLAY.year} outline in the burned areas`); return; }
     const r = new Replay(REPLAY, area);
     setReplay(r);
-    // only the 10 m tiles the outline touches are read
-    aefLayers?.setReadFilter(r.touches);
     const [w, s, e, n] = r.bbox;
     mapRef.current?.getMap().fitBounds([[w, s], [e, n]], { padding: REPLAY_PAD, duration: 0 });
     const ac = new AbortController();
-    r.read(() => setReplayVersion(r.version), ac.signal).catch((err) => { if ((err as Error).name !== "AbortError") setError(`replay GOES: ${String(err)}`); });
+    // the fire weather over the fire, from the HRRR analysis: ten days from the clock's start
+    const wx = new ReplayWeather(r.bbox, r.t0);
+    wx.load(-LEAD_H, 240, ac.signal).then(() => { if (!ac.signal.aborted) setReplayWx(wx); }).catch((err) => { if ((err as Error).name !== "AbortError") setError(`replay HRRR: ${String(err)}`); });
+    if (REPLAY_GOES) r.read(() => setReplayVersion(r.version), ac.signal).catch((err) => { if ((err as Error).name !== "AbortError") setError(`replay GOES: ${String(err)}`); });
     return () => ac.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [burnAreas]);
-  const replayHours = replay ? (replay.done ? replay.hours : Math.floor(replay.hoursRead)) : 0;
+  const replayHours = REPLAY_GOES
+    ? replay ? (replay.done ? replay.hours : Math.floor(replay.hoursRead)) : 0
+    : replayWx ? replayWx.h0 + replayWx.nh - 1 : 0;
   const toggleReplay = useCallback(() => {
     if (!replayPlaying && replayHour >= replayHours - 0.01) setReplayHour(-LEAD_H);
     setReplayPlaying((v) => !v);
@@ -1211,27 +1235,15 @@ export default function App() {
   useEffect(() => {
     if (replayPlaying && replay?.done && replayHour >= replayHours) setReplayPlaying(false);
   }, [replayPlaying, replay, replayHour, replayHours]);
-  // each tile's arrival hours: a few tiles a frame, so the map keeps drawing while they are laid on
-  useEffect(() => {
-    if (!aefLayers || !replay) return;
-    const key = `replay|${replay.version}`;
-    const todo = aefLayers.fineTiles().filter((t) => t.arriveKey !== key);
-    if (!todo.length) return;
-    let raf = 0;
-    let gone = false;
-    const work = () => {
-      const t0 = performance.now();
-      let changed = false;
-      while (todo.length && performance.now() - t0 < 8) {
-        const t = todo.pop()!;
-        changed = aefLayers.setArrival(t, key, replay.arrival(t)) || changed;
-      }
-      if (changed) aefLayers.seasonChanged();
-      if (todo.length && !gone) raf = requestAnimationFrame(work);
-    };
-    raf = requestAnimationFrame(work);
-    return () => { gone = true; cancelAnimationFrame(raf); };
-  }, [aefLayers, aefVersion, replay, replayVersion]);
+  // the replay's own tiles (replay-gpu.ts): volume, arrival and the outline mask all on the GPU
+  const replayTileTimer = useRef(0);
+  const replayTiles = useMemo(() => {
+    if (!replay || !mosaic || !aefLayers || !poolRef.current) return null;
+    return new ReplayTiles(replay, poolRef.current, mosaic, () => {
+      if (replayTileTimer.current) return;
+      replayTileTimer.current = window.setTimeout(() => { replayTileTimer.current = 0; setReplayTileVersion((v) => v + 1); }, 300);
+    });
+  }, [replay, mosaic, aefLayers]);
   const [s2Version, setS2Version] = useState(0);
   const s2 = useMemo(() => new S2Imagery(() => setS2Version((v) => v + 1)), []);
   // the year's footprints under the view, looked for as the view settles
@@ -1405,7 +1417,8 @@ export default function App() {
           opacity: boxesOn ? 1 : fuelOpacity,
           ramp: groundRamp,
           // the replay reads nothing until its outline is in (only the tiles it touches are read)
-          visible: fuel !== "off" && fuel !== "counties" && !showImg && (!REPLAY || !!replay),
+          // the replay draws its own tiles (replay-gpu.ts)
+          visible: fuel !== "off" && fuel !== "counties" && !showImg && !REPLAY,
           // the GOES fires view: every fuel pixel at full strength, no dimming or gray around the fire
           seasonDim: (seasonOn && seasonData) || goesOn ? 0.18 : 0,
           seasonGray: false,
@@ -1417,10 +1430,7 @@ export default function App() {
           operation: paintOn ? "mask+draw" : "draw",
           maskBy: burnMask && burnAreas ? { extensions: [maskExt], maskId: BURN_MASK_ID } : undefined,
           // a picked fire: its whole area read, so it can be seen whole from zoom 10 (nothing outside it is read)
-          only: replay
-            ? { bbox: [replay.bbox[0] - 0.02, replay.bbox[1] - 0.02, replay.bbox[2] + 0.02, replay.bbox[3] + 0.02], minZoom: 9 }
-            : boxesOn && boxPicked && reach ? { bbox: reach.bbox(), minZoom: MOSAIC_MIN_ZOOM - 1 } : undefined,
-          replay: REPLAY ? { hour: replayHour, hotH: HOT_H, coolH: COOL_H, before: beforeAlpha(replayHour) } : undefined,
+          only: boxesOn && boxPicked && reach ? { bbox: reach.bbox(), minZoom: MOSAIC_MIN_ZOOM - 1 } : undefined,
           // the fuel alone over every basemap feature but the labels
           beforeId: paintOn || FUEL_ONLY ? LABEL_ID : BEFORE_ID,
         }),
@@ -1429,7 +1439,19 @@ export default function App() {
     // the burned areas as the fuel's mask (M), in the fuel's slot; then their outlines over the fuel, the imagery bare
     if (burnAreas && burnMask) out.push(burnMaskLayer({ areas: burnAreas, beforeId: paintOn || FUEL_ONLY ? LABEL_ID : BEFORE_ID }));
     if (burnAreas) out.push(burnAreaLayer({ areas: burnAreas, visible: burnOn && !showImg, beforeId: paintOn || FUEL_ONLY ? LABEL_ID : BEFORE_ID }));
-    if (replay && !showImg) out.push(replay.outlineLayer(LABEL_ID), replay.startLayer(LABEL_ID));
+    // the Fosberg field around the fire, under the fuel: context, dim
+    if (replayWx && !showImg) {
+      const f = fieldLayer(replayWx, replayHour, REPLAY_FIELD_ALPHA, LABEL_ID);
+      if (f) out.push(f);
+    }
+    if (replayTiles) {
+      out.push(...replayTiles.layers({
+        hour: replayHour, hotH: HOT_H, coolH: COOL_H, beforeAlpha: 1, pHide, pMax,
+        logit: ignScale !== "probability", ramp: groundRamp, maskExt, beforeId: LABEL_ID, visible: !showImg,
+        wx: replayWx, baseAlpha: REPLAY_BASE_ALPHA, goes: REPLAY_GOES,
+      }));
+    }
+    if (replay && !showImg) out.push(replay.outlineLayer(LABEL_ID, basemap !== "dark"), replay.startLayer(LABEL_ID, basemap !== "dark"));
     if (burnPick) out.push(selectedBurnLayer({ area: burnPick.f, visible: burnOn && !showImg, beforeId: paintOn || FUEL_ONLY ? LABEL_ID : BEFORE_ID }));
     if (seasonOn && seasonData && seasonJoin && !showImg) {
       out.push(
@@ -1540,7 +1562,7 @@ export default function App() {
     s2, s2Version, imgYear, showImg, view, burnAreas, burnOn, burnPick, paintOn, paint, comp, maskExt, stretchOn, tintOn, burnMask,
     goesOn, goesDoc, goesNow, goesSeen, goesPerim, goesHour, goesRead,
     boxesOn, boxEvents, boxPick, flyToBox, boxPicked, reachLines, boxNowEdges, boxNow, reach,
-    replay, replayHour,
+    replay, replayHour, replayTiles, replayTileVersion, replayVersion, replayWx, basemap,
   ]);
   buildLayersRef.current = buildLayers;
   const deckLayers = useMemo(() => buildLayers(hourFracRef.current), [buildLayers]);
@@ -1575,8 +1597,9 @@ export default function App() {
     tilesLoaded: cacheRef.current.size,
     tilesTotal: Math.max(cacheRef.current.size, showRaster ? 24 : 0),
     aefIndexReady: aefIndex !== null && mosaic !== null,
-    aefReading: aefLayers?.work.reading ?? 0,
-    aefDone: aefLayers?.work.done ?? 0,
+    // the replay reads its own tiles (replay-gpu.ts)
+    aefReading: (REPLAY ? replayTiles?.work.reading : aefLayers?.work.reading) ?? 0,
+    aefDone: (REPLAY ? replayTiles?.work.done : aefLayers?.work.done) ?? 0,
     weekDone: timeMode === "week" && week ? week.progress.done : 0,
     weekWanted: timeMode === "week" && week ? week.progress.wanted : 0,
     weekDaysIn: timeMode === "week" && week ? week.daysReady() : 0,
@@ -1883,6 +1906,13 @@ export default function App() {
             scansRead={replay.scansRead}
             scans={replay.scans}
             done={replay.done}
+            tiles={replayTiles?.work.done ?? 0}
+            ffwi={replayWx?.meanAt(replayHour) ?? null}
+            gate={FFWI_GATE}
+            goes={REPLAY_GOES}
+            basemap={basemap}
+            basemaps={(Object.keys(BASEMAPS) as Basemap[]).map((id) => ({ id, label: BASEMAPS[id].label }))}
+            onBasemap={(b) => setBasemap(b as Basemap)}
             gradient={rampGradient(rampStops(groundRamp))}
           />
         ) : undefined}

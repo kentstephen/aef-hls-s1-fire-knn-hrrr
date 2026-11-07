@@ -15,11 +15,13 @@ export class AefPool {
       const ent: W = { w, busy: 0, waiting: new Map() };
       w.onmessage = (ev: MessageEvent<{ id: number; error?: { name: string; message: string }; nlcd?: Uint8Array; esri?: Uint8Array; cover?: Uint8Array; ign?: Uint8Array; fuel?: Uint8Array; vx?: Uint32Array; v0?: Uint8Array; ms?: Classified["ms"] }>) => {
         const { id, error, nlcd, esri, cover, ign, fuel, vx, v0, ms } = ev.data;
+        const raw = (ev.data as { raw?: Int8Array }).raw;
         const p = ent.waiting.get(id);
         if (!p) return;
         ent.waiting.delete(id);
         ent.busy--;
         if (error) p.no(Object.assign(new Error(error.message), { name: error.name }));
+        else if (raw) p.ok(raw as unknown as Classified);
         else p.ok({ nlcd: nlcd!, esri: esri!, cover: cover!, ign: ign!, fuel: fuel ?? new Uint8Array(nlcd!.length), vx, v0, ms });
       };
       return ent;
@@ -55,6 +57,12 @@ export class AefPool {
   }
 
   /** A mosaic chunk read and classified in the worker; fuelYearIdx: the fuel head's years (oldest first), else its own. */
+  /** A chunk's raw int8 blocks [64, h, w] for each year index asked, back to back (read in a worker, not scored). */
+  raw(years: number[], py0: number, px0: number, h: number, w: number, signal?: AbortSignal): Promise<Int8Array> {
+    const slot = Math.abs(Math.imul(py0 >> 8, 73856093) ^ Math.imul(px0 >> 8, 19349663));
+    return this.ask({ type: "raw", years, py0, px0, h, w }, [], signal, slot) as unknown as Promise<Int8Array>;
+  }
+
   /** lean: no land cover heads and nothing kept for reuse (aef.worker.ts), for a view that draws the volume alone. */
   zarr(timeIdx: number, py0: number, px0: number, h: number, w: number, signal?: AbortSignal, fuelYearIdx?: number[], value?: "pfuel" | "volume", lean = false): Promise<Classified> {
     // a small hash of the chunk's place, so neighbors spread over the workers

@@ -45,17 +45,8 @@ export const REPLAY_FIRES: Record<string, ReplayFire> = {
   },
 };
 
-/** The clock starts this many hours before discovery: the before year in full, dimming over the last DIM_H of them. */
+/** The clock starts this many hours before discovery, so the fuel is seen before the fire. */
 export const LEAD_H = 6;
-export const DIM_H = 3;
-/** The before year's opacity once the fire has started. */
-export const BEFORE_DIM = 0.35;
-
-/** The before year's opacity at an hour: full until DIM_H before discovery, then down to BEFORE_DIM at discovery. */
-export function beforeAlpha(hour: number): number {
-  const k = Math.min(1, Math.max(0, (hour + DIM_H) / DIM_H));
-  return 1 + (BEFORE_DIM - 1) * k;
-}
 
 /** How long ground stays hot after the front reaches it, then how long it takes to cool to the after year. */
 export const HOT_H = 3;
@@ -116,7 +107,8 @@ export class Replay {
         this.version++;
         onUpdate();
       }
-    }, signal, 12, false);
+      // a few KB a scan: many at once
+    }, signal, 32, false);
     this.done = true;
     this.version++;
     onUpdate();
@@ -201,6 +193,36 @@ export class Replay {
 
   /** The first times on a plain grid over the cells (NaN where none), made once per version. */
   private denseCache: { v: number; r0: number; c0: number; nr: number; nc: number; a: Float32Array } | null = null;
+  denseGrid() {
+    return this.dense();
+  }
+
+  /** The GOES era the scans were read in (projection and grid), once the reference file is in. */
+  eraOf(): Era | null {
+    return this.era;
+  }
+
+  /** One ground point's arrival hour, as the GPU blends it (replay-gpu.ts); the newest hour read where no cell is around. */
+  arrivalAt(lon: number, lat: number): number {
+    const era = this.era;
+    const late = this.done ? this.hours : this.hoursRead;
+    if (!era) return late;
+    const d = this.dense();
+    const [r, c] = lonLatToRowCol(era, lon, lat);
+    const fr = r - d.r0, fc = c - d.c0;
+    const i0 = Math.floor(fr), j0 = Math.floor(fc), a = fr - i0, b = fc - j0;
+    let sum = 0, wsum = 0;
+    for (const [di, dj, wt] of [[0, 0, (1 - a) * (1 - b)], [0, 1, (1 - a) * b], [1, 0, a * (1 - b)], [1, 1, a * b]] as const) {
+      const i = i0 + di, j = j0 + dj;
+      if (i < 0 || j < 0 || i >= d.nr || j >= d.nc) continue;
+      const v = d.a[i * d.nc + j]!;
+      if (Number.isNaN(v) || wt <= 0) continue;
+      sum += v * wt;
+      wsum += wt;
+    }
+    return wsum > 0 ? sum / wsum : late;
+  }
+
   private dense() {
     if (this.denseCache?.v === this.version) return this.denseCache;
     let r0 = Infinity, r1 = -Infinity, c0 = Infinity, c1 = -Infinity;
@@ -216,14 +238,15 @@ export class Replay {
     return this.denseCache;
   }
 
-  /** The final outline: one thin pale stroke, no dark edge. */
-  outlineLayer(beforeId?: string) {
+  /** The final outline: one thin stroke, pale on a dark map and dark gray on a light one, no casing. */
+  outlineLayer(beforeId?: string, light = false) {
     return new GeoJsonLayer({
       id: "replay-outline",
       data: [this.area] as never,
       filled: false,
       stroked: true,
-      getLineColor: [236, 236, 236, 170],
+      getLineColor: light ? [70, 70, 70, 200] : [236, 236, 236, 170],
+      updateTriggers: { getLineColor: [light] },
       getLineWidth: 1.2,
       lineWidthUnits: "pixels",
       beforeId,
@@ -254,8 +277,8 @@ export class Replay {
     return any ? out : null;
   }
 
-  /** The ignition point: a small pale dot, no dark edge. */
-  startLayer(beforeId?: string) {
+  /** The ignition point: a small dot in the outline's color, a faint ring of the same color around it. */
+  startLayer(beforeId?: string, light = false) {
     return new ScatterplotLayer({
       id: "replay-start",
       data: [this.fire.start],
@@ -264,8 +287,9 @@ export class Replay {
       getRadius: 4,
       filled: true,
       stroked: true,
-      getFillColor: [255, 255, 255, 255],
-      getLineColor: [255, 255, 255, 120],
+      getFillColor: light ? [50, 50, 50, 255] : [255, 255, 255, 255],
+      getLineColor: light ? [50, 50, 50, 90] : [255, 255, 255, 120],
+      updateTriggers: { getFillColor: [light], getLineColor: [light] },
       lineWidthUnits: "pixels",
       getLineWidth: 6,
       beforeId,

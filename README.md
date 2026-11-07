@@ -87,6 +87,41 @@ before the fire (1 = unchanged; ordinary ground drifts to about 0.95 from year t
 
 `results/fire_change.json`.
 
+### A head that sees the burn (`scripts/sample_change.py`, `fit_change.py`)
+
+LANDFIRE's own fuel models barely change after these fires (burned forest stays a timber model), but its canopy
+cover does (inside the sampled chunks: Caldor 42 % in LF2016 to 22 % in LF2022, Dixie 38 to 22, Creek 35 to 19,
+Park 22 to 11 to 5 for LF2023, LF2024, LF2025). So the new head learns canopy cover (CC), canopy height (CH) and
+the fuel kind from four LANDFIRE editions (2016, 2022, 2024, 2025), each paired with the embedding of its own year
+(LF2016 with 2017). Pixels: 537 of the fuel lab's random windows plus 191 windows inside 2020 to 2023 burns, 1,500
+each; windows within about 10 km of the five test fires above are left out.
+
+One network (in -> 64 -> CC, CH, 11 kinds), five input sets; 5 folds by 0.5 degree block. All five score within a
+hair of each other; the best is the year's own embedding alone, with all four editions (`e_all`):
+
+| | CC | CH |
+| --- | --- | --- |
+| All windows, MAE / R^2 | 6.6 points / 0.80 | 3.8 m / 0.72 |
+| Burn windows | 9.5 / 0.73 | 5.8 / 0.63 |
+
+Pixels that lost 20 or more points of CC between LF2016 and LF2022 (39.7 on average): predicted loss 26.0, out of
+fold. Pixels LANDFIRE kept steady: predicted change -0.9. Correlation of predicted with true change 0.70.
+
+The five held-out fires, mean predicted CC inside the burn (outside in parentheses):
+
+| Fire | Year before | Fire year | 2025 | LANDFIRE before -> after |
+| --- | --- | --- | --- | --- |
+| Caldor 2021 | 40 (28) | 27 (29) | 19 (28) | 42 -> 22 |
+| Dixie 2021 | 37 (22) | 29 (24) | 22 (24) | 38 -> 22 |
+| Creek 2020 | 34 (27) | 28 (28) | 15 (29) | 35 -> 19 |
+| Park 2024 | 21 (24) | 13 (23) | 10 (24) | 23 -> 5 |
+| Bobcat 2020 | 24 (5) | 12 (5) | 14 (6) | 26 -> 18 |
+
+Canopy height follows (Caldor 20 m to 11 m). The kinds move slowly, as LANDFIRE's do: in burned Creek forest
+shrub leads on 0 % of pixels before the fire and 22 % in 2025.
+
+`results/fit_change.json`.
+
 ### The risk backtest (`scripts/risk_backtest.py`)
 
 The fire risk map's value (below) recomputed in Python, from what was known the year before each fire: fuel from

@@ -1,0 +1,5410 @@
+{
+ "e": {
+  "rows": 3276000,
+  "all": {
+   "cc_mae": 6.865715026855469,
+   "cc_r2": 0.7739758491516113,
+   "ch_mae": 3.898238182067871,
+   "ch_r2": 0.6867061853408813,
+   "kind_acc": 0.600996336996337
+  },
+  "burn windows": {
+   "cc_mae": 9.882796287536621,
+   "cc_r2": 0.6786428689956665,
+   "ch_mae": 6.017592906951904,
+   "ch_r2": 0.5808756947517395,
+   "kind_acc": 0.4876102385107621
+  },
+  "fires": {
+   "Dixie": {
+    "inside": {
+     "2017": {
+      "cc": 41.0,
+      "ch": 21.28,
+      "lead": {
+       "grass-shrub": 7,
+       "shrub": 3,
+       "timber-understory": 25,
+       "timber-litter": 62
+      }
+     },
+     "2018": {
+      "cc": 37.8,
+      "ch": 19.26,
+      "lead": {
+       "grass-shrub": 9,
+       "timber-understory": 51,
+       "timber-litter": 35
+      }
+     },
+     "2019": {
+      "cc": 38.8,
+      "ch": 19.79,
+      "lead": {
+       "grass-shrub": 11,
+       "shrub": 4,
+       "timber-understory": 22,
+       "timber-litter": 61
+      }
+     },
+     "2020": {
+      "cc": 39.2,
+      "ch": 20.2,
+      "lead": {
+       "grass-shrub": 12,
+       "timber-understory": 49,
+       "timber-litter": 35
+      }
+     },
+     "2021": {
+      "cc": 30.0,
+      "ch": 17.32,
+      "lead": {
+       "grass-shrub": 6,
+       "timber-understory": 11,
+       "timber-litter": 79
+      }
+     },
+     "2022": {
+      "cc": 23.6,
+      "ch": 13.37,
+      "lead": {
+       "grass-shrub": 7,
+       "shrub": 4,
+       "timber-understory": 30,
+       "timber-litter": 56
+      }
+     },
+     "2023": {
+      "cc": 23.7,
+      "ch": 12.89,
+      "lead": {
+       "grass-shrub": 18,
+       "timber-understory": 6,
+       "timber-litter": 72
+      }
+     },
+     "2024": {
+      "cc": 22.8,
+      "ch": 12.71,
+      "lead": {
+       "grass": 3,
+       "grass-shrub": 15,
+       "shrub": 3,
+       "timber-understory": 22,
+       "timber-litter": 54
+      }
+     },
+     "2025": {
+      "cc": 23.0,
+      "ch": 13.12,
+      "lead": {
+       "grass-shrub": 17,
+       "shrub": 6,
+       "timber-understory": 15,
+       "timber-litter": 59
+      }
+     },
+     "lf2016": {
+      "cc": 37.6
+     },
+     "lf2022": {
+      "cc": 22.2
+     },
+     "lf2024": {
+      "cc": 21.9
+     },
+     "lf2025": {
+      "cc": 22.0
+     }
+    },
+    "outside": {
+     "2017": {
+      "cc": 25.9,
+      "ch": 12.72,
+      "lead": {
+       "water": 6,
+       "grass": 20,
+       "grass-shrub": 15,
+       "shrub": 6,
+       "timber-understory": 30,
+       "timber-litter": 21
+      }
+     },
+     "2018": {
+      "cc": 24.6,
+      "ch": 11.98,
+      "lead": {
+       "farmland": 2,
+       "water": 6,
+       "grass": 12,
+       "grass-shrub": 23,
+       "shrub": 5,
+       "timber-understory": 39,
+       "timber-litter": 11
+      }
+     },
+     "2019": {
+      "cc": 23.2,
+      "ch": 11.4,
+      "lead": {
+       "farmland": 2,
+       "water": 6,
+       "grass": 11,
+       "grass-shrub": 33,
+       "shrub": 3,
+       "timber-understory": 22,
+       "timber-litter": 23
+      }
+     },
+     "2020": {
+      "cc": 23.4,
+      "ch": 11.97,
+      "lead": {
+       "water": 6,
+       "grass": 13,
+       "grass-shrub": 22,
+       "shrub": 2,
+       "timber-understory": 42,
+       "timber-litter": 12
+      }
+     },
+     "2021": {
+      "cc": 24.2,
+      "ch": 12.23,
+      "lead": {
+       "water": 5,
+       "grass": 20,
+       "grass-shrub": 22,
+       "timber-understory": 38,
+       "timber-litter": 11
+      }
+     },
+     "2022": {
+      "cc": 23.6,
+      "ch": 12.06,
+      "lead": {
+       "water": 5,
+       "grass": 18,
+       "grass-shrub": 18,
+       "shrub": 8,
+       "timber-understory": 37,
+       "timber-litter": 12
+      }
+     },
+     "2023": {
+      "cc": 24.1,
+      "ch": 11.72,
+      "lead": {
+       "water": 6,
+       "grass": 22,
+       "grass-shrub": 19,
+       "shrub": 3,
+       "timber-understory": 12,
+       "timber-litter": 36
+      }
+     },
+     "2024": {
+      "cc": 24.5,
+      "ch": 12.4,
+      "lead": {
+       "water": 6,
+       "grass": 22,
+       "grass-shrub": 11,
+       "shrub": 5,
+       "timber-understory": 39,
+       "timber-litter": 15
+      }
+     },
+     "2025": {
+      "cc": 24.5,
+      "ch": 12.35,
+      "lead": {
+       "farmland": 4,
+       "water": 6,
+       "grass": 12,
+       "grass-shrub": 21,
+       "shrub": 7,
+       "timber-understory": 38,
+       "timber-litter": 10
+      }
+     },
+     "lf2016": {
+      "cc": 26.4
+     },
+     "lf2022": {
+      "cc": 22.5
+     },
+     "lf2024": {
+      "cc": 24.1
+     },
+     "lf2025": {
+      "cc": 24.3
+     }
+    }
+   },
+   "Caldor": {
+    "inside": {
+     "2017": {
+      "cc": 42.5,
+      "ch": 21.14,
+      "lead": {
+       "bare": 3,
+       "grass-shrub": 9,
+       "shrub": 2,
+       "timber-understory": 57,
+       "timber-litter": 26
+      }
+     },
+     "2018": {
+      "cc": 38.5,
+      "ch": 19.38,
+      "lead": {
+       "bare": 5,
+       "grass-shrub": 6,
+       "timber-understory": 82,
+       "timber-litter": 3
+      }
+     },
+     "2019": {
+      "cc": 39.9,
+      "ch": 19.43,
+      "lead": {
+       "bare": 4,
+       "grass-shrub": 10,
+       "shrub": 2,
+       "timber-understory": 62,
+       "timber-litter": 20
+      }
+     },
+     "2020": {
+      "cc": 40.2,
+      "ch": 20.63,
+      "lead": {
+       "bare": 4,
+       "grass-shrub": 9,
+       "timber-understory": 71,
+       "timber-litter": 13
+      }
+     },
+     "2021": {
+      "cc": 26.1,
+      "ch": 15.33,
+      "lead": {
+       "bare": 6,
+       "grass": 4,
+       "grass-shrub": 3,
+       "timber-understory": 16,
+       "timber-litter": 71
+      }
+     },
+     "2022": {
+      "cc": 20.5,
+      "ch": 12.56,
+      "lead": {
+       "bare": 4,
+       "grass-shrub": 5,
+       "shrub": 3,
+       "timber-understory": 29,
+       "timber-litter": 55
+      }
+     },
+     "2023": {
+      "cc": 20.0,
+      "ch": 11.78,
+      "lead": {
+       "bare": 4,
+       "shrub": 5,
+       "timber-understory": 12,
+       "timber-litter": 75
+      }
+     },
+     "2024": {
+      "cc": 18.3,
+      "ch": 10.95,
+      "lead": {
+       "bare": 4,
+       "grass": 5,
+       "shrub": 9,
+       "timber-understory": 24,
+       "timber-litter": 55
+      }
+     },
+     "2025": {
+      "cc": 18.5,
+      "ch": 11.08,
+      "lead": {
+       "bare": 5,
+       "grass": 3,
+       "grass-shrub": 7,
+       "shrub": 13,
+       "timber-understory": 29,
+       "timber-litter": 41
+      }
+     },
+     "lf2016": {
+      "cc": 42.1
+     },
+     "lf2022": {
+      "cc": 22.1
+     },
+     "lf2024": {
+      "cc": 22.0
+     },
+     "lf2025": {
+      "cc": 22.1
+     }
+    },
+    "outside": {
+     "2017": {
+      "cc": 28.9,
+      "ch": 14.69,
+      "lead": {
+       "bare": 9,
+       "grass": 6,
+       "grass-shrub": 17,
+       "shrub": 9,
+       "timber-understory": 30,
+       "timber-litter": 27
+      }
+     },
+     "2018": {
+      "cc": 26.6,
+      "ch": 13.35,
+      "lead": {
+       "bare": 12,
+       "grass": 9,
+       "grass-shrub": 18,
+       "shrub": 5,
+       "timber-understory": 47,
+       "timber-litter": 8
+      }
+     },
+     "2019": {
+      "cc": 27.1,
+      "ch": 13.28,
+      "lead": {
+       "bare": 9,
+       "grass": 9,
+       "grass-shrub": 18,
+       "shrub": 8,
+       "timber-understory": 35,
+       "timber-litter": 20
+      }
+     },
+     "2020": {
+      "cc": 28.0,
+      "ch": 14.66,
+      "lead": {
+       "bare": 12,
+       "grass": 5,
+       "grass-shrub": 28,
+       "shrub": 3,
+       "timber-understory": 30,
+       "timber-litter": 20
+      }
+     },
+     "2021": {
+      "cc": 28.1,
+      "ch": 14.24,
+      "lead": {
+       "bare": 13,
+       "grass": 4,
+       "grass-shrub": 14,
+       "shrub": 2,
+       "timber-understory": 53,
+       "timber-litter": 13
+      }
+     },
+     "2022": {
+      "cc": 27.6,
+      "ch": 14.6,
+      "lead": {
+       "bare": 10,
+       "grass": 4,
+       "grass-shrub": 24,
+       "shrub": 6,
+       "timber-understory": 39,
+       "timber-litter": 16
+      }
+     },
+     "2023": {
+      "cc": 28.0,
+      "ch": 13.65,
+      "lead": {
+       "bare": 10,
+       "grass": 4,
+       "grass-shrub": 18,
+       "shrub": 4,
+       "timber-understory": 39,
+       "timber-litter": 23
+      }
+     },
+     "2024": {
+      "cc": 28.6,
+      "ch": 14.51,
+      "lead": {
+       "bare": 12,
+       "grass": 6,
+       "grass-shrub": 11,
+       "shrub": 7,
+       "timber-understory": 41,
+       "timber-litter": 21
+      }
+     },
+     "2025": {
+      "cc": 29.1,
+      "ch": 14.2,
+      "lead": {
+       "bare": 11,
+       "grass": 4,
+       "grass-shrub": 22,
+       "timber-understory": 44,
+       "timber-litter": 16
+      }
+     },
+     "lf2016": {
+      "cc": 27.1
+     },
+     "lf2022": {
+      "cc": 26.2
+     },
+     "lf2024": {
+      "cc": 27.3
+     },
+     "lf2025": {
+      "cc": 27.1
+     }
+    }
+   },
+   "Creek": {
+    "inside": {
+     "2017": {
+      "cc": 39.1,
+      "ch": 22.05,
+      "lead": {
+       "grass-shrub": 12,
+       "timber-litter": 82
+      }
+     },
+     "2018": {
+      "cc": 34.3,
+      "ch": 19.63,
+      "lead": {
+       "grass-shrub": 15,
+       "timber-understory": 35,
+       "timber-litter": 44
+      }
+     },
+     "2019": {
+      "cc": 36.1,
+      "ch": 19.77,
+      "lead": {
+       "grass-shrub": 13,
+       "shrub": 8,
+       "timber-understory": 6,
+       "timber-litter": 72
+      }
+     },
+     "2020": {
+      "cc": 28.0,
+      "ch": 18.32,
+      "lead": {
+       "grass": 5,
+       "grass-shrub": 7,
+       "timber-understory": 5,
+       "timber-litter": 79
+      }
+     },
+     "2021": {
+      "cc": 17.9,
+      "ch": 12.25,
+      "lead": {
+       "grass-shrub": 3,
+       "shrub": 7,
+       "timber-understory": 3,
+       "timber-litter": 84
+      }
+     },
+     "2022": {
+      "cc": 13.8,
+      "ch": 9.12,
+      "lead": {
+       "grass": 5,
+       "grass-shrub": 7,
+       "shrub": 14,
+       "timber-understory": 18,
+       "timber-litter": 54
+      }
+     },
+     "2023": {
+      "cc": 17.7,
+      "ch": 11.5,
+      "lead": {
+       "bare": 3,
+       "grass-shrub": 9,
+       "shrub": 22,
+       "timber-understory": 4,
+       "timber-litter": 59
+      }
+     },
+     "2024": {
+      "cc": 15.7,
+      "ch": 10.11,
+      "lead": {
+       "grass-shrub": 6,
+       "shrub": 23,
+       "timber-understory": 16,
+       "timber-litter": 50
+      }
+     },
+     "2025": {
+      "cc": 14.1,
+      "ch": 9.23,
+      "lead": {
+       "grass": 3,
+       "grass-shrub": 17,
+       "shrub": 18,
+       "timber-understory": 35,
+       "timber-litter": 24
+      }
+     },
+     "lf2016": {
+      "cc": 34.9
+     },
+     "lf2022": {
+      "cc": 19.2
+     },
+     "lf2024": {
+      "cc": 18.9
+     },
+     "lf2025": {
+      "cc": 19.1
+     }
+    },
+    "outside": {
+     "2017": {
+      "cc": 30.8,
+      "ch": 16.5,
+      "lead": {
+       "bare": 13,
+       "grass": 9,
+       "grass-shrub": 12,
+       "shrub": 4,
+       "timber-understory": 4,
+       "timber-litter": 58
+      }
+     },
+     "2018": {
+      "cc": 26.7,
+      "ch": 14.77,
+      "lead": {
+       "bare": 16,
+       "grass": 12,
+       "grass-shrub": 19,
+       "shrub": 3,
+       "timber-understory": 24,
+       "timber-litter": 27
+      }
+     },
+     "2019": {
+      "cc": 28.8,
+      "ch": 15.12,
+      "lead": {
+       "bare": 14,
+       "grass": 12,
+       "grass-shrub": 15,
+       "shrub": 3,
+       "timber-understory": 7,
+       "timber-litter": 48
+      }
+     },
+     "2020": {
+      "cc": 28.1,
+      "ch": 15.75,
+      "lead": {
+       "bare": 14,
+       "grass": 11,
+       "grass-shrub": 23,
+       "timber-understory": 9,
+       "timber-litter": 41
+      }
+     },
+     "2021": {
+      "cc": 29.4,
+      "ch": 16.21,
+      "lead": {
+       "bare": 15,
+       "grass": 7,
+       "grass-shrub": 9,
+       "shrub": 3,
+       "timber-understory": 36,
+       "timber-litter": 29
+      }
+     },
+     "2022": {
+      "cc": 27.7,
+      "ch": 15.3,
+      "lead": {
+       "bare": 16,
+       "grass": 9,
+       "grass-shrub": 9,
+       "shrub": 4,
+       "timber-understory": 20,
+       "timber-litter": 41
+      }
+     },
+     "2023": {
+      "cc": 28.8,
+      "ch": 15.74,
+      "lead": {
+       "bare": 14,
+       "grass": 8,
+       "grass-shrub": 14,
+       "shrub": 6,
+       "timber-understory": 15,
+       "timber-litter": 42
+      }
+     },
+     "2024": {
+      "cc": 28.6,
+      "ch": 15.39,
+      "lead": {
+       "bare": 17,
+       "grass": 9,
+       "grass-shrub": 10,
+       "shrub": 5,
+       "timber-understory": 25,
+       "timber-litter": 33
+      }
+     },
+     "2025": {
+      "cc": 30.6,
+      "ch": 15.92,
+      "lead": {
+       "bare": 17,
+       "grass": 8,
+       "grass-shrub": 13,
+       "timber-understory": 38,
+       "timber-litter": 21
+      }
+     },
+     "lf2016": {
+      "cc": 27.6
+     },
+     "lf2022": {
+      "cc": 26.7
+     },
+     "lf2024": {
+      "cc": 26.7
+     },
+     "lf2025": {
+      "cc": 26.7
+     }
+    }
+   },
+   "PARK": {
+    "inside": {
+     "2017": {
+      "cc": 21.4,
+      "ch": 11.01,
+      "lead": {
+       "grass": 20,
+       "grass-shrub": 18,
+       "shrub": 41,
+       "timber-understory": 13,
+       "timber-litter": 8
+      }
+     },
+     "2018": {
+      "cc": 21.9,
+      "ch": 11.5,
+      "lead": {
+       "grass": 28,
+       "grass-shrub": 12,
+       "shrub": 33,
+       "timber-understory": 15,
+       "timber-litter": 12
+      }
+     },
+     "2019": {
+      "cc": 21.0,
+      "ch": 11.31,
+      "lead": {
+       "grass": 24,
+       "grass-shrub": 14,
+       "shrub": 34,
+       "timber-understory": 17,
+       "timber-litter": 11
+      }
+     },
+     "2020": {
+      "cc": 20.4,
+      "ch": 11.02,
+      "lead": {
+       "grass": 35,
+       "grass-shrub": 21,
+       "shrub": 21,
+       "timber-understory": 15,
+       "timber-litter": 8
+      }
+     },
+     "2021": {
+      "cc": 24.8,
+      "ch": 12.06,
+      "lead": {
+       "grass": 27,
+       "grass-shrub": 11,
+       "shrub": 30,
+       "timber-understory": 27,
+       "timber-litter": 4
+      }
+     },
+     "2022": {
+      "cc": 24.2,
+      "ch": 12.71,
+      "lead": {
+       "grass": 26,
+       "grass-shrub": 11,
+       "shrub": 38,
+       "timber-understory": 20,
+       "timber-litter": 4
+      }
+     },
+     "2023": {
+      "cc": 21.5,
+      "ch": 11.37,
+      "lead": {
+       "grass": 26,
+       "grass-shrub": 10,
+       "shrub": 36,
+       "timber-understory": 20,
+       "timber-litter": 8
+      }
+     },
+     "2024": {
+      "cc": 16.0,
+      "ch": 10.77,
+      "lead": {
+       "grass": 34,
+       "grass-shrub": 9,
+       "shrub": 17,
+       "timber-litter": 39
+      }
+     },
+     "2025": {
+      "cc": 11.5,
+      "ch": 6.87,
+      "lead": {
+       "grass": 39,
+       "grass-shrub": 20,
+       "shrub": 10,
+       "timber-understory": 13,
+       "timber-litter": 17
+      }
+     },
+     "lf2016": {
+      "cc": 23.9
+     },
+     "lf2022": {
+      "cc": 23.4
+     },
+     "lf2024": {
+      "cc": 10.9
+     },
+     "lf2025": {
+      "cc": 4.7
+     }
+    },
+    "outside": {
+     "2017": {
+      "cc": 26.5,
+      "ch": 13.25,
+      "lead": {
+       "grass": 38,
+       "grass-shrub": 10,
+       "shrub": 7,
+       "timber-understory": 17,
+       "timber-litter": 27
+      }
+     },
+     "2018": {
+      "cc": 26.0,
+      "ch": 12.4,
+      "lead": {
+       "grass": 35,
+       "grass-shrub": 8,
+       "shrub": 7,
+       "timber-understory": 30,
+       "timber-litter": 18
+      }
+     },
+     "2019": {
+      "cc": 26.7,
+      "ch": 12.97,
+      "lead": {
+       "grass": 35,
+       "grass-shrub": 12,
+       "shrub": 8,
+       "timber-understory": 24,
+       "timber-litter": 20
+      }
+     },
+     "2020": {
+      "cc": 25.9,
+      "ch": 12.79,
+      "lead": {
+       "grass": 29,
+       "grass-shrub": 23,
+       "shrub": 2,
+       "timber-understory": 24,
+       "timber-litter": 20
+      }
+     },
+     "2021": {
+      "cc": 27.4,
+      "ch": 13.27,
+      "lead": {
+       "grass": 26,
+       "grass-shrub": 19,
+       "shrub": 4,
+       "timber-understory": 32,
+       "timber-litter": 17
+      }
+     },
+     "2022": {
+      "cc": 24.7,
+      "ch": 12.7,
+      "lead": {
+       "grass": 35,
+       "grass-shrub": 11,
+       "shrub": 7,
+       "timber-understory": 30,
+       "timber-litter": 16
+      }
+     },
+     "2023": {
+      "cc": 24.4,
+      "ch": 12.28,
+      "lead": {
+       "grass": 33,
+       "grass-shrub": 13,
+       "shrub": 6,
+       "timber-understory": 22,
+       "timber-litter": 24
+      }
+     },
+     "2024": {
+      "cc": 24.6,
+      "ch": 12.36,
+      "lead": {
+       "grass": 35,
+       "grass-shrub": 7,
+       "shrub": 9,
+       "timber-understory": 27,
+       "timber-litter": 21
+      }
+     },
+     "2025": {
+      "cc": 25.5,
+      "ch": 12.77,
+      "lead": {
+       "grass": 30,
+       "grass-shrub": 14,
+       "shrub": 9,
+       "timber-understory": 31,
+       "timber-litter": 14
+      }
+     },
+     "lf2016": {
+      "cc": 26.8
+     },
+     "lf2022": {
+      "cc": 23.3
+     },
+     "lf2024": {
+      "cc": 23.3
+     },
+     "lf2025": {
+      "cc": 23.5
+     }
+    }
+   },
+   "Bobcat": {
+    "inside": {
+     "2017": {
+      "cc": 21.5,
+      "ch": 10.7,
+      "lead": {
+       "bare": 4,
+       "grass-shrub": 40,
+       "shrub": 35,
+       "timber-understory": 16,
+       "timber-litter": 4
+      }
+     },
+     "2018": {
+      "cc": 21.0,
+      "ch": 10.46,
+      "lead": {
+       "bare": 4,
+       "grass-shrub": 39,
+       "shrub": 32,
+       "timber-understory": 19,
+       "timber-litter": 5
+      }
+     },
+     "2019": {
+      "cc": 21.9,
+      "ch": 10.26,
+      "lead": {
+       "bare": 6,
+       "grass-shrub": 27,
+       "shrub": 38,
+       "timber-understory": 26,
+       "timber-litter": 2
+      }
+     },
+     "2020": {
+      "cc": 10.6,
+      "ch": 7.49,
+      "lead": {
+       "bare": 3,
+       "grass": 24,
+       "grass-shrub": 43,
+       "timber-understory": 3,
+       "timber-litter": 25
+      }
+     },
+     "2021": {
+      "cc": 12.9,
+      "ch": 8.0,
+      "lead": {
+       "bare": 5,
+       "grass": 8,
+       "grass-shrub": 25,
+       "shrub": 37,
+       "timber-understory": 3,
+       "timber-litter": 23
+      }
+     },
+     "2022": {
+      "cc": 14.6,
+      "ch": 8.57,
+      "lead": {
+       "bare": 4,
+       "grass": 9,
+       "grass-shrub": 17,
+       "shrub": 43,
+       "timber-understory": 2,
+       "timber-litter": 24
+      }
+     },
+     "2023": {
+      "cc": 17.1,
+      "ch": 9.47,
+      "lead": {
+       "bare": 4,
+       "grass": 7,
+       "grass-shrub": 32,
+       "shrub": 30,
+       "timber-understory": 5,
+       "timber-litter": 21
+      }
+     },
+     "2024": {
+      "cc": 15.7,
+      "ch": 9.02,
+      "lead": {
+       "bare": 4,
+       "grass": 5,
+       "grass-shrub": 28,
+       "shrub": 38,
+       "timber-understory": 2,
+       "timber-litter": 23
+      }
+     },
+     "2025": {
+      "cc": 16.0,
+      "ch": 8.53,
+      "lead": {
+       "bare": 4,
+       "grass-shrub": 38,
+       "shrub": 36,
+       "timber-understory": 9,
+       "timber-litter": 12
+      }
+     },
+     "lf2016": {
+      "cc": 26.2
+     },
+     "lf2022": {
+      "cc": 18.3
+     },
+     "lf2024": {
+      "cc": 18.3
+     },
+     "lf2025": {
+      "cc": 19.2
+     }
+    },
+    "outside": {
+     "2017": {
+      "cc": 3.4,
+      "ch": 2.25,
+      "lead": {
+       "urban and roads": 4,
+       "bare": 7,
+       "grass": 11,
+       "grass-shrub": 33,
+       "shrub": 43
+      }
+     },
+     "2018": {
+      "cc": 3.6,
+      "ch": 2.54,
+      "lead": {
+       "urban and roads": 3,
+       "bare": 5,
+       "grass": 12,
+       "grass-shrub": 40,
+       "shrub": 38
+      }
+     },
+     "2019": {
+      "cc": 3.8,
+      "ch": 2.36,
+      "lead": {
+       "urban and roads": 3,
+       "bare": 11,
+       "grass": 4,
+       "grass-shrub": 27,
+       "shrub": 52,
+       "timber-litter": 2
+      }
+     },
+     "2020": {
+      "cc": 4.6,
+      "ch": 2.87,
+      "lead": {
+       "urban and roads": 3,
+       "bare": 8,
+       "grass": 19,
+       "grass-shrub": 55,
+       "shrub": 13
+      }
+     },
+     "2021": {
+      "cc": 5.2,
+      "ch": 3.02,
+      "lead": {
+       "urban and roads": 3,
+       "bare": 7,
+       "grass": 11,
+       "grass-shrub": 62,
+       "shrub": 16
+      }
+     },
+     "2022": {
+      "cc": 4.4,
+      "ch": 2.68,
+      "lead": {
+       "urban and roads": 2,
+       "bare": 9,
+       "grass": 8,
+       "grass-shrub": 37,
+       "shrub": 41
+      }
+     },
+     "2023": {
+      "cc": 5.9,
+      "ch": 3.34,
+      "lead": {
+       "urban and roads": 5,
+       "bare": 7,
+       "grass": 8,
+       "grass-shrub": 51,
+       "shrub": 25,
+       "timber-understory": 3
+      }
+     },
+     "2024": {
+      "cc": 5.6,
+      "ch": 3.25,
+      "lead": {
+       "urban and roads": 4,
+       "bare": 9,
+       "grass-shrub": 46,
+       "shrub": 39
+      }
+     },
+     "2025": {
+      "cc": 6.4,
+      "ch": 3.32,
+      "lead": {
+       "urban and roads": 4,
+       "bare": 7,
+       "grass": 6,
+       "grass-shrub": 51,
+       "shrub": 29
+      }
+     },
+     "lf2016": {
+      "cc": 4.4
+     },
+     "lf2022": {
+      "cc": 4.2
+     },
+     "lf2024": {
+      "cc": 5.3
+     },
+     "lf2025": {
+      "cc": 5.4
+     }
+    }
+   }
+  }
+ },
+ "e_prev": {
+  "rows": 3276000,
+  "all": {
+   "cc_mae": 6.856539249420166,
+   "cc_r2": 0.7782604694366455,
+   "ch_mae": 3.898379325866699,
+   "ch_r2": 0.6922947764396667,
+   "kind_acc": 0.6098211233211234
+  },
+  "burn windows": {
+   "cc_mae": 9.803686141967773,
+   "cc_r2": 0.6841487884521484,
+   "ch_mae": 5.960252285003662,
+   "ch_r2": 0.5881348252296448,
+   "kind_acc": 0.4988074461896451
+  },
+  "fires": {
+   "Dixie": {
+    "inside": {
+     "2018": {
+      "cc": 40.5,
+      "ch": 21.31,
+      "lead": {
+       "grass-shrub": 6,
+       "timber-understory": 69,
+       "timber-litter": 20
+      }
+     },
+     "2019": {
+      "cc": 37.4,
+      "ch": 20.01,
+      "lead": {
+       "grass-shrub": 10,
+       "timber-understory": 56,
+       "timber-litter": 29
+      }
+     },
+     "2020": {
+      "cc": 38.6,
+      "ch": 20.43,
+      "lead": {
+       "grass-shrub": 9,
+       "timber-understory": 65,
+       "timber-litter": 22
+      }
+     },
+     "2021": {
+      "cc": 25.2,
+      "ch": 15.09,
+      "lead": {
+       "bare": 2,
+       "grass-shrub": 6,
+       "timber-understory": 39,
+       "timber-litter": 49
+      }
+     },
+     "2022": {
+      "cc": 23.7,
+      "ch": 14.09,
+      "lead": {
+       "grass-shrub": 3,
+       "shrub": 3,
+       "timber-understory": 32,
+       "timber-litter": 58
+      }
+     },
+     "2023": {
+      "cc": 25.6,
+      "ch": 15.48,
+      "lead": {
+       "grass-shrub": 9,
+       "shrub": 10,
+       "timber-understory": 14,
+       "timber-litter": 65
+      }
+     },
+     "2024": {
+      "cc": 23.8,
+      "ch": 13.37,
+      "lead": {
+       "grass-shrub": 10,
+       "shrub": 3,
+       "timber-understory": 31,
+       "timber-litter": 52
+      }
+     },
+     "2025": {
+      "cc": 23.4,
+      "ch": 13.3,
+      "lead": {
+       "grass-shrub": 13,
+       "shrub": 9,
+       "timber-understory": 22,
+       "timber-litter": 52
+      }
+     },
+     "lf2016": {
+      "cc": 37.6
+     },
+     "lf2022": {
+      "cc": 22.2
+     },
+     "lf2024": {
+      "cc": 21.9
+     },
+     "lf2025": {
+      "cc": 22.0
+     }
+    },
+    "outside": {
+     "2018": {
+      "cc": 25.7,
+      "ch": 13.31,
+      "lead": {
+       "farmland": 2,
+       "water": 7,
+       "grass": 11,
+       "grass-shrub": 22,
+       "shrub": 4,
+       "timber-understory": 42,
+       "timber-litter": 13
+      }
+     },
+     "2019": {
+      "cc": 23.4,
+      "ch": 12.36,
+      "lead": {
+       "water": 7,
+       "grass": 7,
+       "grass-shrub": 27,
+       "shrub": 3,
+       "timber-understory": 41,
+       "timber-litter": 13
+      }
+     },
+     "2020": {
+      "cc": 22.2,
+      "ch": 11.55,
+      "lead": {
+       "water": 6,
+       "grass": 6,
+       "grass-shrub": 33,
+       "timber-understory": 41,
+       "timber-litter": 12
+      }
+     },
+     "2021": {
+      "cc": 23.7,
+      "ch": 12.53,
+      "lead": {
+       "water": 5,
+       "grass": 13,
+       "grass-shrub": 19,
+       "shrub": 4,
+       "timber-understory": 49,
+       "timber-litter": 8
+      }
+     },
+     "2022": {
+      "cc": 23.7,
+      "ch": 12.26,
+      "lead": {
+       "water": 5,
+       "grass": 12,
+       "grass-shrub": 26,
+       "shrub": 5,
+       "timber-understory": 38,
+       "timber-litter": 11
+      }
+     },
+     "2023": {
+      "cc": 23.6,
+      "ch": 12.69,
+      "lead": {
+       "water": 7,
+       "grass": 11,
+       "grass-shrub": 29,
+       "shrub": 6,
+       "timber-understory": 29,
+       "timber-litter": 16
+      }
+     },
+     "2024": {
+      "cc": 24.1,
+      "ch": 11.98,
+      "lead": {
+       "water": 8,
+       "grass": 16,
+       "grass-shrub": 14,
+       "shrub": 5,
+       "timber-understory": 39,
+       "timber-litter": 17
+      }
+     },
+     "2025": {
+      "cc": 24.0,
+      "ch": 12.24,
+      "lead": {
+       "farmland": 5,
+       "water": 7,
+       "grass": 7,
+       "grass-shrub": 21,
+       "shrub": 5,
+       "timber-understory": 45,
+       "timber-litter": 10
+      }
+     },
+     "lf2016": {
+      "cc": 26.4
+     },
+     "lf2022": {
+      "cc": 22.5
+     },
+     "lf2024": {
+      "cc": 24.1
+     },
+     "lf2025": {
+      "cc": 24.3
+     }
+    }
+   },
+   "Caldor": {
+    "inside": {
+     "2018": {
+      "cc": 40.3,
+      "ch": 20.66,
+      "lead": {
+       "bare": 2,
+       "grass-shrub": 9,
+       "shrub": 2,
+       "timber-understory": 81,
+       "timber-litter": 3
+      }
+     },
+     "2019": {
+      "cc": 39.3,
+      "ch": 20.16,
+      "lead": {
+       "bare": 5,
+       "grass-shrub": 6,
+       "shrub": 4,
+       "timber-understory": 79,
+       "timber-litter": 3
+      }
+     },
+     "2020": {
+      "cc": 38.1,
+      "ch": 19.36,
+      "lead": {
+       "bare": 2,
+       "grass-shrub": 12,
+       "timber-understory": 75,
+       "timber-litter": 8
+      }
+     },
+     "2021": {
+      "cc": 23.4,
+      "ch": 14.58,
+      "lead": {
+       "bare": 5,
+       "grass-shrub": 4,
+       "timber-understory": 62,
+       "timber-litter": 26
+      }
+     },
+     "2022": {
+      "cc": 19.1,
+      "ch": 11.7,
+      "lead": {
+       "bare": 5,
+       "grass": 2,
+       "grass-shrub": 2,
+       "shrub": 3,
+       "timber-understory": 23,
+       "timber-litter": 63
+      }
+     },
+     "2023": {
+      "cc": 19.9,
+      "ch": 12.91,
+      "lead": {
+       "bare": 4,
+       "grass": 2,
+       "shrub": 11,
+       "timber-understory": 11,
+       "timber-litter": 69
+      }
+     },
+     "2024": {
+      "cc": 19.6,
+      "ch": 11.5,
+      "lead": {
+       "bare": 4,
+       "grass": 4,
+       "shrub": 7,
+       "timber-understory": 26,
+       "timber-litter": 56
+      }
+     },
+     "2025": {
+      "cc": 18.0,
+      "ch": 10.6,
+      "lead": {
+       "bare": 4,
+       "grass": 6,
+       "grass-shrub": 2,
+       "shrub": 17,
+       "timber-understory": 26,
+       "timber-litter": 43
+      }
+     },
+     "lf2016": {
+      "cc": 42.1
+     },
+     "lf2022": {
+      "cc": 22.1
+     },
+     "lf2024": {
+      "cc": 22.0
+     },
+     "lf2025": {
+      "cc": 22.1
+     }
+    },
+    "outside": {
+     "2018": {
+      "cc": 27.8,
+      "ch": 14.48,
+      "lead": {
+       "bare": 8,
+       "grass": 6,
+       "grass-shrub": 16,
+       "shrub": 6,
+       "timber-understory": 55,
+       "timber-litter": 7
+      }
+     },
+     "2019": {
+      "cc": 25.8,
+      "ch": 13.55,
+      "lead": {
+       "bare": 14,
+       "grass": 6,
+       "grass-shrub": 10,
+       "shrub": 12,
+       "timber-understory": 45,
+       "timber-litter": 10
+      }
+     },
+     "2020": {
+      "cc": 26.0,
+      "ch": 13.3,
+      "lead": {
+       "bare": 9,
+       "grass": 4,
+       "grass-shrub": 28,
+       "timber-understory": 40,
+       "timber-litter": 16
+      }
+     },
+     "2021": {
+      "cc": 28.7,
+      "ch": 15.34,
+      "lead": {
+       "bare": 12,
+       "grass": 6,
+       "grass-shrub": 18,
+       "shrub": 5,
+       "timber-understory": 39,
+       "timber-litter": 19
+      }
+     },
+     "2022": {
+      "cc": 28.7,
+      "ch": 14.6,
+      "lead": {
+       "bare": 12,
+       "grass": 4,
+       "grass-shrub": 17,
+       "shrub": 6,
+       "timber-understory": 48,
+       "timber-litter": 12
+      }
+     },
+     "2023": {
+      "cc": 27.6,
+      "ch": 15.06,
+      "lead": {
+       "bare": 12,
+       "grass": 5,
+       "grass-shrub": 16,
+       "shrub": 12,
+       "timber-understory": 34,
+       "timber-litter": 20
+      }
+     },
+     "2024": {
+      "cc": 28.7,
+      "ch": 14.5,
+      "lead": {
+       "bare": 10,
+       "grass": 5,
+       "grass-shrub": 11,
+       "shrub": 6,
+       "timber-understory": 50,
+       "timber-litter": 16
+      }
+     },
+     "2025": {
+      "cc": 28.9,
+      "ch": 14.46,
+      "lead": {
+       "bare": 12,
+       "grass": 6,
+       "grass-shrub": 13,
+       "shrub": 5,
+       "timber-understory": 48,
+       "timber-litter": 15
+      }
+     },
+     "lf2016": {
+      "cc": 27.1
+     },
+     "lf2022": {
+      "cc": 26.2
+     },
+     "lf2024": {
+      "cc": 27.3
+     },
+     "lf2025": {
+      "cc": 27.1
+     }
+    }
+   },
+   "Creek": {
+    "inside": {
+     "2018": {
+      "cc": 38.1,
+      "ch": 21.4,
+      "lead": {
+       "grass-shrub": 10,
+       "timber-understory": 45,
+       "timber-litter": 40
+      }
+     },
+     "2019": {
+      "cc": 37.8,
+      "ch": 20.72,
+      "lead": {
+       "bare": 3,
+       "grass-shrub": 10,
+       "shrub": 5,
+       "timber-understory": 20,
+       "timber-litter": 60
+      }
+     },
+     "2020": {
+      "cc": 23.0,
+      "ch": 14.9,
+      "lead": {
+       "grass-shrub": 12,
+       "timber-understory": 71,
+       "timber-litter": 13
+      }
+     },
+     "2021": {
+      "cc": 18.3,
+      "ch": 13.16,
+      "lead": {
+       "grass-shrub": 12,
+       "shrub": 4,
+       "timber-understory": 5,
+       "timber-litter": 76
+      }
+     },
+     "2022": {
+      "cc": 11.4,
+      "ch": 8.4,
+      "lead": {
+       "grass": 4,
+       "grass-shrub": 2,
+       "shrub": 22,
+       "timber-understory": 20,
+       "timber-litter": 50
+      }
+     },
+     "2023": {
+      "cc": 16.7,
+      "ch": 11.35,
+      "lead": {
+       "grass-shrub": 3,
+       "shrub": 23,
+       "timber-litter": 69
+      }
+     },
+     "2024": {
+      "cc": 15.7,
+      "ch": 9.83,
+      "lead": {
+       "bare": 2,
+       "grass": 4,
+       "grass-shrub": 4,
+       "shrub": 18,
+       "timber-understory": 13,
+       "timber-litter": 56
+      }
+     },
+     "2025": {
+      "cc": 12.7,
+      "ch": 8.59,
+      "lead": {
+       "grass": 8,
+       "grass-shrub": 15,
+       "shrub": 20,
+       "timber-understory": 27,
+       "timber-litter": 27
+      }
+     },
+     "lf2016": {
+      "cc": 34.9
+     },
+     "lf2022": {
+      "cc": 19.2
+     },
+     "lf2024": {
+      "cc": 18.9
+     },
+     "lf2025": {
+      "cc": 19.1
+     }
+    },
+    "outside": {
+     "2018": {
+      "cc": 29.2,
+      "ch": 15.38,
+      "lead": {
+       "bare": 11,
+       "grass": 9,
+       "grass-shrub": 14,
+       "timber-understory": 34,
+       "timber-litter": 28
+      }
+     },
+     "2019": {
+      "cc": 28.2,
+      "ch": 14.97,
+      "lead": {
+       "bare": 16,
+       "grass": 9,
+       "grass-shrub": 15,
+       "shrub": 3,
+       "timber-understory": 16,
+       "timber-litter": 39
+      }
+     },
+     "2020": {
+      "cc": 27.4,
+      "ch": 14.74,
+      "lead": {
+       "bare": 12,
+       "grass": 8,
+       "grass-shrub": 18,
+       "timber-understory": 40,
+       "timber-litter": 19
+      }
+     },
+     "2021": {
+      "cc": 28.7,
+      "ch": 15.36,
+      "lead": {
+       "bare": 14,
+       "grass": 10,
+       "grass-shrub": 20,
+       "timber-understory": 30,
+       "timber-litter": 23
+      }
+     },
+     "2022": {
+      "cc": 28.2,
+      "ch": 15.45,
+      "lead": {
+       "bare": 14,
+       "grass": 8,
+       "grass-shrub": 6,
+       "shrub": 6,
+       "timber-understory": 31,
+       "timber-litter": 34
+      }
+     },
+     "2023": {
+      "cc": 28.9,
+      "ch": 15.96,
+      "lead": {
+       "bare": 14,
+       "grass": 7,
+       "grass-shrub": 8,
+       "shrub": 8,
+       "timber-understory": 23,
+       "timber-litter": 39
+      }
+     },
+     "2024": {
+      "cc": 27.8,
+      "ch": 15.15,
+      "lead": {
+       "bare": 13,
+       "grass": 8,
+       "grass-shrub": 4,
+       "shrub": 8,
+       "timber-understory": 49,
+       "timber-litter": 17
+      }
+     },
+     "2025": {
+      "cc": 29.5,
+      "ch": 15.73,
+      "lead": {
+       "bare": 16,
+       "grass": 8,
+       "grass-shrub": 16,
+       "shrub": 2,
+       "timber-understory": 35,
+       "timber-litter": 21
+      }
+     },
+     "lf2016": {
+      "cc": 27.6
+     },
+     "lf2022": {
+      "cc": 26.7
+     },
+     "lf2024": {
+      "cc": 26.7
+     },
+     "lf2025": {
+      "cc": 26.7
+     }
+    }
+   },
+   "PARK": {
+    "inside": {
+     "2018": {
+      "cc": 21.5,
+      "ch": 11.37,
+      "lead": {
+       "grass": 27,
+       "grass-shrub": 13,
+       "shrub": 38,
+       "timber-understory": 13,
+       "timber-litter": 9
+      }
+     },
+     "2019": {
+      "cc": 21.1,
+      "ch": 10.87,
+      "lead": {
+       "grass": 25,
+       "grass-shrub": 12,
+       "shrub": 31,
+       "timber-understory": 25,
+       "timber-litter": 6
+      }
+     },
+     "2020": {
+      "cc": 21.7,
+      "ch": 11.45,
+      "lead": {
+       "grass": 25,
+       "grass-shrub": 10,
+       "shrub": 36,
+       "timber-understory": 13,
+       "timber-litter": 16
+      }
+     },
+     "2021": {
+      "cc": 23.5,
+      "ch": 11.95,
+      "lead": {
+       "grass": 34,
+       "grass-shrub": 14,
+       "shrub": 27,
+       "timber-understory": 14,
+       "timber-litter": 11
+      }
+     },
+     "2022": {
+      "cc": 23.4,
+      "ch": 11.76,
+      "lead": {
+       "grass": 26,
+       "grass-shrub": 9,
+       "shrub": 37,
+       "timber-understory": 25,
+       "timber-litter": 3
+      }
+     },
+     "2023": {
+      "cc": 23.9,
+      "ch": 12.74,
+      "lead": {
+       "grass": 29,
+       "grass-shrub": 17,
+       "shrub": 24,
+       "timber-understory": 24,
+       "timber-litter": 6
+      }
+     },
+     "2024": {
+      "cc": 13.2,
+      "ch": 8.28,
+      "lead": {
+       "grass": 24,
+       "grass-shrub": 3,
+       "shrub": 47,
+       "timber-understory": 3,
+       "timber-litter": 24
+      }
+     },
+     "2025": {
+      "cc": 13.7,
+      "ch": 8.36,
+      "lead": {
+       "grass": 26,
+       "grass-shrub": 36,
+       "shrub": 5,
+       "timber-understory": 13,
+       "timber-litter": 19
+      }
+     },
+     "lf2016": {
+      "cc": 23.9
+     },
+     "lf2022": {
+      "cc": 23.4
+     },
+     "lf2024": {
+      "cc": 10.9
+     },
+     "lf2025": {
+      "cc": 4.7
+     }
+    },
+    "outside": {
+     "2018": {
+      "cc": 25.5,
+      "ch": 12.93,
+      "lead": {
+       "grass": 34,
+       "grass-shrub": 12,
+       "shrub": 7,
+       "timber-understory": 25,
+       "timber-litter": 20
+      }
+     },
+     "2019": {
+      "cc": 25.3,
+      "ch": 12.55,
+      "lead": {
+       "grass": 34,
+       "grass-shrub": 8,
+       "shrub": 8,
+       "timber-understory": 35,
+       "timber-litter": 12
+      }
+     },
+     "2020": {
+      "cc": 25.3,
+      "ch": 12.73,
+      "lead": {
+       "grass": 25,
+       "grass-shrub": 22,
+       "shrub": 8,
+       "timber-understory": 21,
+       "timber-litter": 23
+      }
+     },
+     "2021": {
+      "cc": 25.6,
+      "ch": 12.81,
+      "lead": {
+       "grass": 37,
+       "grass-shrub": 9,
+       "shrub": 7,
+       "timber-understory": 26,
+       "timber-litter": 18
+      }
+     },
+     "2022": {
+      "cc": 24.4,
+      "ch": 12.18,
+      "lead": {
+       "grass": 33,
+       "grass-shrub": 9,
+       "shrub": 10,
+       "timber-understory": 31,
+       "timber-litter": 15
+      }
+     },
+     "2023": {
+      "cc": 25.0,
+      "ch": 13.04,
+      "lead": {
+       "grass": 39,
+       "grass-shrub": 11,
+       "shrub": 7,
+       "timber-understory": 16,
+       "timber-litter": 26
+      }
+     },
+     "2024": {
+      "cc": 24.1,
+      "ch": 12.02,
+      "lead": {
+       "grass": 34,
+       "grass-shrub": 9,
+       "shrub": 11,
+       "timber-understory": 29,
+       "timber-litter": 15
+      }
+     },
+     "2025": {
+      "cc": 24.2,
+      "ch": 11.98,
+      "lead": {
+       "grass": 33,
+       "grass-shrub": 10,
+       "shrub": 9,
+       "timber-understory": 32,
+       "timber-litter": 14
+      }
+     },
+     "lf2016": {
+      "cc": 26.8
+     },
+     "lf2022": {
+      "cc": 23.3
+     },
+     "lf2024": {
+      "cc": 23.3
+     },
+     "lf2025": {
+      "cc": 23.5
+     }
+    }
+   },
+   "Bobcat": {
+    "inside": {
+     "2018": {
+      "cc": 21.1,
+      "ch": 11.05,
+      "lead": {
+       "grass-shrub": 43,
+       "shrub": 30,
+       "timber-understory": 19,
+       "timber-litter": 3
+      }
+     },
+     "2019": {
+      "cc": 24.4,
+      "ch": 12.94,
+      "lead": {
+       "bare": 5,
+       "grass": 2,
+       "grass-shrub": 23,
+       "shrub": 43,
+       "timber-understory": 19,
+       "timber-litter": 8
+      }
+     },
+     "2020": {
+      "cc": 11.5,
+      "ch": 7.76,
+      "lead": {
+       "bare": 3,
+       "grass": 28,
+       "grass-shrub": 43,
+       "shrub": 4,
+       "timber-understory": 13,
+       "timber-litter": 9
+      }
+     },
+     "2021": {
+      "cc": 13.4,
+      "ch": 8.43,
+      "lead": {
+       "bare": 8,
+       "grass": 13,
+       "grass-shrub": 48,
+       "shrub": 16,
+       "timber-understory": 3,
+       "timber-litter": 12
+      }
+     },
+     "2022": {
+      "cc": 13.6,
+      "ch": 7.76,
+      "lead": {
+       "grass": 3,
+       "grass-shrub": 28,
+       "shrub": 43,
+       "timber-understory": 4,
+       "timber-litter": 19
+      }
+     },
+     "2023": {
+      "cc": 16.0,
+      "ch": 8.8,
+      "lead": {
+       "bare": 2,
+       "grass": 16,
+       "grass-shrub": 14,
+       "shrub": 39,
+       "timber-understory": 3,
+       "timber-litter": 26
+      }
+     },
+     "2024": {
+      "cc": 13.7,
+      "ch": 7.74,
+      "lead": {
+       "bare": 3,
+       "grass": 3,
+       "grass-shrub": 20,
+       "shrub": 48,
+       "timber-understory": 3,
+       "timber-litter": 23
+      }
+     },
+     "2025": {
+      "cc": 16.2,
+      "ch": 8.75,
+      "lead": {
+       "bare": 3,
+       "grass-shrub": 36,
+       "shrub": 35,
+       "timber-understory": 5,
+       "timber-litter": 19
+      }
+     },
+     "lf2016": {
+      "cc": 26.2
+     },
+     "lf2022": {
+      "cc": 18.3
+     },
+     "lf2024": {
+      "cc": 18.3
+     },
+     "lf2025": {
+      "cc": 19.2
+     }
+    },
+    "outside": {
+     "2018": {
+      "cc": 3.9,
+      "ch": 2.39,
+      "lead": {
+       "urban and roads": 4,
+       "bare": 4,
+       "grass": 13,
+       "grass-shrub": 34,
+       "shrub": 44
+      }
+     },
+     "2019": {
+      "cc": 4.6,
+      "ch": 2.76,
+      "lead": {
+       "urban and roads": 4,
+       "bare": 4,
+       "grass": 4,
+       "grass-shrub": 18,
+       "shrub": 68
+      }
+     },
+     "2020": {
+      "cc": 4.4,
+      "ch": 2.58,
+      "lead": {
+       "urban and roads": 3,
+       "bare": 7,
+       "grass": 4,
+       "grass-shrub": 49,
+       "shrub": 34
+      }
+     },
+     "2021": {
+      "cc": 4.9,
+      "ch": 2.85,
+      "lead": {
+       "urban and roads": 2,
+       "bare": 3,
+       "grass": 14,
+       "grass-shrub": 61,
+       "shrub": 18
+      }
+     },
+     "2022": {
+      "cc": 5.9,
+      "ch": 3.0,
+      "lead": {
+       "urban and roads": 3,
+       "bare": 5,
+       "grass": 10,
+       "grass-shrub": 45,
+       "shrub": 35
+      }
+     },
+     "2023": {
+      "cc": 6.6,
+      "ch": 3.43,
+      "lead": {
+       "urban and roads": 4,
+       "bare": 6,
+       "grass": 9,
+       "grass-shrub": 33,
+       "shrub": 44,
+       "timber-understory": 3
+      }
+     },
+     "2024": {
+      "cc": 5.5,
+      "ch": 2.8,
+      "lead": {
+       "urban and roads": 3,
+       "bare": 6,
+       "grass-shrub": 37,
+       "shrub": 50
+      }
+     },
+     "2025": {
+      "cc": 5.5,
+      "ch": 3.05,
+      "lead": {
+       "urban and roads": 3,
+       "bare": 5,
+       "grass-shrub": 50,
+       "shrub": 38
+      }
+     },
+     "lf2016": {
+      "cc": 4.4
+     },
+     "lf2022": {
+      "cc": 4.2
+     },
+     "lf2024": {
+      "cc": 5.3
+     },
+     "lf2025": {
+      "cc": 5.4
+     }
+    }
+   }
+  }
+ },
+ "e_d": {
+  "rows": 3276000,
+  "all": {
+   "cc_mae": 6.877350330352783,
+   "cc_r2": 0.7752286195755005,
+   "ch_mae": 3.9110379219055176,
+   "ch_r2": 0.6899710893630981,
+   "kind_acc": 0.6043907203907204
+  },
+  "burn windows": {
+   "cc_mae": 9.813997268676758,
+   "cc_r2": 0.681117057800293,
+   "ch_mae": 5.958981513977051,
+   "ch_r2": 0.5874704122543335,
+   "kind_acc": 0.4970157068062827
+  },
+  "fires": {
+   "Dixie": {
+    "inside": {
+     "2018": {
+      "cc": 39.7,
+      "ch": 20.76,
+      "lead": {
+       "grass-shrub": 5,
+       "shrub": 2,
+       "timber-understory": 76,
+       "timber-litter": 15
+      }
+     },
+     "2019": {
+      "cc": 35.7,
+      "ch": 19.67,
+      "lead": {
+       "grass-shrub": 21,
+       "timber-understory": 35,
+       "timber-litter": 40
+      }
+     },
+     "2020": {
+      "cc": 40.1,
+      "ch": 21.06,
+      "lead": {
+       "grass-shrub": 9,
+       "timber-understory": 59,
+       "timber-litter": 28
+      }
+     },
+     "2021": {
+      "cc": 24.5,
+      "ch": 14.45,
+      "lead": {
+       "bare": 2,
+       "grass-shrub": 12,
+       "timber-understory": 36,
+       "timber-litter": 48
+      }
+     },
+     "2022": {
+      "cc": 21.7,
+      "ch": 13.39,
+      "lead": {
+       "grass-shrub": 10,
+       "shrub": 3,
+       "timber-understory": 28,
+       "timber-litter": 56
+      }
+     },
+     "2023": {
+      "cc": 28.2,
+      "ch": 16.18,
+      "lead": {
+       "grass": 2,
+       "grass-shrub": 17,
+       "shrub": 10,
+       "timber-understory": 4,
+       "timber-litter": 64
+      }
+     },
+     "2024": {
+      "cc": 23.5,
+      "ch": 12.9,
+      "lead": {
+       "grass": 2,
+       "grass-shrub": 16,
+       "shrub": 3,
+       "timber-understory": 33,
+       "timber-litter": 44
+      }
+     },
+     "2025": {
+      "cc": 22.3,
+      "ch": 12.68,
+      "lead": {
+       "grass-shrub": 12,
+       "shrub": 9,
+       "timber-understory": 32,
+       "timber-litter": 43
+      }
+     },
+     "lf2016": {
+      "cc": 37.6
+     },
+     "lf2022": {
+      "cc": 22.2
+     },
+     "lf2024": {
+      "cc": 21.9
+     },
+     "lf2025": {
+      "cc": 22.0
+     }
+    },
+    "outside": {
+     "2018": {
+      "cc": 25.0,
+      "ch": 12.95,
+      "lead": {
+       "water": 6,
+       "grass": 9,
+       "grass-shrub": 23,
+       "shrub": 5,
+       "timber-understory": 52,
+       "timber-litter": 3
+      }
+     },
+     "2019": {
+      "cc": 20.8,
+      "ch": 11.13,
+      "lead": {
+       "water": 6,
+       "grass": 9,
+       "grass-shrub": 30,
+       "shrub": 6,
+       "timber-understory": 35,
+       "timber-litter": 12
+      }
+     },
+     "2020": {
+      "cc": 23.5,
+      "ch": 12.17,
+      "lead": {
+       "water": 5,
+       "grass": 8,
+       "grass-shrub": 23,
+       "shrub": 7,
+       "timber-understory": 43,
+       "timber-litter": 10
+      }
+     },
+     "2021": {
+      "cc": 24.0,
+      "ch": 12.14,
+      "lead": {
+       "water": 5,
+       "grass": 8,
+       "grass-shrub": 28,
+       "shrub": 5,
+       "timber-understory": 45,
+       "timber-litter": 7
+      }
+     },
+     "2022": {
+      "cc": 22.8,
+      "ch": 12.04,
+      "lead": {
+       "water": 5,
+       "grass": 16,
+       "grass-shrub": 24,
+       "shrub": 8,
+       "timber-understory": 30,
+       "timber-litter": 15
+      }
+     },
+     "2023": {
+      "cc": 23.2,
+      "ch": 12.41,
+      "lead": {
+       "water": 5,
+       "grass": 16,
+       "grass-shrub": 28,
+       "shrub": 12,
+       "timber-understory": 33,
+       "timber-litter": 4
+      }
+     },
+     "2024": {
+      "cc": 23.8,
+      "ch": 11.39,
+      "lead": {
+       "water": 6,
+       "grass": 16,
+       "grass-shrub": 17,
+       "shrub": 8,
+       "timber-understory": 39,
+       "timber-litter": 12
+      }
+     },
+     "2025": {
+      "cc": 24.9,
+      "ch": 12.39,
+      "lead": {
+       "farmland": 2,
+       "water": 6,
+       "grass": 9,
+       "grass-shrub": 20,
+       "shrub": 9,
+       "timber-understory": 47,
+       "timber-litter": 6
+      }
+     },
+     "lf2016": {
+      "cc": 26.4
+     },
+     "lf2022": {
+      "cc": 22.5
+     },
+     "lf2024": {
+      "cc": 24.1
+     },
+     "lf2025": {
+      "cc": 24.3
+     }
+    }
+   },
+   "Caldor": {
+    "inside": {
+     "2018": {
+      "cc": 39.6,
+      "ch": 20.59,
+      "lead": {
+       "bare": 3,
+       "grass-shrub": 7,
+       "timber-understory": 80,
+       "timber-litter": 7
+      }
+     },
+     "2019": {
+      "cc": 35.4,
+      "ch": 18.52,
+      "lead": {
+       "bare": 3,
+       "grass-shrub": 14,
+       "timber-understory": 77,
+       "timber-litter": 2
+      }
+     },
+     "2020": {
+      "cc": 39.7,
+      "ch": 20.25,
+      "lead": {
+       "bare": 2,
+       "grass-shrub": 9,
+       "timber-understory": 55,
+       "timber-litter": 31
+      }
+     },
+     "2021": {
+      "cc": 22.4,
+      "ch": 13.7,
+      "lead": {
+       "bare": 4,
+       "grass-shrub": 6,
+       "timber-understory": 16,
+       "timber-litter": 72
+      }
+     },
+     "2022": {
+      "cc": 19.3,
+      "ch": 11.7,
+      "lead": {
+       "bare": 4,
+       "grass-shrub": 4,
+       "shrub": 6,
+       "timber-understory": 37,
+       "timber-litter": 47
+      }
+     },
+     "2023": {
+      "cc": 22.7,
+      "ch": 13.54,
+      "lead": {
+       "bare": 7,
+       "grass": 7,
+       "grass-shrub": 5,
+       "shrub": 28,
+       "timber-understory": 4,
+       "timber-litter": 47
+      }
+     },
+     "2024": {
+      "cc": 19.8,
+      "ch": 11.76,
+      "lead": {
+       "bare": 5,
+       "grass": 5,
+       "grass-shrub": 3,
+       "shrub": 7,
+       "timber-understory": 33,
+       "timber-litter": 45
+      }
+     },
+     "2025": {
+      "cc": 18.1,
+      "ch": 10.76,
+      "lead": {
+       "bare": 5,
+       "grass": 5,
+       "grass-shrub": 6,
+       "shrub": 17,
+       "timber-understory": 26,
+       "timber-litter": 38
+      }
+     },
+     "lf2016": {
+      "cc": 42.1
+     },
+     "lf2022": {
+      "cc": 22.1
+     },
+     "lf2024": {
+      "cc": 22.0
+     },
+     "lf2025": {
+      "cc": 22.1
+     }
+    },
+    "outside": {
+     "2018": {
+      "cc": 27.7,
+      "ch": 14.65,
+      "lead": {
+       "bare": 9,
+       "grass": 7,
+       "grass-shrub": 25,
+       "shrub": 3,
+       "timber-understory": 46,
+       "timber-litter": 8
+      }
+     },
+     "2019": {
+      "cc": 23.3,
+      "ch": 12.89,
+      "lead": {
+       "bare": 9,
+       "grass": 6,
+       "grass-shrub": 32,
+       "shrub": 7,
+       "timber-understory": 39,
+       "timber-litter": 6
+      }
+     },
+     "2020": {
+      "cc": 27.4,
+      "ch": 14.12,
+      "lead": {
+       "bare": 8,
+       "grass": 3,
+       "grass-shrub": 27,
+       "shrub": 2,
+       "timber-understory": 24,
+       "timber-litter": 34
+      }
+     },
+     "2021": {
+      "cc": 29.1,
+      "ch": 15.79,
+      "lead": {
+       "bare": 9,
+       "grass": 6,
+       "grass-shrub": 34,
+       "shrub": 3,
+       "timber-understory": 17,
+       "timber-litter": 30
+      }
+     },
+     "2022": {
+      "cc": 28.2,
+      "ch": 14.66,
+      "lead": {
+       "bare": 10,
+       "grass": 5,
+       "grass-shrub": 22,
+       "shrub": 6,
+       "timber-understory": 39,
+       "timber-litter": 16
+      }
+     },
+     "2023": {
+      "cc": 26.1,
+      "ch": 14.34,
+      "lead": {
+       "bare": 10,
+       "grass": 8,
+       "grass-shrub": 40,
+       "shrub": 3,
+       "timber-understory": 24,
+       "timber-litter": 13
+      }
+     },
+     "2024": {
+      "cc": 28.9,
+      "ch": 14.88,
+      "lead": {
+       "bare": 11,
+       "grass": 4,
+       "grass-shrub": 13,
+       "shrub": 9,
+       "timber-understory": 42,
+       "timber-litter": 20
+      }
+     },
+     "2025": {
+      "cc": 29.1,
+      "ch": 14.34,
+      "lead": {
+       "bare": 11,
+       "grass": 5,
+       "grass-shrub": 17,
+       "shrub": 7,
+       "timber-understory": 43,
+       "timber-litter": 15
+      }
+     },
+     "lf2016": {
+      "cc": 27.1
+     },
+     "lf2022": {
+      "cc": 26.2
+     },
+     "lf2024": {
+      "cc": 27.3
+     },
+     "lf2025": {
+      "cc": 27.1
+     }
+    }
+   },
+   "Creek": {
+    "inside": {
+     "2018": {
+      "cc": 38.3,
+      "ch": 22.49,
+      "lead": {
+       "grass-shrub": 13,
+       "timber-understory": 31,
+       "timber-litter": 52
+      }
+     },
+     "2019": {
+      "cc": 35.1,
+      "ch": 19.61,
+      "lead": {
+       "grass-shrub": 10,
+       "shrub": 8,
+       "timber-understory": 41,
+       "timber-litter": 39
+      }
+     },
+     "2020": {
+      "cc": 21.2,
+      "ch": 14.67,
+      "lead": {
+       "grass-shrub": 17,
+       "timber-understory": 36,
+       "timber-litter": 44
+      }
+     },
+     "2021": {
+      "cc": 17.9,
+      "ch": 12.0,
+      "lead": {
+       "grass-shrub": 14,
+       "shrub": 14,
+       "timber-understory": 28,
+       "timber-litter": 41
+      }
+     },
+     "2022": {
+      "cc": 12.3,
+      "ch": 9.2,
+      "lead": {
+       "grass": 6,
+       "grass-shrub": 6,
+       "shrub": 18,
+       "timber-understory": 18,
+       "timber-litter": 50
+      }
+     },
+     "2023": {
+      "cc": 21.3,
+      "ch": 12.41,
+      "lead": {
+       "grass-shrub": 6,
+       "shrub": 61,
+       "timber-understory": 3,
+       "timber-litter": 27
+      }
+     },
+     "2024": {
+      "cc": 17.9,
+      "ch": 11.17,
+      "lead": {
+       "grass": 3,
+       "grass-shrub": 8,
+       "shrub": 22,
+       "timber-understory": 16,
+       "timber-litter": 48
+      }
+     },
+     "2025": {
+      "cc": 13.2,
+      "ch": 9.03,
+      "lead": {
+       "grass": 7,
+       "grass-shrub": 16,
+       "shrub": 33,
+       "timber-understory": 24,
+       "timber-litter": 17
+      }
+     },
+     "lf2016": {
+      "cc": 34.9
+     },
+     "lf2022": {
+      "cc": 19.2
+     },
+     "lf2024": {
+      "cc": 18.9
+     },
+     "lf2025": {
+      "cc": 19.1
+     }
+    },
+    "outside": {
+     "2018": {
+      "cc": 29.3,
+      "ch": 16.04,
+      "lead": {
+       "bare": 13,
+       "grass": 13,
+       "grass-shrub": 16,
+       "timber-understory": 19,
+       "timber-litter": 36
+      }
+     },
+     "2019": {
+      "cc": 26.3,
+      "ch": 14.59,
+      "lead": {
+       "bare": 16,
+       "grass": 7,
+       "grass-shrub": 25,
+       "timber-understory": 30,
+       "timber-litter": 20
+      }
+     },
+     "2020": {
+      "cc": 26.3,
+      "ch": 14.71,
+      "lead": {
+       "bare": 11,
+       "grass": 8,
+       "grass-shrub": 24,
+       "shrub": 4,
+       "timber-understory": 10,
+       "timber-litter": 43
+      }
+     },
+     "2021": {
+      "cc": 29.3,
+      "ch": 16.4,
+      "lead": {
+       "bare": 14,
+       "grass": 12,
+       "grass-shrub": 22,
+       "timber-understory": 28,
+       "timber-litter": 22
+      }
+     },
+     "2022": {
+      "cc": 28.1,
+      "ch": 15.52,
+      "lead": {
+       "bare": 14,
+       "grass": 7,
+       "grass-shrub": 10,
+       "shrub": 12,
+       "timber-understory": 24,
+       "timber-litter": 32
+      }
+     },
+     "2023": {
+      "cc": 28.7,
+      "ch": 15.81,
+      "lead": {
+       "bare": 17,
+       "grass": 5,
+       "grass-shrub": 15,
+       "shrub": 16,
+       "timber-understory": 27,
+       "timber-litter": 19
+      }
+     },
+     "2024": {
+      "cc": 28.5,
+      "ch": 15.6,
+      "lead": {
+       "bare": 15,
+       "grass": 12,
+       "grass-shrub": 10,
+       "shrub": 4,
+       "timber-understory": 38,
+       "timber-litter": 21
+      }
+     },
+     "2025": {
+      "cc": 29.6,
+      "ch": 15.69,
+      "lead": {
+       "bare": 18,
+       "grass": 10,
+       "grass-shrub": 13,
+       "shrub": 8,
+       "timber-understory": 22,
+       "timber-litter": 28
+      }
+     },
+     "lf2016": {
+      "cc": 27.6
+     },
+     "lf2022": {
+      "cc": 26.7
+     },
+     "lf2024": {
+      "cc": 26.7
+     },
+     "lf2025": {
+      "cc": 26.7
+     }
+    }
+   },
+   "PARK": {
+    "inside": {
+     "2018": {
+      "cc": 20.6,
+      "ch": 10.46,
+      "lead": {
+       "grass": 19,
+       "grass-shrub": 20,
+       "shrub": 43,
+       "timber-understory": 15,
+       "timber-litter": 3
+      }
+     },
+     "2019": {
+      "cc": 20.4,
+      "ch": 11.32,
+      "lead": {
+       "grass": 12,
+       "grass-shrub": 30,
+       "shrub": 36,
+       "timber-understory": 20,
+       "timber-litter": 2
+      }
+     },
+     "2020": {
+      "cc": 19.6,
+      "ch": 10.53,
+      "lead": {
+       "grass": 3,
+       "grass-shrub": 34,
+       "shrub": 34,
+       "timber-understory": 15,
+       "timber-litter": 12
+      }
+     },
+     "2021": {
+      "cc": 21.0,
+      "ch": 11.53,
+      "lead": {
+       "grass": 43,
+       "grass-shrub": 22,
+       "shrub": 14,
+       "timber-understory": 13,
+       "timber-litter": 7
+      }
+     },
+     "2022": {
+      "cc": 23.6,
+      "ch": 11.92,
+      "lead": {
+       "grass": 25,
+       "grass-shrub": 12,
+       "shrub": 35,
+       "timber-understory": 22,
+       "timber-litter": 5
+      }
+     },
+     "2023": {
+      "cc": 23.7,
+      "ch": 13.03,
+      "lead": {
+       "grass": 25,
+       "grass-shrub": 41,
+       "shrub": 17,
+       "timber-understory": 15
+      }
+     },
+     "2024": {
+      "cc": 11.6,
+      "ch": 7.46,
+      "lead": {
+       "grass": 32,
+       "grass-shrub": 9,
+       "shrub": 34,
+       "timber-litter": 23
+      }
+     },
+     "2025": {
+      "cc": 10.9,
+      "ch": 6.75,
+      "lead": {
+       "grass": 47,
+       "grass-shrub": 16,
+       "timber-understory": 10,
+       "timber-litter": 25
+      }
+     },
+     "lf2016": {
+      "cc": 23.9
+     },
+     "lf2022": {
+      "cc": 23.4
+     },
+     "lf2024": {
+      "cc": 10.9
+     },
+     "lf2025": {
+      "cc": 4.7
+     }
+    },
+    "outside": {
+     "2018": {
+      "cc": 25.2,
+      "ch": 12.18,
+      "lead": {
+       "grass": 36,
+       "grass-shrub": 9,
+       "shrub": 11,
+       "timber-understory": 37,
+       "timber-litter": 7
+      }
+     },
+     "2019": {
+      "cc": 24.5,
+      "ch": 12.15,
+      "lead": {
+       "grass": 23,
+       "grass-shrub": 25,
+       "shrub": 8,
+       "timber-understory": 34,
+       "timber-litter": 8
+      }
+     },
+     "2020": {
+      "cc": 25.2,
+      "ch": 12.16,
+      "lead": {
+       "grass": 11,
+       "grass-shrub": 35,
+       "shrub": 7,
+       "timber-understory": 20,
+       "timber-litter": 25
+      }
+     },
+     "2021": {
+      "cc": 24.7,
+      "ch": 12.34,
+      "lead": {
+       "grass": 40,
+       "grass-shrub": 10,
+       "shrub": 6,
+       "timber-understory": 22,
+       "timber-litter": 21
+      }
+     },
+     "2022": {
+      "cc": 25.1,
+      "ch": 12.38,
+      "lead": {
+       "grass": 35,
+       "grass-shrub": 8,
+       "shrub": 12,
+       "timber-understory": 29,
+       "timber-litter": 16
+      }
+     },
+     "2023": {
+      "cc": 26.2,
+      "ch": 13.41,
+      "lead": {
+       "grass": 34,
+       "grass-shrub": 19,
+       "shrub": 9,
+       "timber-understory": 28,
+       "timber-litter": 7
+      }
+     },
+     "2024": {
+      "cc": 24.2,
+      "ch": 12.02,
+      "lead": {
+       "grass": 34,
+       "grass-shrub": 9,
+       "shrub": 9,
+       "timber-understory": 34,
+       "timber-litter": 13
+      }
+     },
+     "2025": {
+      "cc": 25.6,
+      "ch": 12.32,
+      "lead": {
+       "grass": 35,
+       "grass-shrub": 7,
+       "shrub": 9,
+       "timber-understory": 34,
+       "timber-litter": 13
+      }
+     },
+     "lf2016": {
+      "cc": 26.8
+     },
+     "lf2022": {
+      "cc": 23.3
+     },
+     "lf2024": {
+      "cc": 23.3
+     },
+     "lf2025": {
+      "cc": 23.5
+     }
+    }
+   },
+   "Bobcat": {
+    "inside": {
+     "2018": {
+      "cc": 21.2,
+      "ch": 10.65,
+      "lead": {
+       "bare": 3,
+       "grass": 3,
+       "grass-shrub": 37,
+       "shrub": 36,
+       "timber-understory": 18,
+       "timber-litter": 4
+      }
+     },
+     "2019": {
+      "cc": 21.9,
+      "ch": 11.32,
+      "lead": {
+       "grass": 11,
+       "grass-shrub": 9,
+       "shrub": 52,
+       "timber-understory": 6,
+       "timber-litter": 18
+      }
+     },
+     "2020": {
+      "cc": 7.5,
+      "ch": 5.03,
+      "lead": {
+       "urban and roads": 3,
+       "bare": 3,
+       "grass": 5,
+       "grass-shrub": 56,
+       "shrub": 4,
+       "timber-understory": 2,
+       "timber-litter": 26
+      }
+     },
+     "2021": {
+      "cc": 15.0,
+      "ch": 9.21,
+      "lead": {
+       "bare": 4,
+       "grass": 14,
+       "grass-shrub": 36,
+       "shrub": 20,
+       "timber-understory": 4,
+       "timber-litter": 21
+      }
+     },
+     "2022": {
+      "cc": 15.4,
+      "ch": 8.87,
+      "lead": {
+       "grass": 7,
+       "grass-shrub": 17,
+       "shrub": 43,
+       "timber-understory": 7,
+       "timber-litter": 23
+      }
+     },
+     "2023": {
+      "cc": 17.4,
+      "ch": 9.72,
+      "lead": {
+       "grass": 24,
+       "grass-shrub": 10,
+       "shrub": 33,
+       "timber-understory": 3,
+       "timber-litter": 30
+      }
+     },
+     "2024": {
+      "cc": 15.4,
+      "ch": 8.2,
+      "lead": {
+       "bare": 4,
+       "grass-shrub": 29,
+       "shrub": 39,
+       "timber-litter": 26
+      }
+     },
+     "2025": {
+      "cc": 18.2,
+      "ch": 9.65,
+      "lead": {
+       "grass": 9,
+       "grass-shrub": 26,
+       "shrub": 36,
+       "timber-understory": 11,
+       "timber-litter": 15
+      }
+     },
+     "lf2016": {
+      "cc": 26.2
+     },
+     "lf2022": {
+      "cc": 18.3
+     },
+     "lf2024": {
+      "cc": 18.3
+     },
+     "lf2025": {
+      "cc": 19.2
+     }
+    },
+    "outside": {
+     "2018": {
+      "cc": 4.6,
+      "ch": 2.56,
+      "lead": {
+       "urban and roads": 3,
+       "bare": 5,
+       "grass": 14,
+       "grass-shrub": 58,
+       "shrub": 18
+      }
+     },
+     "2019": {
+      "cc": 4.1,
+      "ch": 2.5,
+      "lead": {
+       "urban and roads": 6,
+       "bare": 4,
+       "grass": 17,
+       "grass-shrub": 14,
+       "shrub": 57
+      }
+     },
+     "2020": {
+      "cc": 4.2,
+      "ch": 2.48,
+      "lead": {
+       "urban and roads": 6,
+       "bare": 4,
+       "grass": 9,
+       "grass-shrub": 54,
+       "shrub": 24,
+       "timber-litter": 2
+      }
+     },
+     "2021": {
+      "cc": 6.3,
+      "ch": 3.54,
+      "lead": {
+       "urban and roads": 3,
+       "bare": 2,
+       "grass": 21,
+       "grass-shrub": 30,
+       "shrub": 43
+      }
+     },
+     "2022": {
+      "cc": 5.4,
+      "ch": 3.13,
+      "lead": {
+       "urban and roads": 4,
+       "bare": 7,
+       "grass": 10,
+       "grass-shrub": 48,
+       "shrub": 29,
+       "timber-litter": 2
+      }
+     },
+     "2023": {
+      "cc": 5.1,
+      "ch": 2.82,
+      "lead": {
+       "urban and roads": 4,
+       "bare": 6,
+       "grass": 30,
+       "grass-shrub": 34,
+       "shrub": 23
+      }
+     },
+     "2024": {
+      "cc": 5.2,
+      "ch": 2.82,
+      "lead": {
+       "urban and roads": 4,
+       "bare": 7,
+       "grass-shrub": 40,
+       "shrub": 45
+      }
+     },
+     "2025": {
+      "cc": 6.3,
+      "ch": 3.46,
+      "lead": {
+       "urban and roads": 3,
+       "bare": 5,
+       "grass": 2,
+       "grass-shrub": 58,
+       "shrub": 28
+      }
+     },
+     "lf2016": {
+      "cc": 4.4
+     },
+     "lf2022": {
+      "cc": 4.2
+     },
+     "lf2024": {
+      "cc": 5.3
+     },
+     "lf2025": {
+      "cc": 5.4
+     }
+    }
+   }
+  }
+ },
+ "e_sd": {
+  "rows": 3276000,
+  "all": {
+   "cc_mae": 6.851657390594482,
+   "cc_r2": 0.7761777639389038,
+   "ch_mae": 3.9193217754364014,
+   "ch_r2": 0.6880895495414734,
+   "kind_acc": 0.6033400488400489
+  },
+  "burn windows": {
+   "cc_mae": 9.807168960571289,
+   "cc_r2": 0.683503270149231,
+   "ch_mae": 5.986475467681885,
+   "ch_r2": 0.5842685699462891,
+   "kind_acc": 0.48972891215823156
+  },
+  "fires": {
+   "Dixie": {
+    "inside": {
+     "2019": {
+      "cc": 38.7,
+      "ch": 20.25,
+      "lead": {
+       "grass-shrub": 14,
+       "timber-understory": 27,
+       "timber-litter": 55
+      }
+     },
+     "2020": {
+      "cc": 38.3,
+      "ch": 20.21,
+      "lead": {
+       "grass-shrub": 11,
+       "timber-understory": 52,
+       "timber-litter": 34
+      }
+     },
+     "2021": {
+      "cc": 26.9,
+      "ch": 15.8,
+      "lead": {
+       "grass-shrub": 4,
+       "shrub": 4,
+       "timber-understory": 17,
+       "timber-litter": 72
+      }
+     },
+     "2022": {
+      "cc": 23.0,
+      "ch": 13.56,
+      "lead": {
+       "grass-shrub": 8,
+       "shrub": 7,
+       "timber-understory": 24,
+       "timber-litter": 58
+      }
+     },
+     "2023": {
+      "cc": 25.7,
+      "ch": 13.68,
+      "lead": {
+       "grass-shrub": 6,
+       "shrub": 7,
+       "timber-understory": 35,
+       "timber-litter": 49
+      }
+     },
+     "2024": {
+      "cc": 23.7,
+      "ch": 13.32,
+      "lead": {
+       "grass": 2,
+       "grass-shrub": 14,
+       "shrub": 6,
+       "timber-understory": 31,
+       "timber-litter": 44
+      }
+     },
+     "2025": {
+      "cc": 23.5,
+      "ch": 13.56,
+      "lead": {
+       "grass": 2,
+       "grass-shrub": 16,
+       "shrub": 9,
+       "timber-understory": 22,
+       "timber-litter": 49
+      }
+     },
+     "lf2016": {
+      "cc": 37.6
+     },
+     "lf2022": {
+      "cc": 22.2
+     },
+     "lf2024": {
+      "cc": 21.9
+     },
+     "lf2025": {
+      "cc": 22.0
+     }
+    },
+    "outside": {
+     "2019": {
+      "cc": 22.8,
+      "ch": 11.73,
+      "lead": {
+       "farmland": 5,
+       "water": 4,
+       "grass": 13,
+       "grass-shrub": 25,
+       "timber-understory": 18,
+       "timber-litter": 32
+      }
+     },
+     "2020": {
+      "cc": 22.7,
+      "ch": 11.65,
+      "lead": {
+       "water": 6,
+       "grass": 6,
+       "grass-shrub": 32,
+       "shrub": 2,
+       "timber-understory": 36,
+       "timber-litter": 16
+      }
+     },
+     "2021": {
+      "cc": 23.3,
+      "ch": 11.91,
+      "lead": {
+       "water": 4,
+       "grass": 10,
+       "grass-shrub": 32,
+       "shrub": 3,
+       "timber-understory": 35,
+       "timber-litter": 13
+      }
+     },
+     "2022": {
+      "cc": 23.7,
+      "ch": 12.1,
+      "lead": {
+       "water": 4,
+       "grass": 17,
+       "grass-shrub": 22,
+       "shrub": 6,
+       "timber-understory": 29,
+       "timber-litter": 20
+      }
+     },
+     "2023": {
+      "cc": 24.9,
+      "ch": 11.92,
+      "lead": {
+       "water": 5,
+       "grass": 17,
+       "grass-shrub": 16,
+       "timber-understory": 25,
+       "timber-litter": 31
+      }
+     },
+     "2024": {
+      "cc": 24.4,
+      "ch": 12.04,
+      "lead": {
+       "water": 6,
+       "grass": 15,
+       "grass-shrub": 16,
+       "shrub": 5,
+       "timber-understory": 48,
+       "timber-litter": 7
+      }
+     },
+     "2025": {
+      "cc": 23.9,
+      "ch": 11.86,
+      "lead": {
+       "farmland": 2,
+       "water": 6,
+       "grass": 9,
+       "grass-shrub": 24,
+       "shrub": 5,
+       "timber-understory": 49,
+       "timber-litter": 3
+      }
+     },
+     "lf2016": {
+      "cc": 26.4
+     },
+     "lf2022": {
+      "cc": 22.5
+     },
+     "lf2024": {
+      "cc": 24.1
+     },
+     "lf2025": {
+      "cc": 24.3
+     }
+    }
+   },
+   "Caldor": {
+    "inside": {
+     "2019": {
+      "cc": 39.1,
+      "ch": 19.72,
+      "lead": {
+       "bare": 4,
+       "grass-shrub": 6,
+       "timber-understory": 54,
+       "timber-litter": 32
+      }
+     },
+     "2020": {
+      "cc": 40.2,
+      "ch": 21.51,
+      "lead": {
+       "bare": 4,
+       "grass-shrub": 4,
+       "shrub": 2,
+       "timber-understory": 72,
+       "timber-litter": 15
+      }
+     },
+     "2021": {
+      "cc": 22.3,
+      "ch": 13.01,
+      "lead": {
+       "bare": 2,
+       "grass": 3,
+       "grass-shrub": 3,
+       "shrub": 6,
+       "timber-understory": 14,
+       "timber-litter": 70
+      }
+     },
+     "2022": {
+      "cc": 19.8,
+      "ch": 12.32,
+      "lead": {
+       "bare": 3,
+       "grass-shrub": 3,
+       "shrub": 3,
+       "timber-understory": 24,
+       "timber-litter": 65
+      }
+     },
+     "2023": {
+      "cc": 20.2,
+      "ch": 11.71,
+      "lead": {
+       "bare": 4,
+       "shrub": 7,
+       "timber-understory": 28,
+       "timber-litter": 58
+      }
+     },
+     "2024": {
+      "cc": 19.4,
+      "ch": 11.43,
+      "lead": {
+       "bare": 6,
+       "grass": 4,
+       "grass-shrub": 3,
+       "shrub": 6,
+       "timber-understory": 24,
+       "timber-litter": 56
+      }
+     },
+     "2025": {
+      "cc": 18.0,
+      "ch": 10.54,
+      "lead": {
+       "bare": 8,
+       "grass": 3,
+       "grass-shrub": 9,
+       "shrub": 14,
+       "timber-understory": 27,
+       "timber-litter": 38
+      }
+     },
+     "lf2016": {
+      "cc": 42.1
+     },
+     "lf2022": {
+      "cc": 22.1
+     },
+     "lf2024": {
+      "cc": 22.0
+     },
+     "lf2025": {
+      "cc": 22.1
+     }
+    },
+    "outside": {
+     "2019": {
+      "cc": 26.5,
+      "ch": 13.67,
+      "lead": {
+       "bare": 11,
+       "grass": 9,
+       "grass-shrub": 17,
+       "shrub": 3,
+       "timber-understory": 33,
+       "timber-litter": 26
+      }
+     },
+     "2020": {
+      "cc": 27.4,
+      "ch": 14.98,
+      "lead": {
+       "bare": 11,
+       "grass": 9,
+       "grass-shrub": 16,
+       "shrub": 6,
+       "timber-understory": 36,
+       "timber-litter": 22
+      }
+     },
+     "2021": {
+      "cc": 28.7,
+      "ch": 14.76,
+      "lead": {
+       "bare": 10,
+       "grass": 5,
+       "grass-shrub": 17,
+       "shrub": 5,
+       "timber-understory": 48,
+       "timber-litter": 15
+      }
+     },
+     "2022": {
+      "cc": 28.4,
+      "ch": 15.14,
+      "lead": {
+       "bare": 10,
+       "grass": 4,
+       "grass-shrub": 21,
+       "shrub": 6,
+       "timber-understory": 45,
+       "timber-litter": 12
+      }
+     },
+     "2023": {
+      "cc": 29.4,
+      "ch": 14.21,
+      "lead": {
+       "bare": 10,
+       "grass": 6,
+       "grass-shrub": 17,
+       "shrub": 5,
+       "timber-understory": 34,
+       "timber-litter": 26
+      }
+     },
+     "2024": {
+      "cc": 28.6,
+      "ch": 14.66,
+      "lead": {
+       "bare": 12,
+       "grass": 6,
+       "grass-shrub": 12,
+       "shrub": 7,
+       "timber-understory": 44,
+       "timber-litter": 19
+      }
+     },
+     "2025": {
+      "cc": 28.9,
+      "ch": 14.3,
+      "lead": {
+       "bare": 9,
+       "grass": 6,
+       "grass-shrub": 18,
+       "shrub": 4,
+       "timber-understory": 47,
+       "timber-litter": 15
+      }
+     },
+     "lf2016": {
+      "cc": 27.1
+     },
+     "lf2022": {
+      "cc": 26.2
+     },
+     "lf2024": {
+      "cc": 27.3
+     },
+     "lf2025": {
+      "cc": 27.1
+     }
+    }
+   },
+   "Creek": {
+    "inside": {
+     "2019": {
+      "cc": 37.0,
+      "ch": 20.56,
+      "lead": {
+       "grass-shrub": 8,
+       "shrub": 6,
+       "timber-understory": 9,
+       "timber-litter": 74
+      }
+     },
+     "2020": {
+      "cc": 28.8,
+      "ch": 18.59,
+      "lead": {
+       "grass": 2,
+       "grass-shrub": 14,
+       "shrub": 4,
+       "timber-understory": 9,
+       "timber-litter": 69
+      }
+     },
+     "2021": {
+      "cc": 18.6,
+      "ch": 13.54,
+      "lead": {
+       "grass-shrub": 15,
+       "shrub": 16,
+       "timber-understory": 6,
+       "timber-litter": 60
+      }
+     },
+     "2022": {
+      "cc": 14.6,
+      "ch": 9.98,
+      "lead": {
+       "bare": 3,
+       "grass": 4,
+       "grass-shrub": 10,
+       "shrub": 12,
+       "timber-understory": 18,
+       "timber-litter": 52
+      }
+     },
+     "2023": {
+      "cc": 17.2,
+      "ch": 11.57,
+      "lead": {
+       "grass-shrub": 11,
+       "shrub": 18,
+       "timber-understory": 12,
+       "timber-litter": 53
+      }
+     },
+     "2024": {
+      "cc": 13.9,
+      "ch": 9.63,
+      "lead": {
+       "bare": 2,
+       "grass": 4,
+       "grass-shrub": 8,
+       "shrub": 29,
+       "timber-understory": 18,
+       "timber-litter": 37
+      }
+     },
+     "2025": {
+      "cc": 13.0,
+      "ch": 8.41,
+      "lead": {
+       "bare": 4,
+       "grass": 7,
+       "grass-shrub": 19,
+       "shrub": 26,
+       "timber-understory": 19,
+       "timber-litter": 23
+      }
+     },
+     "lf2016": {
+      "cc": 34.9
+     },
+     "lf2022": {
+      "cc": 19.2
+     },
+     "lf2024": {
+      "cc": 18.9
+     },
+     "lf2025": {
+      "cc": 19.1
+     }
+    },
+    "outside": {
+     "2019": {
+      "cc": 29.0,
+      "ch": 15.71,
+      "lead": {
+       "bare": 15,
+       "grass": 10,
+       "grass-shrub": 12,
+       "timber-understory": 9,
+       "timber-litter": 51
+      }
+     },
+     "2020": {
+      "cc": 27.7,
+      "ch": 15.87,
+      "lead": {
+       "bare": 17,
+       "grass": 14,
+       "grass-shrub": 17,
+       "timber-understory": 13,
+       "timber-litter": 38
+      }
+     },
+     "2021": {
+      "cc": 30.5,
+      "ch": 16.59,
+      "lead": {
+       "bare": 15,
+       "grass": 7,
+       "grass-shrub": 10,
+       "shrub": 6,
+       "timber-understory": 32,
+       "timber-litter": 29
+      }
+     },
+     "2022": {
+      "cc": 27.8,
+      "ch": 15.73,
+      "lead": {
+       "bare": 16,
+       "grass": 9,
+       "grass-shrub": 6,
+       "shrub": 3,
+       "timber-understory": 28,
+       "timber-litter": 37
+      }
+     },
+     "2023": {
+      "cc": 28.6,
+      "ch": 15.83,
+      "lead": {
+       "bare": 14,
+       "grass": 9,
+       "grass-shrub": 13,
+       "shrub": 4,
+       "timber-understory": 18,
+       "timber-litter": 39
+      }
+     },
+     "2024": {
+      "cc": 27.6,
+      "ch": 15.39,
+      "lead": {
+       "bare": 17,
+       "grass": 10,
+       "grass-shrub": 12,
+       "shrub": 3,
+       "timber-understory": 35,
+       "timber-litter": 23
+      }
+     },
+     "2025": {
+      "cc": 29.1,
+      "ch": 15.81,
+      "lead": {
+       "bare": 15,
+       "grass": 9,
+       "grass-shrub": 8,
+       "timber-understory": 41,
+       "timber-litter": 24
+      }
+     },
+     "lf2016": {
+      "cc": 27.6
+     },
+     "lf2022": {
+      "cc": 26.7
+     },
+     "lf2024": {
+      "cc": 26.7
+     },
+     "lf2025": {
+      "cc": 26.7
+     }
+    }
+   },
+   "PARK": {
+    "inside": {
+     "2019": {
+      "cc": 19.3,
+      "ch": 9.25,
+      "lead": {
+       "grass": 20,
+       "grass-shrub": 14,
+       "shrub": 40,
+       "timber-understory": 16,
+       "timber-litter": 10
+      }
+     },
+     "2020": {
+      "cc": 18.9,
+      "ch": 10.29,
+      "lead": {
+       "grass": 30,
+       "grass-shrub": 16,
+       "shrub": 20,
+       "timber-understory": 22,
+       "timber-litter": 11
+      }
+     },
+     "2021": {
+      "cc": 24.2,
+      "ch": 12.49,
+      "lead": {
+       "grass": 15,
+       "grass-shrub": 7,
+       "shrub": 34,
+       "timber-understory": 37,
+       "timber-litter": 7
+      }
+     },
+     "2022": {
+      "cc": 22.1,
+      "ch": 11.5,
+      "lead": {
+       "grass": 17,
+       "grass-shrub": 9,
+       "shrub": 44,
+       "timber-understory": 23,
+       "timber-litter": 7
+      }
+     },
+     "2023": {
+      "cc": 21.4,
+      "ch": 10.89,
+      "lead": {
+       "grass": 15,
+       "grass-shrub": 10,
+       "shrub": 43,
+       "timber-understory": 20,
+       "timber-litter": 12
+      }
+     },
+     "2024": {
+      "cc": 13.9,
+      "ch": 9.33,
+      "lead": {
+       "grass": 21,
+       "grass-shrub": 31,
+       "shrub": 11,
+       "timber-litter": 36
+      }
+     },
+     "2025": {
+      "cc": 10.1,
+      "ch": 5.77,
+      "lead": {
+       "grass": 28,
+       "grass-shrub": 31,
+       "shrub": 8,
+       "timber-understory": 12,
+       "timber-litter": 21
+      }
+     },
+     "lf2016": {
+      "cc": 23.9
+     },
+     "lf2022": {
+      "cc": 23.4
+     },
+     "lf2024": {
+      "cc": 10.9
+     },
+     "lf2025": {
+      "cc": 4.7
+     }
+    },
+    "outside": {
+     "2019": {
+      "cc": 26.0,
+      "ch": 12.46,
+      "lead": {
+       "bare": 4,
+       "grass": 22,
+       "grass-shrub": 14,
+       "shrub": 13,
+       "timber-understory": 25,
+       "timber-litter": 21
+      }
+     },
+     "2020": {
+      "cc": 24.3,
+      "ch": 12.2,
+      "lead": {
+       "grass": 20,
+       "grass-shrub": 25,
+       "shrub": 5,
+       "timber-understory": 24,
+       "timber-litter": 24
+      }
+     },
+     "2021": {
+      "cc": 24.6,
+      "ch": 12.3,
+      "lead": {
+       "grass": 30,
+       "grass-shrub": 13,
+       "shrub": 5,
+       "timber-understory": 32,
+       "timber-litter": 18
+      }
+     },
+     "2022": {
+      "cc": 23.2,
+      "ch": 11.83,
+      "lead": {
+       "grass": 36,
+       "grass-shrub": 8,
+       "shrub": 10,
+       "timber-understory": 29,
+       "timber-litter": 17
+      }
+     },
+     "2023": {
+      "cc": 23.7,
+      "ch": 11.56,
+      "lead": {
+       "grass": 30,
+       "grass-shrub": 13,
+       "shrub": 8,
+       "timber-understory": 22,
+       "timber-litter": 25
+      }
+     },
+     "2024": {
+      "cc": 23.5,
+      "ch": 11.88,
+      "lead": {
+       "grass": 35,
+       "grass-shrub": 10,
+       "shrub": 10,
+       "timber-understory": 23,
+       "timber-litter": 22
+      }
+     },
+     "2025": {
+      "cc": 23.7,
+      "ch": 11.89,
+      "lead": {
+       "grass": 35,
+       "grass-shrub": 10,
+       "shrub": 6,
+       "timber-understory": 31,
+       "timber-litter": 16
+      }
+     },
+     "lf2016": {
+      "cc": 26.8
+     },
+     "lf2022": {
+      "cc": 23.3
+     },
+     "lf2024": {
+      "cc": 23.3
+     },
+     "lf2025": {
+      "cc": 23.5
+     }
+    }
+   },
+   "Bobcat": {
+    "inside": {
+     "2019": {
+      "cc": 23.8,
+      "ch": 11.37,
+      "lead": {
+       "bare": 4,
+       "grass-shrub": 19,
+       "shrub": 42,
+       "timber-understory": 33
+      }
+     },
+     "2020": {
+      "cc": 11.5,
+      "ch": 8.54,
+      "lead": {
+       "grass": 23,
+       "grass-shrub": 33,
+       "shrub": 9,
+       "timber-litter": 33
+      }
+     },
+     "2021": {
+      "cc": 13.5,
+      "ch": 8.07,
+      "lead": {
+       "grass": 8,
+       "grass-shrub": 31,
+       "shrub": 29,
+       "timber-litter": 28
+      }
+     },
+     "2022": {
+      "cc": 15.0,
+      "ch": 8.68,
+      "lead": {
+       "bare": 3,
+       "grass": 3,
+       "grass-shrub": 22,
+       "shrub": 45,
+       "timber-understory": 4,
+       "timber-litter": 24
+      }
+     },
+     "2023": {
+      "cc": 15.0,
+      "ch": 8.79,
+      "lead": {
+       "bare": 5,
+       "grass": 2,
+       "grass-shrub": 39,
+       "shrub": 23,
+       "timber-understory": 5,
+       "timber-litter": 26
+      }
+     },
+     "2024": {
+      "cc": 15.8,
+      "ch": 9.11,
+      "lead": {
+       "bare": 3,
+       "grass-shrub": 31,
+       "shrub": 39,
+       "timber-understory": 3,
+       "timber-litter": 24
+      }
+     },
+     "2025": {
+      "cc": 16.0,
+      "ch": 8.71,
+      "lead": {
+       "bare": 4,
+       "grass-shrub": 37,
+       "shrub": 34,
+       "timber-understory": 6,
+       "timber-litter": 18
+      }
+     },
+     "lf2016": {
+      "cc": 26.2
+     },
+     "lf2022": {
+      "cc": 18.3
+     },
+     "lf2024": {
+      "cc": 18.3
+     },
+     "lf2025": {
+      "cc": 19.2
+     }
+    },
+    "outside": {
+     "2019": {
+      "cc": 3.2,
+      "ch": 1.83,
+      "lead": {
+       "urban and roads": 4,
+       "bare": 8,
+       "grass": 4,
+       "grass-shrub": 33,
+       "shrub": 49
+      }
+     },
+     "2020": {
+      "cc": 3.5,
+      "ch": 2.67,
+      "lead": {
+       "urban and roads": 4,
+       "bare": 3,
+       "grass": 11,
+       "grass-shrub": 64,
+       "shrub": 16
+      }
+     },
+     "2021": {
+      "cc": 4.3,
+      "ch": 2.95,
+      "lead": {
+       "urban and roads": 3,
+       "bare": 5,
+       "grass": 10,
+       "grass-shrub": 56,
+       "shrub": 24
+      }
+     },
+     "2022": {
+      "cc": 3.6,
+      "ch": 2.39,
+      "lead": {
+       "urban and roads": 3,
+       "bare": 10,
+       "grass": 6,
+       "grass-shrub": 52,
+       "shrub": 26
+      }
+     },
+     "2023": {
+      "cc": 4.4,
+      "ch": 2.68,
+      "lead": {
+       "urban and roads": 4,
+       "bare": 8,
+       "grass": 8,
+       "grass-shrub": 43,
+       "shrub": 31,
+       "timber-understory": 3,
+       "timber-litter": 2
+      }
+     },
+     "2024": {
+      "cc": 4.5,
+      "ch": 2.4,
+      "lead": {
+       "urban and roads": 3,
+       "bare": 7,
+       "grass-shrub": 49,
+       "shrub": 36,
+       "timber-understory": 3
+      }
+     },
+     "2025": {
+      "cc": 5.7,
+      "ch": 2.97,
+      "lead": {
+       "urban and roads": 3,
+       "bare": 6,
+       "grass-shrub": 61,
+       "shrub": 25
+      }
+     },
+     "lf2016": {
+      "cc": 4.4
+     },
+     "lf2022": {
+      "cc": 4.2
+     },
+     "lf2024": {
+      "cc": 5.3
+     },
+     "lf2025": {
+      "cc": 5.4
+     }
+    }
+   }
+  }
+ },
+ "e_all": {
+  "rows": 4368000,
+  "all": {
+   "cc_mae": 6.631370544433594,
+   "cc_r2": 0.7984730005264282,
+   "ch_mae": 3.8125932216644287,
+   "ch_r2": 0.7152868509292603,
+   "kind_acc": 0.604277919373288
+  },
+  "burn windows": {
+   "cc_mae": 9.496504783630371,
+   "cc_r2": 0.7257859706878662,
+   "ch_mae": 5.76798152923584,
+   "ch_r2": 0.6274852752685547,
+   "kind_acc": 0.505174520069808
+  },
+  "cc_change_2016_2022": {
+   "pixels": 1091684,
+   "corr": 0.6991387405954437,
+   "lost_20_plus": 104502,
+   "lost_true_mean": -39.68995666503906,
+   "lost_pred_mean": -25.968603134155273,
+   "steady_true_mean": 0.0,
+   "steady_pred_mean": -0.9205793738365173
+  },
+  "fires": {
+   "Dixie": {
+    "inside": {
+     "2017": {
+      "cc": 40.0,
+      "ch": 21.25,
+      "lead": {
+       "grass-shrub": 16,
+       "timber-understory": 27,
+       "timber-litter": 54
+      }
+     },
+     "2018": {
+      "cc": 36.1,
+      "ch": 18.76,
+      "lead": {
+       "grass-shrub": 10,
+       "timber-understory": 56,
+       "timber-litter": 31
+      }
+     },
+     "2019": {
+      "cc": 36.7,
+      "ch": 19.68,
+      "lead": {
+       "grass-shrub": 16,
+       "timber-understory": 23,
+       "timber-litter": 58
+      }
+     },
+     "2020": {
+      "cc": 36.6,
+      "ch": 18.66,
+      "lead": {
+       "grass-shrub": 9,
+       "shrub": 2,
+       "timber-understory": 44,
+       "timber-litter": 43
+      }
+     },
+     "2021": {
+      "cc": 29.2,
+      "ch": 16.13,
+      "lead": {
+       "bare": 3,
+       "grass-shrub": 7,
+       "timber-understory": 21,
+       "timber-litter": 67
+      }
+     },
+     "2022": {
+      "cc": 22.7,
+      "ch": 13.18,
+      "lead": {
+       "bare": 3,
+       "grass-shrub": 9,
+       "shrub": 2,
+       "timber-understory": 31,
+       "timber-litter": 53
+      }
+     },
+     "2023": {
+      "cc": 23.0,
+      "ch": 12.9,
+      "lead": {
+       "grass-shrub": 26,
+       "timber-understory": 10,
+       "timber-litter": 59
+      }
+     },
+     "2024": {
+      "cc": 21.4,
+      "ch": 12.5,
+      "lead": {
+       "grass": 4,
+       "grass-shrub": 16,
+       "shrub": 3,
+       "timber-understory": 19,
+       "timber-litter": 55
+      }
+     },
+     "2025": {
+      "cc": 22.0,
+      "ch": 12.79,
+      "lead": {
+       "grass": 2,
+       "grass-shrub": 20,
+       "shrub": 7,
+       "timber-understory": 17,
+       "timber-litter": 53
+      }
+     },
+     "lf2016": {
+      "cc": 37.6
+     },
+     "lf2022": {
+      "cc": 22.2
+     },
+     "lf2024": {
+      "cc": 21.9
+     },
+     "lf2025": {
+      "cc": 22.0
+     }
+    },
+    "outside": {
+     "2017": {
+      "cc": 25.7,
+      "ch": 13.01,
+      "lead": {
+       "water": 6,
+       "grass": 15,
+       "grass-shrub": 29,
+       "timber-understory": 24,
+       "timber-litter": 23
+      }
+     },
+     "2018": {
+      "cc": 24.3,
+      "ch": 12.37,
+      "lead": {
+       "water": 6,
+       "grass": 17,
+       "grass-shrub": 18,
+       "shrub": 4,
+       "timber-understory": 42,
+       "timber-litter": 11
+      }
+     },
+     "2019": {
+      "cc": 22.7,
+      "ch": 12.03,
+      "lead": {
+       "water": 6,
+       "grass": 10,
+       "grass-shrub": 36,
+       "shrub": 2,
+       "timber-understory": 24,
+       "timber-litter": 20
+      }
+     },
+     "2020": {
+      "cc": 22.5,
+      "ch": 11.62,
+      "lead": {
+       "water": 6,
+       "grass": 13,
+       "grass-shrub": 19,
+       "shrub": 2,
+       "timber-understory": 40,
+       "timber-litter": 17
+      }
+     },
+     "2021": {
+      "cc": 24.2,
+      "ch": 11.98,
+      "lead": {
+       "water": 5,
+       "grass": 26,
+       "grass-shrub": 12,
+       "shrub": 4,
+       "timber-understory": 42,
+       "timber-litter": 8
+      }
+     },
+     "2022": {
+      "cc": 23.8,
+      "ch": 12.2,
+      "lead": {
+       "water": 5,
+       "grass": 17,
+       "grass-shrub": 20,
+       "shrub": 4,
+       "timber-understory": 36,
+       "timber-litter": 16
+      }
+     },
+     "2023": {
+      "cc": 24.5,
+      "ch": 12.13,
+      "lead": {
+       "water": 6,
+       "grass": 20,
+       "grass-shrub": 22,
+       "timber-understory": 12,
+       "timber-litter": 37
+      }
+     },
+     "2024": {
+      "cc": 24.5,
+      "ch": 12.52,
+      "lead": {
+       "water": 6,
+       "grass": 22,
+       "grass-shrub": 11,
+       "shrub": 4,
+       "timber-understory": 35,
+       "timber-litter": 20
+      }
+     },
+     "2025": {
+      "cc": 24.5,
+      "ch": 12.22,
+      "lead": {
+       "farmland": 2,
+       "water": 6,
+       "grass": 13,
+       "grass-shrub": 23,
+       "shrub": 4,
+       "timber-understory": 42,
+       "timber-litter": 8
+      }
+     },
+     "lf2016": {
+      "cc": 26.4
+     },
+     "lf2022": {
+      "cc": 22.5
+     },
+     "lf2024": {
+      "cc": 24.1
+     },
+     "lf2025": {
+      "cc": 24.3
+     }
+    }
+   },
+   "Caldor": {
+    "inside": {
+     "2017": {
+      "cc": 41.3,
+      "ch": 20.23,
+      "lead": {
+       "bare": 4,
+       "grass-shrub": 12,
+       "timber-understory": 43,
+       "timber-litter": 38
+      }
+     },
+     "2018": {
+      "cc": 37.6,
+      "ch": 18.78,
+      "lead": {
+       "bare": 4,
+       "grass-shrub": 4,
+       "timber-understory": 78,
+       "timber-litter": 10
+      }
+     },
+     "2019": {
+      "cc": 38.6,
+      "ch": 19.14,
+      "lead": {
+       "bare": 4,
+       "grass-shrub": 10,
+       "shrub": 2,
+       "timber-understory": 52,
+       "timber-litter": 30
+      }
+     },
+     "2020": {
+      "cc": 40.0,
+      "ch": 20.35,
+      "lead": {
+       "bare": 4,
+       "grass-shrub": 5,
+       "timber-understory": 66,
+       "timber-litter": 23
+      }
+     },
+     "2021": {
+      "cc": 27.2,
+      "ch": 14.78,
+      "lead": {
+       "bare": 8,
+       "grass": 2,
+       "grass-shrub": 2,
+       "timber-understory": 26,
+       "timber-litter": 60
+      }
+     },
+     "2022": {
+      "cc": 19.3,
+      "ch": 12.31,
+      "lead": {
+       "bare": 5,
+       "grass-shrub": 3,
+       "shrub": 2,
+       "timber-understory": 34,
+       "timber-litter": 53
+      }
+     },
+     "2023": {
+      "cc": 19.9,
+      "ch": 11.99,
+      "lead": {
+       "bare": 4,
+       "grass-shrub": 5,
+       "shrub": 4,
+       "timber-understory": 17,
+       "timber-litter": 66
+      }
+     },
+     "2024": {
+      "cc": 18.5,
+      "ch": 11.31,
+      "lead": {
+       "bare": 4,
+       "grass": 5,
+       "shrub": 10,
+       "timber-understory": 24,
+       "timber-litter": 54
+      }
+     },
+     "2025": {
+      "cc": 18.8,
+      "ch": 11.47,
+      "lead": {
+       "bare": 5,
+       "grass": 3,
+       "grass-shrub": 5,
+       "shrub": 15,
+       "timber-understory": 29,
+       "timber-litter": 41
+      }
+     },
+     "lf2016": {
+      "cc": 42.1
+     },
+     "lf2022": {
+      "cc": 22.1
+     },
+     "lf2024": {
+      "cc": 22.0
+     },
+     "lf2025": {
+      "cc": 22.1
+     }
+    },
+    "outside": {
+     "2017": {
+      "cc": 28.5,
+      "ch": 14.29,
+      "lead": {
+       "bare": 10,
+       "grass": 7,
+       "grass-shrub": 21,
+       "shrub": 4,
+       "timber-understory": 27,
+       "timber-litter": 31
+      }
+     },
+     "2018": {
+      "cc": 26.0,
+      "ch": 13.31,
+      "lead": {
+       "bare": 11,
+       "grass": 7,
+       "grass-shrub": 13,
+       "shrub": 5,
+       "timber-understory": 45,
+       "timber-litter": 18
+      }
+     },
+     "2019": {
+      "cc": 26.5,
+      "ch": 13.42,
+      "lead": {
+       "bare": 10,
+       "grass": 7,
+       "grass-shrub": 20,
+       "shrub": 5,
+       "timber-understory": 28,
+       "timber-litter": 29
+      }
+     },
+     "2020": {
+      "cc": 28.1,
+      "ch": 14.6,
+      "lead": {
+       "bare": 11,
+       "grass": 5,
+       "grass-shrub": 12,
+       "shrub": 4,
+       "timber-understory": 32,
+       "timber-litter": 36
+      }
+     },
+     "2021": {
+      "cc": 29.3,
+      "ch": 14.43,
+      "lead": {
+       "bare": 14,
+       "grass": 4,
+       "grass-shrub": 9,
+       "shrub": 7,
+       "timber-understory": 58,
+       "timber-litter": 6
+      }
+     },
+     "2022": {
+      "cc": 28.3,
+      "ch": 14.84,
+      "lead": {
+       "bare": 9,
+       "grass": 3,
+       "grass-shrub": 15,
+       "shrub": 7,
+       "timber-understory": 52,
+       "timber-litter": 13
+      }
+     },
+     "2023": {
+      "cc": 28.3,
+      "ch": 13.64,
+      "lead": {
+       "bare": 10,
+       "grass": 4,
+       "grass-shrub": 21,
+       "shrub": 5,
+       "timber-understory": 43,
+       "timber-litter": 17
+      }
+     },
+     "2024": {
+      "cc": 28.0,
+      "ch": 14.24,
+      "lead": {
+       "bare": 11,
+       "grass": 7,
+       "grass-shrub": 7,
+       "shrub": 8,
+       "timber-understory": 41,
+       "timber-litter": 25
+      }
+     },
+     "2025": {
+      "cc": 28.3,
+      "ch": 13.76,
+      "lead": {
+       "bare": 12,
+       "grass": 5,
+       "grass-shrub": 16,
+       "shrub": 5,
+       "timber-understory": 44,
+       "timber-litter": 16
+      }
+     },
+     "lf2016": {
+      "cc": 27.1
+     },
+     "lf2022": {
+      "cc": 26.2
+     },
+     "lf2024": {
+      "cc": 27.3
+     },
+     "lf2025": {
+      "cc": 27.1
+     }
+    }
+   },
+   "Creek": {
+    "inside": {
+     "2017": {
+      "cc": 38.5,
+      "ch": 21.69,
+      "lead": {
+       "grass-shrub": 11,
+       "shrub": 5,
+       "timber-understory": 14,
+       "timber-litter": 66
+      }
+     },
+     "2018": {
+      "cc": 36.1,
+      "ch": 20.53,
+      "lead": {
+       "grass-shrub": 8,
+       "timber-understory": 64,
+       "timber-litter": 24
+      }
+     },
+     "2019": {
+      "cc": 34.5,
+      "ch": 19.38,
+      "lead": {
+       "grass-shrub": 19,
+       "shrub": 4,
+       "timber-understory": 22,
+       "timber-litter": 53
+      }
+     },
+     "2020": {
+      "cc": 28.2,
+      "ch": 17.32,
+      "lead": {
+       "bare": 3,
+       "grass-shrub": 5,
+       "timber-understory": 14,
+       "timber-litter": 73
+      }
+     },
+     "2021": {
+      "cc": 17.5,
+      "ch": 11.73,
+      "lead": {
+       "grass-shrub": 9,
+       "shrub": 6,
+       "timber-understory": 7,
+       "timber-litter": 75
+      }
+     },
+     "2022": {
+      "cc": 13.0,
+      "ch": 9.17,
+      "lead": {
+       "grass": 4,
+       "grass-shrub": 8,
+       "shrub": 11,
+       "timber-understory": 21,
+       "timber-litter": 53
+      }
+     },
+     "2023": {
+      "cc": 18.2,
+      "ch": 11.25,
+      "lead": {
+       "bare": 3,
+       "grass-shrub": 12,
+       "shrub": 17,
+       "timber-understory": 7,
+       "timber-litter": 58
+      }
+     },
+     "2024": {
+      "cc": 15.0,
+      "ch": 9.96,
+      "lead": {
+       "grass": 6,
+       "grass-shrub": 11,
+       "shrub": 18,
+       "timber-understory": 17,
+       "timber-litter": 45
+      }
+     },
+     "2025": {
+      "cc": 14.7,
+      "ch": 9.39,
+      "lead": {
+       "grass": 6,
+       "grass-shrub": 15,
+       "shrub": 22,
+       "timber-understory": 25,
+       "timber-litter": 28
+      }
+     },
+     "lf2016": {
+      "cc": 34.9
+     },
+     "lf2022": {
+      "cc": 19.2
+     },
+     "lf2024": {
+      "cc": 18.9
+     },
+     "lf2025": {
+      "cc": 19.1
+     }
+    },
+    "outside": {
+     "2017": {
+      "cc": 29.7,
+      "ch": 15.78,
+      "lead": {
+       "bare": 15,
+       "grass": 11,
+       "grass-shrub": 14,
+       "shrub": 3,
+       "timber-understory": 16,
+       "timber-litter": 41
+      }
+     },
+     "2018": {
+      "cc": 27.0,
+      "ch": 14.85,
+      "lead": {
+       "bare": 15,
+       "grass": 9,
+       "grass-shrub": 9,
+       "shrub": 5,
+       "timber-understory": 41,
+       "timber-litter": 20
+      }
+     },
+     "2019": {
+      "cc": 27.3,
+      "ch": 14.77,
+      "lead": {
+       "bare": 15,
+       "grass": 10,
+       "grass-shrub": 15,
+       "shrub": 5,
+       "timber-understory": 19,
+       "timber-litter": 35
+      }
+     },
+     "2020": {
+      "cc": 28.1,
+      "ch": 15.51,
+      "lead": {
+       "bare": 17,
+       "grass": 10,
+       "grass-shrub": 9,
+       "shrub": 3,
+       "timber-understory": 29,
+       "timber-litter": 32
+      }
+     },
+     "2021": {
+      "cc": 31.2,
+      "ch": 17.0,
+      "lead": {
+       "bare": 16,
+       "grass": 6,
+       "grass-shrub": 11,
+       "timber-understory": 51,
+       "timber-litter": 13
+      }
+     },
+     "2022": {
+      "cc": 27.8,
+      "ch": 15.59,
+      "lead": {
+       "bare": 16,
+       "grass": 8,
+       "grass-shrub": 6,
+       "shrub": 6,
+       "timber-understory": 34,
+       "timber-litter": 29
+      }
+     },
+     "2023": {
+      "cc": 28.2,
+      "ch": 15.41,
+      "lead": {
+       "bare": 15,
+       "grass": 9,
+       "grass-shrub": 9,
+       "shrub": 5,
+       "timber-understory": 29,
+       "timber-litter": 32
+      }
+     },
+     "2024": {
+      "cc": 28.1,
+      "ch": 15.31,
+      "lead": {
+       "bare": 17,
+       "grass": 7,
+       "grass-shrub": 9,
+       "shrub": 6,
+       "timber-understory": 29,
+       "timber-litter": 31
+      }
+     },
+     "2025": {
+      "cc": 29.3,
+      "ch": 15.69,
+      "lead": {
+       "bare": 18,
+       "grass": 8,
+       "grass-shrub": 13,
+       "shrub": 2,
+       "timber-understory": 40,
+       "timber-litter": 17
+      }
+     },
+     "lf2016": {
+      "cc": 27.6
+     },
+     "lf2022": {
+      "cc": 26.7
+     },
+     "lf2024": {
+      "cc": 26.7
+     },
+     "lf2025": {
+      "cc": 26.7
+     }
+    }
+   },
+   "PARK": {
+    "inside": {
+     "2017": {
+      "cc": 21.0,
+      "ch": 10.78,
+      "lead": {
+       "grass": 24,
+       "grass-shrub": 21,
+       "shrub": 32,
+       "timber-understory": 15,
+       "timber-litter": 8
+      }
+     },
+     "2018": {
+      "cc": 20.0,
+      "ch": 10.69,
+      "lead": {
+       "grass": 26,
+       "grass-shrub": 11,
+       "shrub": 34,
+       "timber-understory": 18,
+       "timber-litter": 11
+      }
+     },
+     "2019": {
+      "cc": 20.2,
+      "ch": 10.71,
+      "lead": {
+       "grass": 26,
+       "grass-shrub": 13,
+       "shrub": 29,
+       "timber-understory": 17,
+       "timber-litter": 16
+      }
+     },
+     "2020": {
+      "cc": 19.3,
+      "ch": 10.55,
+      "lead": {
+       "grass": 30,
+       "grass-shrub": 6,
+       "shrub": 28,
+       "timber-understory": 13,
+       "timber-litter": 22
+      }
+     },
+     "2021": {
+      "cc": 23.1,
+      "ch": 11.57,
+      "lead": {
+       "grass": 33,
+       "grass-shrub": 16,
+       "shrub": 17,
+       "timber-understory": 32
+      }
+     },
+     "2022": {
+      "cc": 23.1,
+      "ch": 12.66,
+      "lead": {
+       "grass": 18,
+       "grass-shrub": 13,
+       "shrub": 41,
+       "timber-understory": 25,
+       "timber-litter": 3
+      }
+     },
+     "2023": {
+      "cc": 20.7,
+      "ch": 10.78,
+      "lead": {
+       "grass": 28,
+       "grass-shrub": 8,
+       "shrub": 32,
+       "timber-understory": 20,
+       "timber-litter": 11
+      }
+     },
+     "2024": {
+      "cc": 13.0,
+      "ch": 8.87,
+      "lead": {
+       "grass": 36,
+       "grass-shrub": 19,
+       "shrub": 8,
+       "timber-understory": 2,
+       "timber-litter": 35
+      }
+     },
+     "2025": {
+      "cc": 10.5,
+      "ch": 6.27,
+      "lead": {
+       "grass": 47,
+       "grass-shrub": 18,
+       "shrub": 3,
+       "timber-understory": 16,
+       "timber-litter": 15
+      }
+     },
+     "lf2016": {
+      "cc": 23.9
+     },
+     "lf2022": {
+      "cc": 23.4
+     },
+     "lf2024": {
+      "cc": 10.9
+     },
+     "lf2025": {
+      "cc": 4.7
+     }
+    },
+    "outside": {
+     "2017": {
+      "cc": 26.6,
+      "ch": 13.46,
+      "lead": {
+       "grass": 33,
+       "grass-shrub": 21,
+       "timber-understory": 19,
+       "timber-litter": 24
+      }
+     },
+     "2018": {
+      "cc": 24.7,
+      "ch": 12.24,
+      "lead": {
+       "grass": 30,
+       "grass-shrub": 14,
+       "shrub": 6,
+       "timber-understory": 27,
+       "timber-litter": 22
+      }
+     },
+     "2019": {
+      "cc": 25.6,
+      "ch": 12.76,
+      "lead": {
+       "grass": 22,
+       "grass-shrub": 30,
+       "shrub": 3,
+       "timber-understory": 23,
+       "timber-litter": 22
+      }
+     },
+     "2020": {
+      "cc": 24.7,
+      "ch": 12.36,
+      "lead": {
+       "grass": 30,
+       "grass-shrub": 14,
+       "shrub": 6,
+       "timber-understory": 16,
+       "timber-litter": 33
+      }
+     },
+     "2021": {
+      "cc": 25.1,
+      "ch": 12.15,
+      "lead": {
+       "grass": 27,
+       "grass-shrub": 21,
+       "shrub": 5,
+       "timber-understory": 33,
+       "timber-litter": 13
+      }
+     },
+     "2022": {
+      "cc": 23.5,
+      "ch": 12.43,
+      "lead": {
+       "grass": 35,
+       "grass-shrub": 11,
+       "shrub": 9,
+       "timber-understory": 28,
+       "timber-litter": 16
+      }
+     },
+     "2023": {
+      "cc": 23.7,
+      "ch": 11.85,
+      "lead": {
+       "grass": 31,
+       "grass-shrub": 17,
+       "shrub": 6,
+       "timber-understory": 21,
+       "timber-litter": 23
+      }
+     },
+     "2024": {
+      "cc": 23.0,
+      "ch": 11.66,
+      "lead": {
+       "grass": 32,
+       "grass-shrub": 11,
+       "shrub": 9,
+       "timber-understory": 25,
+       "timber-litter": 22
+      }
+     },
+     "2025": {
+      "cc": 24.4,
+      "ch": 12.11,
+      "lead": {
+       "grass": 26,
+       "grass-shrub": 24,
+       "shrub": 6,
+       "timber-understory": 32,
+       "timber-litter": 12
+      }
+     },
+     "lf2016": {
+      "cc": 26.8
+     },
+     "lf2022": {
+      "cc": 23.3
+     },
+     "lf2024": {
+      "cc": 23.3
+     },
+     "lf2025": {
+      "cc": 23.5
+     }
+    }
+   },
+   "Bobcat": {
+    "inside": {
+     "2017": {
+      "cc": 22.8,
+      "ch": 11.39,
+      "lead": {
+       "grass": 6,
+       "grass-shrub": 70,
+       "shrub": 3,
+       "timber-understory": 10,
+       "timber-litter": 9
+      }
+     },
+     "2018": {
+      "cc": 21.4,
+      "ch": 11.0,
+      "lead": {
+       "grass": 3,
+       "grass-shrub": 71,
+       "shrub": 7,
+       "timber-understory": 15,
+       "timber-litter": 2
+      }
+     },
+     "2019": {
+      "cc": 23.8,
+      "ch": 11.8,
+      "lead": {
+       "bare": 3,
+       "grass": 3,
+       "grass-shrub": 33,
+       "shrub": 28,
+       "timber-understory": 21,
+       "timber-litter": 12
+      }
+     },
+     "2020": {
+      "cc": 12.4,
+      "ch": 8.39,
+      "lead": {
+       "grass": 18,
+       "grass-shrub": 41,
+       "shrub": 3,
+       "timber-understory": 7,
+       "timber-litter": 30
+      }
+     },
+     "2021": {
+      "cc": 13.2,
+      "ch": 7.94,
+      "lead": {
+       "bare": 4,
+       "grass": 4,
+       "grass-shrub": 29,
+       "shrub": 37,
+       "timber-understory": 5,
+       "timber-litter": 21
+      }
+     },
+     "2022": {
+      "cc": 13.7,
+      "ch": 7.91,
+      "lead": {
+       "bare": 5,
+       "grass": 5,
+       "grass-shrub": 25,
+       "shrub": 39,
+       "timber-understory": 2,
+       "timber-litter": 23
+      }
+     },
+     "2023": {
+      "cc": 15.2,
+      "ch": 8.91,
+      "lead": {
+       "bare": 3,
+       "grass": 3,
+       "grass-shrub": 31,
+       "shrub": 30,
+       "timber-understory": 8,
+       "timber-litter": 25
+      }
+     },
+     "2024": {
+      "cc": 14.7,
+      "ch": 9.15,
+      "lead": {
+       "bare": 4,
+       "grass": 9,
+       "grass-shrub": 31,
+       "shrub": 30,
+       "timber-litter": 25
+      }
+     },
+     "2025": {
+      "cc": 14.4,
+      "ch": 7.94,
+      "lead": {
+       "bare": 3,
+       "grass-shrub": 43,
+       "shrub": 31,
+       "timber-understory": 6,
+       "timber-litter": 15
+      }
+     },
+     "lf2016": {
+      "cc": 26.2
+     },
+     "lf2022": {
+      "cc": 18.3
+     },
+     "lf2024": {
+      "cc": 18.3
+     },
+     "lf2025": {
+      "cc": 19.2
+     }
+    },
+    "outside": {
+     "2017": {
+      "cc": 4.3,
+      "ch": 2.73,
+      "lead": {
+       "urban and roads": 3,
+       "bare": 3,
+       "grass": 24,
+       "grass-shrub": 51,
+       "shrub": 17
+      }
+     },
+     "2018": {
+      "cc": 4.6,
+      "ch": 3.16,
+      "lead": {
+       "urban and roads": 3,
+       "bare": 3,
+       "grass": 16,
+       "grass-shrub": 43,
+       "shrub": 33
+      }
+     },
+     "2019": {
+      "cc": 4.7,
+      "ch": 3.15,
+      "lead": {
+       "urban and roads": 4,
+       "bare": 6,
+       "grass": 8,
+       "grass-shrub": 35,
+       "shrub": 42,
+       "timber-litter": 2
+      }
+     },
+     "2020": {
+      "cc": 5.0,
+      "ch": 3.49,
+      "lead": {
+       "urban and roads": 4,
+       "bare": 6,
+       "grass": 11,
+       "grass-shrub": 55,
+       "shrub": 21
+      }
+     },
+     "2021": {
+      "cc": 5.4,
+      "ch": 3.54,
+      "lead": {
+       "urban and roads": 3,
+       "bare": 4,
+       "grass": 12,
+       "grass-shrub": 60,
+       "shrub": 20
+      }
+     },
+     "2022": {
+      "cc": 5.1,
+      "ch": 3.23,
+      "lead": {
+       "urban and roads": 3,
+       "bare": 4,
+       "grass": 13,
+       "grass-shrub": 56,
+       "shrub": 23
+      }
+     },
+     "2023": {
+      "cc": 6.5,
+      "ch": 4.05,
+      "lead": {
+       "urban and roads": 5,
+       "bare": 4,
+       "grass": 11,
+       "grass-shrub": 49,
+       "shrub": 26,
+       "timber-understory": 3
+      }
+     },
+     "2024": {
+      "cc": 6.3,
+      "ch": 3.98,
+      "lead": {
+       "urban and roads": 4,
+       "bare": 4,
+       "grass": 14,
+       "grass-shrub": 48,
+       "shrub": 27
+      }
+     },
+     "2025": {
+      "cc": 6.4,
+      "ch": 3.64,
+      "lead": {
+       "urban and roads": 5,
+       "bare": 3,
+       "grass": 12,
+       "grass-shrub": 53,
+       "shrub": 25
+      }
+     },
+     "lf2016": {
+      "cc": 4.4
+     },
+     "lf2022": {
+      "cc": 4.2
+     },
+     "lf2024": {
+      "cc": 5.3
+     },
+     "lf2025": {
+      "cc": 5.4
+     }
+    }
+   }
+  }
+ }
+}

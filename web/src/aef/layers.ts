@@ -17,6 +17,7 @@ import { fuelPipeline, type FuelMode } from "./render.js";
 import { forgetData } from "../hrrr/get-tile-data.js";
 import { cacheSource, makeGrid, type WeatherGrid, type WeatherSource, weatherTexture } from "./weather.js";
 import { ignLogit, NO_CLASS } from "./head.js";
+import type { ViewGrid } from "../fuel/viewHist.js";
 
 /**
  * The land cover under the weather, two readers by zoom with the same head and the same shader:
@@ -288,6 +289,45 @@ export class AefLayers {
       acc += hist[v]!;
     }
     return lut;
+  }
+
+  /** The stretch in use (each fuel byte's place on the ramp, 0..255), or null. */
+  get stretch(): Uint8Array | null {
+    return this.stretchLut;
+  }
+
+  /**
+   * The current year's 10 m fuel bytes on a grid over the view (fuel/viewHist.ts): grid cells per byte (index 0 =
+   * no embedding), the cells with ground that a mask (1 = in) leaves out, and the cells no tile covers yet. Each
+   * cell reads the pixel under its center, from the first tile that holds it.
+   */
+  fuelOnGrid(g: ViewGrid, mask: Uint8Array | null): { counts: Float64Array; off: number; unread: number } {
+    const counts = new Float64Array(256);
+    const taken = new Uint8Array(g.gw * g.gh);
+    let off = 0, got = 0;
+    const { lons, lats, gw, gh } = g;
+    for (const t of this.fineTiles()) {
+      const [w, s, e, n] = t.bbox;
+      if (e < lons[0]! || w > lons[gw - 1]! || n < lats[gh - 1]! || s > lats[0]!) continue;
+      const f = t.classes.fuel;
+      for (let r = 0; r < gh; r++) {
+        const lat = lats[r]!;
+        if (lat < s || lat >= n) continue;
+        const y = Math.min(t.height - 1, Math.floor(((n - lat) / (n - s)) * t.height));
+        for (let c = 0; c < gw; c++) {
+          const lon = lons[c]!;
+          if (lon < w || lon >= e) continue;
+          const i = r * gw + c;
+          if (taken[i]) continue;
+          taken[i] = 1;
+          got++;
+          const v = f[y * t.width + Math.min(t.width - 1, Math.floor(((lon - w) / (e - w)) * t.width))]!;
+          if (mask && !mask[i]) { if (v > 0) off++; continue; }
+          counts[v]!++;
+        }
+      }
+    }
+    return { counts, off, unread: gw * gh - got };
   }
 
   /** Use a stretch (or none): drawn again only when it changed. */

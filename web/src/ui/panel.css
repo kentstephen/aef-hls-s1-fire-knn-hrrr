@@ -177,3 +177,12 @@
 .pn .fire-hist .fh-year { font-size: 11px; fill: #9aa0a6; font-variant-numeric: tabular-nums; }
 .pn .fire-hist .fh-year.on { font-size: 13px; font-weight: 700; fill: #e8eaed; }
 .pn .fire-hist .fh-tag { font-size: 10px; fill: #00e5ff; }
+
+.pn .view-hist { margin: 10px 0 4px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.pn .view-hist .vh-title { font-weight: 600; color: #e8eaed; }
+.pn .view-hist svg { display: block; background: rgba(255, 255, 255, 0.035); border-radius: 3px 3px 0 0; }
+.pn .view-hist .vh-head { display: flex; justify-content: space-between; margin: 6px 0 3px; font-variant-numeric: tabular-nums; }
+.pn .view-hist .vh-marks { position: relative; height: 14px; margin-top: 3px; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--muted); }
+.pn .view-hist .vh-marks > span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.pn .view-hist .vh-marks > span.first { transform: none; }
+.pn .view-hist .vh-marks > span.last { transform: translateX(-100%); }

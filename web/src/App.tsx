@@ -20,9 +20,11 @@ import { ignitionRate, rateLabel } from "./aef/calibration.js";
 // the burn perimeters (perimeters.ts): not drawn for now; TODO draw them from GeoArrow (deck.gl-geoarrow) rather
 // than a 7 MB GeoJSON parsed on the main thread, and only while each fire burned
 // import { loadPerimeters, type Perimeter, perimeterLayer, perimetersInRun } from "./perimeters.js";
-import { BURN_MASK_ID, type BurnArea, burnAreaLayer, burnAreasAt, burnMaskLayer, loadCaBurnAreas, selectedBurnLayer } from "./perimeters.js";
-import { BurnHist, type YearHist } from "./fuel/burnHist.js";
-import { FireHist } from "./ui/FireHist.js";
+import { BURN_MASK_ID, type BurnArea, burnAreaLayer, burnAreasAt, burnGrid, burnMaskLayer, loadCaBurnAreas, selectedBurnLayer } from "./perimeters.js";
+// the picked fire's fuel by year is off (it read every embeddings year under the outline); its imports with it
+// import { BurnHist, type YearHist } from "./fuel/burnHist.js";
+// import { FireHist } from "./ui/FireHist.js";
+import { binView, viewGrid, type ViewHist as ViewHistData } from "./fuel/viewHist.js";
 import { HEADS, NO_CLASS, type Teacher } from "./aef/head.js";
 import { AefLayers, type FuelValue } from "./aef/layers.js";
 import volumeJson from "../../models/fuel_volume.json";
@@ -59,7 +61,7 @@ import { openHrrr, type HrrrSource } from "./hrrr/store.js";
 import { FfwiTileCache } from "./hrrr/tile-cache.js";
 import { RASTER_VARIABLES, type RasterVariable } from "./hrrr/variables.js";
 import { HOURS_PER_DAY, WeekWeather, weekHourDate, type WeekSpec } from "./hrrr/week.js";
-import type { GroundRamp } from "./aef/ramp.js";
+import { rampStops, type GroundRamp } from "./aef/ramp.js";
 import { cacheSource } from "./aef/weather.js";
 import { CONUS_MEAN } from "./aef/calibration.js";
 import { CountyTable, countyLayer, loadCounties, unitsGrid, type CountyFeature } from "./counties.js";
@@ -288,7 +290,7 @@ export default function App() {
   const [burnPick, setBurnPick] = useState<{ f: BurnArea; key: string; name: string; year: number | null; acres: number | null } | null>(null);
   const burnPickRef = useRef(burnPick);
   burnPickRef.current = burnPick;
-  const [burnHists, setBurnHists] = useState<YearHist[] | null>(null);
+  // const [burnHists, setBurnHists] = useState<YearHist[] | null>(null);
   useEffect(() => {
     const ac = new AbortController();
     loadCaBurnAreas(ac.signal).then(setBurnAreas).catch((e) => { if (!ac.signal.aborted) setError(`perimeters: ${String(e)}`); });
@@ -1070,16 +1072,17 @@ export default function App() {
   // the Sentinel-2 mosaic's. The season view puts the embeddings on the year before its fires; the imagery follows
   // the embeddings' year until it is picked itself
   const [embYear, setEmbYear] = useState(AEF_YEAR);
-  // the selected fire's histograms: the chunks in view, the year on screen first, then outward
-  const burnHist = useMemo(() => (aefLayers && poolRef.current ? new BurnHist(poolRef.current) : null), [aefLayers]);
-  useEffect(() => {
-    setBurnHists(null);
-    if (!burnPick || !burnHist || !view || zoom < MOSAIC_MIN_ZOOM) return;
-    const ac = new AbortController();
-    void burnHist.run(burnPick.f, burnPick.key, view, embYear, setBurnHists, ac.signal, fuelValue);
-    return () => ac.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [burnPick, burnHist, view, embYear, fuelValue]);
+  // the selected fire's fuel by year, off: it read every embeddings year (2017 to 2025) for each chunk under the
+  // outline, slow on a large fire; stepping the year with the view histogram shows the same change
+  // const burnHist = useMemo(() => (aefLayers && poolRef.current ? new BurnHist(poolRef.current) : null), [aefLayers]);
+  // useEffect(() => {
+  //   setBurnHists(null);
+  //   if (!burnPick || !burnHist || !view || zoom < MOSAIC_MIN_ZOOM) return;
+  //   const ac = new AbortController();
+  //   void burnHist.run(burnPick.f, burnPick.key, view, embYear, setBurnHists, ac.signal, fuelValue);
+  //   return () => ac.abort();
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [burnPick, burnHist, view, embYear, fuelValue]);
   stepEmbYearRef.current = (d: number) =>
     setEmbYear((y) => EMB_YEARS[Math.max(0, Math.min(EMB_YEARS.length - 1, EMB_YEARS.indexOf(y) + d))]!);
   useEffect(() => {
@@ -1123,6 +1126,33 @@ export default function App() {
   const paintOn = paint === "imagery" && fuel === "lit" && !(WEATHER_ON && useWeather);
   /** The fuel as a tint on the imagery: the imagery under, the fuel's ramp shifting its color. */
   const tintOn = paint === "tint" && fuel === "lit" && !(WEATHER_ON && useWeather);
+  // the view's histogram in the panel: the fuel drawn in view binned by its color, at most every 400 ms; the timer
+  // reads the newest state when it fires, so the last pan is always counted
+  const [viewHist, setViewHist] = useState<ViewHistData | null>(null);
+  const viewHistRun = useRef<() => void>(() => {});
+  viewHistRun.current = () => {
+    if (!aefLayers || !view || fuel !== "lit" || paintOn || (WEATHER_ON && useWeather) || zoom < MOSAIC_MIN_ZOOM) {
+      setViewHist(null);
+      return;
+    }
+    const g = viewGrid(view);
+    const mask = burnMask && burnAreas ? burnGrid(burnAreas, view, g.gw, g.gh) : null;
+    const { counts, off, unread } = aefLayers.fuelOnGrid(g, mask);
+    setViewHist(binView(counts, off, unread, g.gw * g.gh, {
+      pHide,
+      pMax,
+      logit: ignScale !== "probability",
+      stretch: stretchOn ? aefLayers.stretch : null,
+    }, rampStops(groundRamp)));
+  };
+  const viewHistTimer = useRef<number | null>(null);
+  useEffect(() => {
+    if (viewHistTimer.current !== null) return;
+    viewHistTimer.current = window.setTimeout(() => {
+      viewHistTimer.current = null;
+      viewHistRun.current();
+    }, 400);
+  }, [aefLayers, view, zoom, aefVersion, stretchOn, stretchMarks, pHide, pMax, ignScale, burnMask, burnAreas, fuelValue, embYear, groundRamp, paintOn, fuel, useWeather]);
   const [s2Version, setS2Version] = useState(0);
   const s2 = useMemo(() => new S2Imagery(() => setS2Version((v) => v + 1)), []);
   // the year's footprints under the view, looked for as the view settles
@@ -1748,6 +1778,7 @@ export default function App() {
         stretch={stretchOn}
         onStretchChange={setStretchOn}
         stretchMarks={stretchOn && !paintOn ? stretchMarks : null}
+        viewHist={viewHist}
         fuelValue={fuelValue}
         onFuelValueChange={setFuelValue}
         burnMask={burnMask}
@@ -1780,18 +1811,19 @@ export default function App() {
           waiting: autoStartRef.current,
         } : null}
         fire={{ pick: firePick, record: fireRec, onClear: () => setFirePick(null) }}
-        burnHist={burnPick ? (
-          <FireHist
-            name={burnPick.name}
-            fireYear={burnPick.year}
-            acres={burnPick.acres}
-            hists={burnHists}
-            embYear={embYear}
-            zoomOk={zoom >= MOSAIC_MIN_ZOOM}
-            minZoom={MOSAIC_MIN_ZOOM}
-            volume={fuelValue === "volume"}
-          />
-        ) : null}
+        // the picked fire's fuel by year, off with its reads above
+        // burnHist={burnPick ? (
+        //   <FireHist
+        //     name={burnPick.name}
+        //     fireYear={burnPick.year}
+        //     acres={burnPick.acres}
+        //     hists={burnHists}
+        //     embYear={embYear}
+        //     zoomOk={zoom >= MOSAIC_MIN_ZOOM}
+        //     minZoom={MOSAIC_MIN_ZOOM}
+        //     volume={fuelValue === "volume"}
+        //   />
+        // ) : null}
         season={{
           year: SEASON_YEAR,
           on: seasonOn,

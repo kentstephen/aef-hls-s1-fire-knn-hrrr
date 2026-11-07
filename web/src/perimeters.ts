@@ -191,6 +191,42 @@ export function burnAreasAt(areas: BurnArea[], lon: number, lat: number): BurnHi
   return out.sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
 }
 
+/**
+ * The burned areas on a grid over the view (lon even across, Web Mercator y even down; fuel/viewHist.ts): 1 where
+ * a cell's center is inside one, as the M mask draws them. Each polygon filled even-odd on its own (holes out,
+ * overlaps in), on a canvas, read back where it is at least half covered.
+ */
+export function burnGrid(areas: BurnArea[], view: [number, number, number, number], gw: number, gh: number): Uint8Array {
+  const [w, s, e, n] = view;
+  const my = (lat: number) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
+  const yN = my(n), yS = my(s);
+  const cv = new OffscreenCanvas(gw, gh);
+  const ctx = cv.getContext("2d")!;
+  ctx.fillStyle = "#fff";
+  for (const f of areas) {
+    const b = boxOf(f);
+    if (b[2] < w || b[0] > e || b[3] < s || b[1] > n) continue;
+    const g = f.geometry;
+    const polys = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
+    for (const poly of polys) {
+      ctx.beginPath();
+      for (const r of poly) {
+        r.forEach(([x, y], i) => {
+          const px = ((x! - w) / (e - w)) * gw, py = ((yN - my(y!)) / (yN - yS)) * gh;
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        });
+        ctx.closePath();
+      }
+      ctx.fill("evenodd");
+    }
+  }
+  const d = ctx.getImageData(0, 0, gw, gh).data;
+  const out = new Uint8Array(gw * gh);
+  for (let i = 0; i < out.length; i++) out[i] = d[i * 4 + 3]! >= 128 ? 1 : 0;
+  return out;
+}
+
 export const BURN_MASK_ID = "ca-burn-mask";
 
 /** The burned areas filled, as a mask (never drawn): the fuel shown only inside them. */

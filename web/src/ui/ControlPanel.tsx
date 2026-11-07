@@ -26,6 +26,8 @@ import { type RasterVariable } from "../hrrr/variables.js";
 import { HOURS_PER_DAY, RUN_HOUR_UTC, type DayState } from "../hrrr/week.js";
 import { A, Check, Field, Fold, Help, Key, Seg, Slider } from "./controls.js";
 // import { Ramp } from "./controls.js";
+import { ViewHist } from "./ViewHist.js";
+import type { ViewHist as ViewHistData } from "../fuel/viewHist.js";
 import "./panel.css";
 
 // const COLORMAP_ROW_COUNT = Object.keys(COLORMAP_INDEX).length;
@@ -213,6 +215,8 @@ export type ControlPanelProps = {
   stretch: boolean;
   onStretchChange: (on: boolean) => void;
   stretchMarks: [number, number, number] | null;
+  /** The fuel drawn in view, binned by its color (fuel/viewHist.ts); null before enough is in. */
+  viewHist: ViewHistData | null;
   /** What the fuel's colors stand for (V): the volume head's vegetation volume, or the fuel head's P(fuel). */
   fuelValue: FuelValue;
   onFuelValueChange: (v: FuelValue) => void;
@@ -492,9 +496,18 @@ export function ControlPanel(p: ControlPanelProps) {
           Hold <b>Space</b> to see the imagery (the wheel steps its year while held), <b>[</b> <b>]</b> a year back or
           forward, <b>P</b> for the two side by side. Imagery from zoom 9 in, fuel from zoom {MOSAIC_MIN_ZOOM} in.
         */}
-        <p className="muted small">Fuel from zoom {MOSAIC_MIN_ZOOM} in. Click inside a fire's outline for its fuel by year.</p>
+        <p className="muted small">Fuel from zoom {MOSAIC_MIN_ZOOM} in. Click inside a fire's outline to pick it out; Esc clears it.</p>
       </div>
       {p.burnHist}
+      {p.viewHist && p.fuel === "lit" && !p.weatherOn && p.paint !== "imagery" ? (
+        <ViewHist
+          hist={p.viewHist}
+          gradient={rampGradient(rampStops(p.groundRamp))}
+          fmt={p.fuelValue === "volume" ? meters : (v) => `${Math.round(v * 100)}%`}
+          what={p.fuelValue === "volume" ? "vegetation volume" : "chance of fuel"}
+          year={p.years.emb}
+        />
+      ) : null}
       <p className="muted small" style={{ marginTop: 6 }}>
         Data: <A href="https://source.coop/tge-labs/aef">AlphaEarth Foundations</A> (tge-labs on Source Cooperative) ·{" "}
         <A href="https://www.earthgenome.org/">Earth Genome</A> Sentinel-2 mosaics (CC BY 4.0) ·{" "}

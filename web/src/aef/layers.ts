@@ -63,6 +63,13 @@ export type AefTile = {
   /** The season view's mask (r8, tile size) and the key it was drawn for. */
   seasonTex?: Texture;
   seasonKey?: string;
+  /** Volume tiles: the oldest year read's volume (v0), on the GPU as the fuel plane is. */
+  v0Tex?: Texture;
+  /** The replay's arrival hour per pixel (r32float, NEVER where it never burns), its CPU copy, and its key. */
+  arriveTex?: Texture;
+  /** Quarter hours + 1, 0 where it never burns (half the size of the texture's floats). */
+  arrive?: Uint16Array;
+  arriveKey?: string;
   gone?: boolean;
 };
 
@@ -114,6 +121,11 @@ export type AefLayerOpts = {
   stretch?: boolean;
   /** The fuel as a tint on the imagery under it, at this strength (0 = off): render.ts tint. */
   tint?: number;
+  /**
+   * The replay (render.ts): the before year's fuel dim until a pixel's arrival hour, then hot for hotH hours, cooling
+   * over coolH to the after year's fuel. The hour is from the replay's start.
+   */
+  replay?: { hour: number; hotH: number; coolH: number; before: number };
   /** "mask+draw": the layer is also the imagery's mask (its loaded tiles), as well as drawn. */
   operation?: "draw" | "mask+draw";
   /** Draw the 10 m fuel only where this mask layer covers (deck MaskExtension, on the GPU): the burned areas. */
@@ -177,8 +189,14 @@ export class AefLayers {
   private fuelYear = AEF_YEAR;
   /** What the 10 m tiles' fuel plane holds. */
   private fuelValue: FuelValue = "volume";
+  /** Only 10 m tiles whose lon / lat box passes this are read (the replay: those its fire's outline touches). */
+  private readFilter: ((bbox: [number, number, number, number]) => boolean) | null = null;
+  /** The embedding years each 10 m tile reads, oldest first (null: the fuel year and the two before it). */
+  private fuelYears: number[] | null = null;
   /** A 1 x 1 empty season mask for tiles that have none yet. */
   private noMask: Texture | null = null;
+  /** A 1 x 1 arrival that never burns, for tiles the replay misses. */
+  private noArrive: Texture | null = null;
   /** The view's stretch: each fuel byte's place on the ramp (256 x 1), from fuelStretch. */
   private stretchTex: Texture | null = null;
   private stretchLut: Uint8Array | null = null;
@@ -203,6 +221,28 @@ export class AefLayers {
   setFuelYear(y: number) {
     if (y === this.fuelYear) return;
     this.fuelYear = y;
+    for (const t of [...this.live.values()]) if (t.kind === "zarr") this.drop(t);
+    this.version++;
+    this.redraw();
+  }
+
+  /**
+   * The years each 10 m tile reads, oldest first, the fuel year last (the replay: the year before a fire and the year
+   * after, so a volume tile holds both and reads two years, not three). Null: the fuel year and the two before.
+   */
+  setFuelYears(ys: number[] | null) {
+    if (JSON.stringify(ys) === JSON.stringify(this.fuelYears)) return;
+    this.fuelYears = ys;
+    if (ys) this.fuelYear = ys[ys.length - 1]!;
+    for (const t of [...this.live.values()]) if (t.kind === "zarr") this.drop(t);
+    this.version++;
+    this.redraw();
+  }
+
+  /** Read only the 10 m tiles whose box passes f (null: all); tiles on hand are dropped and read again under it. */
+  setReadFilter(f: ((bbox: [number, number, number, number]) => boolean) | null) {
+    if (f === this.readFilter) return;
+    this.readFilter = f;
     for (const t of [...this.live.values()]) if (t.kind === "zarr") this.drop(t);
     this.version++;
     this.redraw();
@@ -236,6 +276,22 @@ export class AefLayers {
         }))
       : undefined;
     t.seasonKey = key;
+    if (old) later(old);
+    return true;
+  }
+
+  /** Set a tile's replay arrival hours (tile size, NEVER where it never burns) drawn for key; false when it already has it. */
+  setArrival(t: AefTile, key: string, arr: Float32Array | null): boolean {
+    if (t.arriveKey === key || !this.device || t.gone) return false;
+    const old = t.arriveTex;
+    t.arrive = arr ? Uint16Array.from(arr, (h) => (h < 0 ? 0 : Math.min(65535, 1 + Math.round(h * 4)))) : undefined;
+    t.arriveTex = arr
+      ? forgetData(this.device.createTexture({
+          format: "r32float", width: t.width, height: t.height, mipLevels: 1, data: arr,
+          sampler: { minFilter: "nearest", magFilter: "nearest", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge" },
+        }))
+      : undefined;
+    t.arriveKey = key;
     if (old) later(old);
     return true;
   }
@@ -301,7 +357,7 @@ export class AefLayers {
    * no embedding), the cells with ground that a mask (1 = in) leaves out, and the cells no tile covers yet. Each
    * cell reads the pixel under its center, from the first tile that holds it.
    */
-  fuelOnGrid(g: ViewGrid, mask: Uint8Array | null): { counts: Float64Array; off: number; unread: number } {
+  fuelOnGrid(g: ViewGrid, mask: Uint8Array | null, replay?: { hour: number; hotH: number; coolH: number }): { counts: Float64Array; off: number; unread: number } {
     const counts = new Float64Array(256);
     const taken = new Uint8Array(g.gw * g.gh);
     let off = 0, got = 0;
@@ -321,7 +377,17 @@ export class AefLayers {
           if (taken[i]) continue;
           taken[i] = 1;
           got++;
-          const v = f[y * t.width + Math.min(t.width - 1, Math.floor(((lon - w) / (e - w)) * t.width))]!;
+          const p = y * t.width + Math.min(t.width - 1, Math.floor(((lon - w) / (e - w)) * t.width));
+          // the replay: the before year until the pixel burns, the after year once it has cooled, none while it is hot
+          let v = f[p]!;
+          if (replay) {
+            const q = t.arrive?.[p] ?? 0;
+            const a = q === 0 ? -1 : (q - 1) / 4;
+            // outside the fire's outline: not drawn
+            if (a < 0) continue;
+            if (replay.hour < a) v = t.classes.v0?.[p] ?? v;
+            else if (replay.hour < a + replay.hotH + replay.coolH) continue;
+          }
           if (mask && !mask[i]) { if (v > 0) off++; continue; }
           counts[v]!++;
         }
@@ -367,6 +433,8 @@ export class AefLayers {
       this.rampId = rampId;
       this.luts = this.device === device && this.luts ? this.luts : { nlcd: lutTexture(device, "nlcd"), esri: lutTexture(device, "esri") };
       this.noMask = forgetData(device.createTexture({ format: "r8unorm", width: 1, height: 1, mipLevels: 1, data: new Uint8Array(1),
+        sampler: { minFilter: "nearest", magFilter: "nearest" } }));
+      this.noArrive = forgetData(device.createTexture({ format: "r32float", width: 1, height: 1, mipLevels: 1, data: new Float32Array([-1]),
         sampler: { minFilter: "nearest", magFilter: "nearest" } }));
     }
     return { ramp: this.ramp, luts: this.luts };
@@ -490,6 +558,7 @@ export class AefLayers {
       classTex: { nlcd: tex(classes.nlcd), esri: tex(classes.esri) },
       groundTex: tex(classes.ign),
       fuelTex: smooth(classes.fuel),
+      v0Tex: classes.v0 ? smooth(classes.v0) : undefined,
       grid,
       ffwiTex: w.tex,
       weatherKey: this.weatherKey,
@@ -509,7 +578,7 @@ export class AefLayers {
   private drop(t: AefTile) {
     t.gone = true;
     if (this.live.get(t.key) === t) this.live.delete(t.key);
-    later(t.classTex.nlcd, t.classTex.esri, t.groundTex, t.fuelTex, t.ffwiTex, ...(t.seasonTex ? [t.seasonTex] : []));
+    later(t.classTex.nlcd, t.classTex.esri, t.groundTex, t.fuelTex, t.ffwiTex, ...[t.seasonTex, t.v0Tex, t.arriveTex].filter((x): x is Texture => !!x));
   }
 
   private async read<T>(f: () => Promise<T>): Promise<T> {
@@ -546,23 +615,28 @@ export class AefLayers {
 
   // ---- the 10 m mosaic
   private zarrGetTileData = async (_arr: zarr.Array<"int8", zarr.Readable>, o: ZarrTileOptions): Promise<AefTile> => {
+    const ys = o.sliceSpec[2] as zarr.Slice;
+    const xs = o.sliceSpec[3] as zarr.Slice;
+    const py0 = ys.start ?? 0;
+    const px0 = xs.start ?? 0;
+    const { width, height } = o;
+    // a tile the read filter leaves out: nothing read, nothing drawn (the tile layer skips an empty tile)
+    if (this.readFilter && !this.readFilter([X0 + px0 * RES, Y0 - (py0 + height) * RES, X0 + (px0 + width) * RES, Y0 - py0 * RES])) {
+      return null as unknown as AefTile;
+    }
     return this.read(async () => {
-      const ys = o.sliceSpec[2] as zarr.Slice;
-      const xs = o.sliceSpec[3] as zarr.Slice;
-      const py0 = ys.start ?? 0;
-      const px0 = xs.start ?? 0;
-      const { width, height } = o;
       // the class heads and the fuel head on the same newest year; the fuel head's spread over it and the two before
       const fy = this.fuelYear;
       const fv = this.fuelValue;
-      const classes = await this.pool.zarr(YEARS.indexOf(fy), py0, px0, height, width, o.signal, [fy - 2, fy - 1, fy].map((y) => YEARS.indexOf(y)), fv);
+      const yrs = this.fuelYears ?? [fy - 2, fy - 1, fy];
+      const classes = await this.pool.zarr(YEARS.indexOf(fy), py0, px0, height, width, o.signal, yrs.map((y) => YEARS.indexOf(y)), fv, !!this.fuelYears);
       const toLonLat = (u: number, v: number): [number, number] => [X0 + (px0 + u * width) * RES, Y0 - (py0 + v * height) * RES];
       const pixelAt = (lon: number, lat: number) => {
         const ci = Math.floor((lon - X0) / RES) - px0;
         const ri = Math.floor((Y0 - lat) / RES) - py0;
         return ci < 0 || ri < 0 || ci >= width || ri >= height ? -1 : ri * width + ci;
       };
-      const t = this.finish(o.device, `zarr:${fy}:${fv}:${py0},${px0}`, "zarr", width, height, classes, toLonLat, width * 10, pixelAt);
+      const t = this.finish(o.device, `zarr:${yrs.join("-")}:${fv}:${py0},${px0}`, "zarr", width, height, classes, toLonLat, width * 10, pixelAt);
       t.fuelYear = fy;
       t.fuelValue = fv;
       return t;
@@ -603,6 +677,13 @@ export class AefLayers {
       tint: o.tint ?? 0,
       stretchTex: this.stretchTex ?? this.noMask!,
       seasonTex: d.seasonTex ?? this.noMask!,
+      replay: o.replay ? 1 : 0,
+      replayHour: o.replay?.hour ?? 0,
+      hotH: o.replay?.hotH ?? 3,
+      coolH: o.replay?.coolH ?? 9,
+      beforeAlpha: o.replay?.before ?? 0.35,
+      v0Tex: d.v0Tex ?? d.fuelTex,
+      arriveTex: d.arriveTex ?? this.noArrive!,
     });
   };
 
@@ -619,7 +700,7 @@ export class AefLayers {
     }
     // debug hook for the headless probe (this instance is the one deck draws from)
     (globalThis as unknown as { __aef?: unknown }).__aef = { layers: this, cache: this.cache };
-    const key = `${opts.mode}|${opts.ramp}|${opts.teacher}|${opts.leadTimeIdx}|${opts.hideBelow}|${opts.rescaleMax}|${opts.pHide}|${opts.pMax}|${opts.scale}|${opts.zLo}|${opts.zHi}|${opts.useWeather}|${opts.standingAlpha}|${opts.wxGate}|${opts.fieldAlpha}|${opts.glowHours}|${opts.grain}|${opts.seasonDim ?? 0}|${opts.seasonGray ? 1 : 0}|${opts.solid ? 1 : 0}|${opts.veil ?? 0}|${opts.stretch ? 1 : 0}|${opts.tint ?? 0}`;
+    const key = `${opts.mode}|${opts.ramp}|${opts.teacher}|${opts.leadTimeIdx}|${opts.hideBelow}|${opts.rescaleMax}|${opts.pHide}|${opts.pMax}|${opts.scale}|${opts.zLo}|${opts.zHi}|${opts.useWeather}|${opts.standingAlpha}|${opts.wxGate}|${opts.fieldAlpha}|${opts.glowHours}|${opts.grain}|${opts.seasonDim ?? 0}|${opts.seasonGray ? 1 : 0}|${opts.solid ? 1 : 0}|${opts.veil ?? 0}|${opts.stretch ? 1 : 0}|${opts.tint ?? 0}|${opts.replay ? `${opts.replay.hour}:${opts.replay.hotH}:${opts.replay.coolH}:${opts.replay.before}` : ""}`;
     if (key !== this.lastKey) {
       this.lastKey = key;
       this.version++;
@@ -661,7 +742,8 @@ export class AefLayers {
       minZoom: opts.only?.minZoom ?? MOSAIC_MIN_ZOOM,
       extent: opts.only?.bbox,
       maxRequests: 6,
-      maxCacheSize: 400,
+      // a fire read whole (only): its tiles all kept, so playing it back reads nothing new
+      maxCacheSize: opts.only ? 1200 : 400,
       ...common,
       operation: opts.operation ?? "draw",
       ...(opts.maskBy ? { extensions: opts.maskBy.extensions, maskId: opts.maskBy.maskId, maskByInstance: false } : {}),
@@ -671,7 +753,7 @@ export class AefLayers {
 
   /** The 10 m layer's id (the imagery's mask, by id): it changes with the fuel's year and value. */
   fineId(): string {
-    return `aef-zarr-${this.fuelYear}-${this.fuelValue}`;
+    return `aef-zarr-${this.fuelYears?.join("-") ?? this.fuelYear}-${this.fuelValue}${this.readFilter ? "-only" : ""}`;
   }
 
   /**

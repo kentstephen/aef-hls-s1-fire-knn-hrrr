@@ -6,9 +6,9 @@ import App from "./App.js";
 import Risk from "./risk/Risk.js";
 import Triage from "./triage/Triage.js";
 
-// the triage dashboard by default; ?app=fuel opens the fuel map, ?app=risk the fire risk map
+// the triage dashboard by default; ?app=fuel opens the fuel map, ?app=replay the fuel map playing one fire back, ?app=risk the fire risk map
 const app = new URLSearchParams(location.search).get("app");
-const Root = app === "fuel" ? App : app === "risk" ? Risk : Triage;
+const Root = app === "fuel" || app === "replay" ? App : app === "risk" ? Risk : Triage;
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

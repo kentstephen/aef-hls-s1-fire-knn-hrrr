@@ -186,3 +186,13 @@
 .pn .view-hist .vh-marks > span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 .pn .view-hist .vh-marks > span.first { transform: none; }
 .pn .view-hist .vh-marks > span.last { transform: translateX(-100%); }
+
+.pn .replay { margin: 10px 0 4px; padding: 8px 10px; border: 1px solid #ffd27a; border-radius: 8px; display: grid; gap: 6px; }
+.pn .replay .rp-title { font-weight: 600; color: #ffe2a8; }
+.pn .replay .rp-clock { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; color: #f2f2f2; }
+.pn .replay .row { display: flex; align-items: center; gap: 8px; }
+.pn .replay .rp-play input[type="range"] { flex: 1; }
+.pn .replay .rp-btn { min-width: 56px; }
+.pn .replay .rp-key { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 3px; font-size: 12px; }
+.pn .replay .rp-key li { display: flex; align-items: center; gap: 7px; }
+.pn .replay .rp-key .sw { display: inline-block; width: 26px; height: 10px; border-radius: 2px; flex: none; }

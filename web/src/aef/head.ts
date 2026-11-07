@@ -143,6 +143,19 @@ export type Classified = {
 };
 
 /**
+ * Only which pixels have an embedding (class 0, else NO_CLASS), no heads: for a view that draws the volume alone (the
+ * replay), where the land cover, canopy and ignition planes are never shown.
+ */
+export function classifyLean(data: Int8Array, n: number): Classified {
+  const nlcd = new Uint8Array(n);
+  for (let i = 0; i < NUM_BANDS; i++) {
+    const o = i * n;
+    for (let p = 0; p < n; p++) if (data[o + p] === NODATA) nlcd[p] = NO_CLASS;
+  }
+  return { nlcd, esri: nlcd.slice(), cover: new Uint8Array(n), ign: new Uint8Array(n), fuel: new Uint8Array(n) };
+}
+
+/**
  * Every pixel of a band-major int8 block [64, n] through the three heads. Argmax of the logits is
  * the class (softmax is monotone, so it is not needed for the label); cover is clamped to 0..1 and
  * stored as 0..255.

@@ -55,9 +55,10 @@ export class AefPool {
   }
 
   /** A mosaic chunk read and classified in the worker; fuelYearIdx: the fuel head's years (oldest first), else its own. */
-  zarr(timeIdx: number, py0: number, px0: number, h: number, w: number, signal?: AbortSignal, fuelYearIdx?: number[], value?: "pfuel" | "volume"): Promise<Classified> {
+  /** lean: no land cover heads and nothing kept for reuse (aef.worker.ts), for a view that draws the volume alone. */
+  zarr(timeIdx: number, py0: number, px0: number, h: number, w: number, signal?: AbortSignal, fuelYearIdx?: number[], value?: "pfuel" | "volume", lean = false): Promise<Classified> {
     // a small hash of the chunk's place, so neighbors spread over the workers
     const slot = Math.abs(Math.imul(py0 >> 8, 73856093) ^ Math.imul(px0 >> 8, 19349663));
-    return this.ask({ type: "zarr", timeIdx, py0, px0, h, w, fuelYearIdx, value }, [], signal, slot);
+    return this.ask({ type: "zarr", timeIdx, py0, px0, h, w, fuelYearIdx, value, lean }, [], signal, slot);
   }
 }

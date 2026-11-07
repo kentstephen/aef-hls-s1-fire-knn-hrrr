@@ -18,7 +18,7 @@ type Props = {
   /** What the values are, for the hover text. */
   what: string;
   /** The embeddings year on screen. */
-  year: number;
+  year: number | string;
 };
 
 const pct = (v: number) => (v >= 0.1 ? `${Math.round(v * 100)}%` : `${(v * 100).toFixed(1)}%`);

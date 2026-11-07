@@ -75,6 +75,18 @@ export type FuelLightProps = {
   tint: number;
   /** The season mask per tile pixel (r8, 0..1). */
   seasonTex: Texture;
+  /**
+   * The replay (fuel alone): 1 = each pixel drawn by its arrival hour (arriveTex, below 0 = never burns): the before
+   * year's fuel (v0Tex) at beforeAlpha until the front reaches it, hot for hotH hours (brighter the more stood there
+   * before), then cooling over coolH to the after year's fuel (fuelTex) at full opacity.
+   */
+  replay: number;
+  replayHour: number;
+  hotH: number;
+  coolH: number;
+  beforeAlpha: number;
+  v0Tex: Texture;
+  arriveTex: Texture;
 };
 
 const MODULE_NAME = "fuelLight";
@@ -118,6 +130,11 @@ uniform ${MODULE_NAME}Uniforms {
   float veil;
   float stretch;
   float tint;
+  float replay;
+  float replayHour;
+  float hotH;
+  float coolH;
+  float beforeAlpha;
 } ${MODULE_NAME};
 `,
   inject: {
@@ -131,6 +148,8 @@ uniform sampler2D lutTex;
 uniform sampler2D rampTex;
 uniform sampler2D seasonTex;
 uniform sampler2D stretchTex;
+uniform sampler2D v0Tex;
+uniform sampler2D arriveTex;
 
 const float WX_NAN = intBitsToFloat(0x7fc00000);
 /** A node outside the HRRR grid holds -Infinity at every hour: no weather here, ever. */
@@ -307,6 +326,47 @@ float fuelHash(vec2 p) {
         }
         if (fb < 0.5) discard;
         float fw = (fb - 1.0) / 254.0;
+        if (${MODULE_NAME}.useWeather < 0.5 && ${MODULE_NAME}.replay > 0.5) {
+          // the replay: the before year's fuel and the after year's on the ramp, as the fuel alone is placed below
+          float fb0 = texture(v0Tex, geometry.uv).r * 255.0;
+          float place[2];
+          for (int k = 0; k < 2; k++) {
+            float b = k == 0 ? fb0 : fb;
+            float v = (b - 1.0) / 254.0;
+            if (${MODULE_NAME}.scale > 0.5) {
+              float h0 = clamp(${MODULE_NAME}.pHide, 0.002, 0.996);
+              float h1 = clamp(${MODULE_NAME}.pMax, 0.002, 0.996);
+              float pv = clamp(v, 0.002, 0.996);
+              place[k] = clamp((log(pv / (1.0 - pv)) - log(h0 / (1.0 - h0))) / max(log(h1 / (1.0 - h1)) - log(h0 / (1.0 - h0)), 0.01), 0.0, 1.0);
+            } else {
+              place[k] = clamp((v - ${MODULE_NAME}.pHide) / max(${MODULE_NAME}.pMax - ${MODULE_NAME}.pHide, 0.0001), 0.0, 1.0);
+            }
+          }
+          float ar = texture(arriveTex, geometry.uv).r;
+          float now = ${MODULE_NAME}.replayHour;
+          // outside the fire's final outline: not drawn
+          if (ar < 0.0) discard;
+          if (now < ar) {
+            // not reached yet: the before year (full before the fire starts, dim once it has)
+            if (fb0 < 0.5 || (fb0 - 1.0) / 254.0 < ${MODULE_NAME}.pHide) discard;
+            color = vec4(texture(rampTex, vec2(place[0], 0.5)).rgb, ${MODULE_NAME}.beforeAlpha);
+            return;
+          }
+          // burning: amber to near white by how much stood there before, whitest right at the front; light, not hue,
+          // carries it, so it reads apart from every fuel ramp without red
+          float dt = now - ar;
+          float heat = fb0 < 0.5 ? 0.3 : (fb0 - 1.0) / 254.0;
+          vec3 hot = mix(vec3(1.0, 0.66, 0.22), vec3(1.0, 0.98, 0.90), heat) * (0.55 + 0.45 * heat);
+          hot = mix(hot, vec3(1.0), 0.5 * exp(-dt / 0.75));
+          if (dt < ${MODULE_NAME}.hotH) {
+            color = vec4(hot, 1.0);
+            return;
+          }
+          // cooling to the after year's fuel, then that alone
+          float k = smoothstep(0.0, 1.0, clamp((dt - ${MODULE_NAME}.hotH) / max(${MODULE_NAME}.coolH, 0.01), 0.0, 1.0));
+          color = vec4(mix(hot, texture(rampTex, vec2(place[1], 0.5)).rgb, k), 1.0);
+          return;
+        }
         if (${MODULE_NAME}.useWeather < 0.5) {
           // the weather left out: P(fuel) alone, hidden below pHide, ramped from there to pMax, straight or on the
           // log-odds (scale 1), which gives the crowded top (90, 96, 99 %) room on the ramp
@@ -367,7 +427,7 @@ float fuelHash(vec2 p) {
       }
     `,
   },
-  uniformTypes: { mode: "f32", layerIndex: "f32", hideBelow: "f32", rescaleMax: "f32", glowHours: "f32", grain: "f32", pHide: "f32", pMax: "f32", scale: "f32", zLo: "f32", zHi: "f32", useWeather: "f32", standingAlpha: "f32", wxGate: "f32", fieldAlpha: "f32", seasonDim: "f32", seasonGray: "f32", solid: "f32", veil: "f32", stretch: "f32", tint: "f32" },
+  uniformTypes: { mode: "f32", layerIndex: "f32", hideBelow: "f32", rescaleMax: "f32", glowHours: "f32", grain: "f32", pHide: "f32", pMax: "f32", scale: "f32", zLo: "f32", zHi: "f32", useWeather: "f32", standingAlpha: "f32", wxGate: "f32", fieldAlpha: "f32", seasonDim: "f32", seasonGray: "f32", solid: "f32", veil: "f32", stretch: "f32", tint: "f32", replay: "f32", replayHour: "f32", hotH: "f32", coolH: "f32", beforeAlpha: "f32" },
   getUniforms: (p: Partial<FuelLightProps>) => ({
     mode: p.mode ?? 0,
     layerIndex: p.layerIndex ?? 0,
@@ -390,6 +450,13 @@ float fuelHash(vec2 p) {
     veil: p.veil ?? 0,
     stretch: p.stretch ?? 0,
     tint: p.tint ?? 0,
+    replay: p.replay ?? 0,
+    replayHour: p.replayHour ?? 0,
+    hotH: p.hotH ?? 3,
+    coolH: p.coolH ?? 9,
+    beforeAlpha: p.beforeAlpha ?? 0.35,
+    v0Tex: p.v0Tex,
+    arriveTex: p.arriveTex,
     stretchTex: p.stretchTex,
     seasonTex: p.seasonTex,
     classTex: p.classTex,

@@ -10,7 +10,7 @@ import { PolygonLayer } from "@deck.gl/layers";
 
 type Codec = { name: string; configuration?: Record<string, unknown> };
 type VarLayout = { shape: number[]; chunks: number[]; dtype: string; fill: string; codecs: Codec[] };
-type Era = {
+export type Era = {
   form: string;
   first: string;
   last: string;
@@ -131,6 +131,49 @@ function xyToLonLat(x: number, y: number, p: Era["projection"]): [number, number
   const lat = Math.atan(((req * req) / (rpol * rpol)) * (sz / Math.sqrt((H - sx) ** 2 + sy * sy)));
   const lon = lon0 - Math.atan(sy / (H - sx));
   return [(lon * 180) / Math.PI, (lat * 180) / Math.PI];
+}
+
+/** A ground point's fractional GOES row and column in an era's grid (GOES-R PUG; a cell's center is a whole number). */
+export function lonLatToRowCol(e: Era, lon: number, lat: number): [number, number] {
+  const p = e.projection, g = e.grid;
+  const req = p.semi_major_axis, rpol = p.semi_minor_axis, H = p.perspective_point_height + p.semi_major_axis;
+  const lon0 = (p.longitude_of_projection_origin * Math.PI) / 180;
+  const e2 = 1 - (rpol * rpol) / (req * req);
+  const phi = (lat * Math.PI) / 180, lam = (lon * Math.PI) / 180 - lon0;
+  const latc = Math.atan(((rpol * rpol) / (req * req)) * Math.tan(phi));
+  const rc = rpol / Math.sqrt(1 - e2 * Math.cos(latc) ** 2);
+  const sx = H - rc * Math.cos(latc) * Math.cos(lam);
+  const sy = -rc * Math.cos(latc) * Math.sin(lam);
+  const sz = rc * Math.sin(latc);
+  const x = Math.asin(-sy / Math.sqrt(sx * sx + sy * sy + sz * sz));
+  const y = Math.atan(sz / sx);
+  return [(y - g.y0) / g.dy, (x - g.x0) / g.dx];
+}
+
+/**
+ * The reference file cut to one fire: the scans from `from` to `to` (ms), each scan's chunks only where they cover
+ * the lon / lat box, and each era's box of rows and columns set to it. Reads a few KB a scan instead of the state.
+ */
+export function cutDoc(doc: GoesDoc, bbox: [number, number, number, number], from: number, to: number): GoesDoc {
+  const [w, s, e, n] = bbox;
+  const eras = doc.eras.map((era) => {
+    const rc = [[w, s], [w, n], [e, s], [e, n]].map(([x, y]) => lonLatToRowCol(era, x!, y!));
+    const r0 = Math.floor(Math.min(...rc.map((v) => v[0]))) - 1, r1 = Math.ceil(Math.max(...rc.map((v) => v[0]))) + 1;
+    const c0 = Math.floor(Math.min(...rc.map((v) => v[1]))) - 1, c1 = Math.ceil(Math.max(...rc.map((v) => v[1]))) + 1;
+    return { ...era, box: [r0, r1, c0, c1] as [number, number, number, number] };
+  });
+  const keep = (era: Era, v: VarLayout, refs: Ref[]) => {
+    const [chY, chX] = v.chunks as [number, number];
+    const [r0, r1, c0, c1] = era.box;
+    return refs.filter(([cy, cx]) => cy * chY <= r1 && (cy + 1) * chY > r0 && cx * chX <= c1 && (cx + 1) * chX > c0);
+  };
+  const scans = doc.scans
+    .filter((sc) => sc.t >= from && sc.t <= to)
+    .map((sc) => {
+      const era = eras[sc.era]!;
+      return { ...sc, refs: { Mask: keep(era, era.vars.Mask, sc.refs.Mask), Power: keep(era, era.vars.Power, sc.refs.Power) } };
+    });
+  return { ...doc, eras, scans };
 }
 
 /** A pixel's footprint: its four corners on the ground (no terrain: a fire high on a ridge can sit about a km off). */

@@ -232,6 +232,10 @@ export type ControlPanelProps = {
   fire: FirePanel;
   /** The selected fire's fuel histograms, under the years box. */
   burnHist?: React.ReactNode;
+  /** The fire replay's card, in place of the years box (the replay sets its own years). */
+  replay?: React.ReactNode;
+  /** The view histogram's year label, when it is not the embeddings year (the replay's before and after). */
+  histYear?: string;
   /** The picked GOES fire hour by hour (null when none is picked). */
   fireHour: FireHourPanel | null;
 };
@@ -467,6 +471,8 @@ export function ControlPanel(p: ControlPanelProps) {
         {/* the imagery is off for now: <b>Sentinel-2</b> shows what the ground looked like. */}
       </p>
 
+      {p.replay}
+      {p.replay ? null : (
       <div className="years">
         <div className="row">
           <label className="yr">
@@ -498,6 +504,7 @@ export function ControlPanel(p: ControlPanelProps) {
         */}
         <p className="muted small">Fuel from zoom {MOSAIC_MIN_ZOOM} in. Click inside a fire's outline to pick it out; Esc clears it.</p>
       </div>
+      )}
       {p.burnHist}
       {p.viewHist && p.fuel === "lit" && !p.weatherOn && p.paint !== "imagery" ? (
         <ViewHist
@@ -505,7 +512,7 @@ export function ControlPanel(p: ControlPanelProps) {
           gradient={rampGradient(rampStops(p.groundRamp))}
           fmt={p.fuelValue === "volume" ? meters : (v) => `${Math.round(v * 100)}%`}
           what={p.fuelValue === "volume" ? "vegetation volume" : "chance of fuel"}
-          year={p.years.emb}
+          year={p.histYear ?? p.years.emb}
         />
       ) : null}
       <p className="muted small" style={{ marginTop: 6 }}>

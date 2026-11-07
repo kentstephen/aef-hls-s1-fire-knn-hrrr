@@ -5,7 +5,7 @@ import { type GpuScorer, makeGpuScorer } from "../fuel/head-gpu.js";
 import volumeJson from "../../../models/fuel_volume.json";
 import { packVolume, probeGap, volumeCpu, type VolumeHead } from "../fuel/volume.js";
 import { makeVolumeScorer, type VolumeScorer } from "../fuel/volume-gpu.js";
-import { classify, type Classified, NUM_BANDS } from "./head.js";
+import { classify, classifyLean, type Classified, NUM_BANDS } from "./head.js";
 import { openAefMosaic, type AefArray, YEARS } from "./mosaic.js";
 
 // the fuel head (scripts/export_fuel_head.py): run on the GPU (WebGPU) in this worker, the CPU without it
@@ -44,7 +44,7 @@ const scoreVolume = async (e: Int8Array, n: number) => {
  */
 type Job =
   | { type: "classify"; id: number; data: Int8Array; n: number }
-  | { type: "zarr"; id: number; timeIdx: number; py0: number; px0: number; h: number; w: number; fuelYearIdx?: number[]; value?: "pfuel" | "volume" }
+  | { type: "zarr"; id: number; timeIdx: number; py0: number; px0: number; h: number; w: number; fuelYearIdx?: number[]; value?: "pfuel" | "volume"; lean?: boolean }
   | { type: "abort"; id: number };
 
 let mosaic: Promise<AefArray> | null = null;
@@ -71,7 +71,26 @@ function keep(k: string, d: Int8Array) {
   }
 }
 
-async function chunkYear(arr: AefArray, t: number, py0: number, px0: number, h: number, w: number, signal: AbortSignal): Promise<Int8Array> {
+/**
+ * In development, a chunk kept on disk by scripts/replay_download.py (served at /local-aef/ by vite.config.ts), the
+ * same band-major int8 block the mosaic gives; null when it is not there, and the mosaic is read instead.
+ */
+async function fromLocal(t: number, py0: number, px0: number, h: number, w: number, signal: AbortSignal): Promise<Int8Array | null> {
+  if (h !== CHUNK || w !== CHUNK || py0 % CHUNK || px0 % CHUNK) return null;
+  try {
+    const r = await fetch(`/local-aef/${YEARS[t]}/${py0 / CHUNK}_${px0 / CHUNK}.bin`, { signal, cache: "no-store" });
+    if (!r.ok) return null;
+    const b = await r.arrayBuffer();
+    return b.byteLength === NUM_BANDS * h * w ? new Int8Array(b) : null;
+  } catch (e) {
+    if ((e as Error).name === "AbortError") throw e;
+    return null;
+  }
+}
+const CHUNK = 256;
+
+/** keepIt false: the chunk is not kept for reuse (a view that reads each chunk once). */
+async function chunkYear(arr: AefArray, t: number, py0: number, px0: number, h: number, w: number, signal: AbortSignal, keepIt = true): Promise<Int8Array> {
   const k = `${t}:${py0}:${px0}:${h}:${w}`;
   const hit = cache.get(k);
   if (hit) {
@@ -82,12 +101,14 @@ async function chunkYear(arr: AefArray, t: number, py0: number, px0: number, h: 
   let f = inflight.get(k);
   if (!f || f.ac.signal.aborted) {
     const ac = new AbortController();
-    const p = zarr.get(arr, [t, null, zarr.slice(py0, py0 + h), zarr.slice(px0, px0 + w)], { signal: ac.signal }).then((c) => {
+    const fromZarr = () => zarr.get(arr, [t, null, zarr.slice(py0, py0 + h), zarr.slice(px0, px0 + w)], { signal: ac.signal }).then((c) => {
       if (c.shape.length !== 3 || c.shape[0] !== NUM_BANDS || c.shape[1] !== h || c.shape[2] !== w) {
         throw new Error(`Unexpected chunk shape [${c.shape.join(", ")}] for a ${w} x ${h} tile`);
       }
-      const d = c.data as Int8Array;
-      keep(k, d);
+      return c.data as Int8Array;
+    });
+    const p = (import.meta.env.DEV ? fromLocal(t, py0, px0, h, w, ac.signal).then((d) => d ?? fromZarr()) : fromZarr()).then((d) => {
+      if (keepIt) keep(k, d);
       return d;
     });
     f = { p, ac, wants: 0 };
@@ -141,12 +162,12 @@ self.onmessage = async (ev: MessageEvent<Job>) => {
     const fy = m.fuelYearIdx ?? FUEL_YEAR_IDX;
     const idx = [...new Set([m.timeIdx, ...fy])];
     const t0 = performance.now();
-    const got = await Promise.all(idx.map((t) => chunkYear(arr, t, m.py0, m.px0, m.h, m.w, ac.signal)));
+    const got = await Promise.all(idx.map((t) => chunkYear(arr, t, m.py0, m.px0, m.h, m.w, ac.signal, !m.lean)));
     const t1 = performance.now();
     const data = (t: number) => got[idx.indexOf(t)]!;
     const n = m.w * m.h;
     const years = fy.map(data);
-    const c = classify(data(m.timeIdx), n);
+    const c = m.lean ? classifyLean(data(m.timeIdx), n) : classify(data(m.timeIdx), n);
     if (m.value === "volume") {
       // the volume of the newest year as the drawn plane, its packed outputs for the tooltip, and the volume
       // two years before (the oldest of the years read) for what a fire took

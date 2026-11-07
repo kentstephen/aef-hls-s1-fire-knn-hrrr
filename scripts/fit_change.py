@@ -23,7 +23,7 @@ Scores:
   fires   fit on every train window, then the five test fires year by year (2018 or 2019 to 2025), inside vs
           outside: mean predicted CC and CH, kind shares, next to LANDFIRE's own CC for each edition.
 
-Writes results/fit_change.json. RAM: about 5 GB at peak (the table standardized in place, folds trained on row indices).
+Writes results/fit_change.json and the final fit per set to data/change/head_<set>.pt. RAM: about 5 GB at peak (the table standardized in place, folds trained on row indices).
 
     uv run scripts/fit_change.py [--sets e,e_prev,e_d,e_sd,e_all] [--epochs 12]
 """
@@ -225,6 +225,7 @@ def fires(parts, s, eds, epochs):
     Xs, mu, sd = standardize(X)
     net = fit(Xs, np.arange(len(X)), cc, ch, kd, epochs, seed=0)
     del X, Xs
+    torch.save(dict(state=net.state_dict(), mu=mu, sd=sd, set=s, kinds=KINDS), D / f"head_{s}.pt")
     out = {}
     for p in parts:
         if not p["kind"].startswith("test_"):

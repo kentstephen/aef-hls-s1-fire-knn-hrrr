@@ -1,0 +1,418 @@
+{
+ "head": "head_e_all.pt",
+ "chunks": 134,
+ "fires": 65,
+ "cc_did_median": -1.8483562469482422,
+ "cc_did_mean": -3.914995730412438,
+ "share_fires_cc_down": 0.7846153846153846,
+ "share_fires_cc_down_2": 0.49230769230769234,
+ "lf_did_median": -2.1147083425665807,
+ "corr_cc_vs_lf": 0.7925369656533635,
+ "corr_cc_vs_cos": 0.7285064571154676,
+ "ch_did_median": -0.516003237105906,
+ "cos_gap_median": -0.07009363174438477,
+ "canopy_before_0_10": {
+  "fires": 32,
+  "cc_did_median": -0.43469151707055664,
+  "lf_did_median": -0.012103540848185788,
+  "share_cc_down": 0.65625
+ },
+ "canopy_before_10_25": {
+  "fires": 19,
+  "cc_did_median": -3.718755602836609,
+  "lf_did_median": -8.909839513233761,
+  "share_cc_down": 0.9473684210526315
+ },
+ "canopy_before_25_101": {
+  "fires": 14,
+  "cc_did_median": -9.169074694315594,
+  "lf_did_median": -11.499493938722082,
+  "share_cc_down": 0.8571428571428571
+ },
+ "by_fire": {
+  "CROZIER": {
+   "cc": -30.0,
+   "lf": -27.9,
+   "cos": -0.307,
+   "cc_before": 62.0
+  },
+  "Mill": {
+   "cc": -25.4,
+   "lf": -33.9,
+   "cos": -0.259,
+   "cc_before": 38.8
+  },
+  "POINT": {
+   "cc": -19.1,
+   "lf": -22.9,
+   "cos": -0.188,
+   "cc_before": 42.8
+  },
+  "PARK": {
+   "cc": -16.5,
+   "lf": -11.5,
+   "cos": -0.135,
+   "cc_before": 36.0
+  },
+  "SHELLY": {
+   "cc": -13.1,
+   "lf": -20.4,
+   "cos": -0.165,
+   "cc_before": 39.3
+  },
+  "PEAK": {
+   "cc": -10.3,
+   "lf": -23.3,
+   "cos": -0.15,
+   "cc_before": 30.9
+  },
+  "LINE": {
+   "cc": -9.9,
+   "lf": -16.6,
+   "cos": -0.14,
+   "cc_before": 22.5
+  },
+  "Boise": {
+   "cc": -9.5,
+   "lf": -11.5,
+   "cos": -0.13,
+   "cc_before": 64.1
+  },
+  "FRENCH": {
+   "cc": -8.9,
+   "lf": -9.2,
+   "cos": -0.114,
+   "cc_before": 26.4
+  },
+  "Felicia": {
+   "cc": -8.4,
+   "lf": -13.1,
+   "cos": -0.049,
+   "cc_before": 15.4
+  },
+  "VISTA": {
+   "cc": -8.3,
+   "lf": -10.5,
+   "cos": -0.124,
+   "cc_before": 22.4
+  },
+  "Hill": {
+   "cc": -8.0,
+   "lf": -2.5,
+   "cos": -0.169,
+   "cc_before": 65.5
+  },
+  "Franklin": {
+   "cc": -7.5,
+   "lf": -2.9,
+   "cos": -0.09,
+   "cc_before": 11.4
+  },
+  "Thompson": {
+   "cc": -6.9,
+   "lf": -3.2,
+   "cos": -0.07,
+   "cc_before": 19.6
+  },
+  "Airport": {
+   "cc": -5.8,
+   "lf": -7.3,
+   "cos": -0.16,
+   "cc_before": 9.0
+  },
+  "VALLEY": {
+   "cc": -5.5,
+   "lf": -9.5,
+   "cos": -0.024,
+   "cc_before": 16.2
+  },
+  "SHOE": {
+   "cc": -4.8,
+   "lf": -8.6,
+   "cos": -0.078,
+   "cc_before": 68.2
+  },
+  "PEDRO": {
+   "cc": -4.8,
+   "lf": -2.8,
+   "cos": -0.098,
+   "cc_before": 14.3
+  },
+  "Coffee Pot": {
+   "cc": -4.4,
+   "lf": -7.0,
+   "cos": -0.079,
+   "cc_before": 39.4
+  },
+  "Basin": {
+   "cc": -4.2,
+   "lf": -4.5,
+   "cos": -0.017,
+   "cc_before": 16.6
+  },
+  "RIDGE": {
+   "cc": -4.1,
+   "lf": -0.7,
+   "cos": -0.023,
+   "cc_before": 8.6
+  },
+  "Bear": {
+   "cc": -3.8,
+   "lf": -10.5,
+   "cos": -0.134,
+   "cc_before": 10.8
+  },
+  "Lake": {
+   "cc": -3.7,
+   "lf": -4.0,
+   "cos": -0.097,
+   "cc_before": 14.3
+  },
+  "WHITE": {
+   "cc": -3.6,
+   "lf": -10.1,
+   "cos": -0.136,
+   "cc_before": 16.1
+  },
+  "Horseshoe": {
+   "cc": -3.2,
+   "lf": -0.4,
+   "cos": -0.045,
+   "cc_before": 10.2
+  },
+  "HAPPY": {
+   "cc": -3.1,
+   "lf": -18.8,
+   "cos": -0.041,
+   "cc_before": 15.1
+  },
+  "Border 66": {
+   "cc": -2.9,
+   "lf": -0.0,
+   "cos": -0.07,
+   "cc_before": 2.9
+  },
+  "RIM 3-6": {
+   "cc": -2.8,
+   "lf": -0.6,
+   "cos": -0.086,
+   "cc_before": 11.7
+  },
+  "BRIDGE": {
+   "cc": -2.8,
+   "lf": -8.9,
+   "cos": -0.155,
+   "cc_before": 21.3
+  },
+  "TROUT": {
+   "cc": -2.7,
+   "lf": -4.5,
+   "cos": -0.107,
+   "cc_before": 19.4
+  },
+  "Mountain": {
+   "cc": -2.3,
+   "lf": -2.1,
+   "cos": -0.055,
+   "cc_before": 8.8
+  },
+  "Apache": {
+   "cc": -2.2,
+   "lf": -0.7,
+   "cos": -0.098,
+   "cc_before": 4.5
+  },
+  "BOGUS": {
+   "cc": -1.8,
+   "lf": -9.0,
+   "cos": -0.139,
+   "cc_before": 21.3
+  },
+  "LONG": {
+   "cc": -1.8,
+   "lf": -3.4,
+   "cos": -0.116,
+   "cc_before": 6.9
+  },
+  "ROBLAR": {
+   "cc": -1.8,
+   "lf": -1.9,
+   "cos": -0.015,
+   "cc_before": 4.6
+  },
+  "FRESNO JUNE LIGHTNING COMPLEX": {
+   "cc": -0.9,
+   "lf": -1.9,
+   "cos": 0.022,
+   "cc_before": 13.0
+  },
+  "GROVE 2": {
+   "cc": -1.6,
+   "lf": 0.0,
+   "cos": -0.106,
+   "cc_before": 3.3
+  },
+  "Sentinel": {
+   "cc": -1.4,
+   "lf": -10.1,
+   "cos": 0.025,
+   "cc_before": 41.2
+  },
+  "SITES": {
+   "cc": -1.2,
+   "lf": -1.6,
+   "cos": -0.077,
+   "cc_before": 6.6
+  },
+  "RANCHO": {
+   "cc": -0.8,
+   "lf": -0.3,
+   "cos": 0.005,
+   "cc_before": 1.2
+  },
+  "Post": {
+   "cc": -0.8,
+   "lf": -0.1,
+   "cos": -0.042,
+   "cc_before": 3.2
+  },
+  "BELLA": {
+   "cc": -0.6,
+   "lf": 0.0,
+   "cos": -0.097,
+   "cc_before": 2.2
+  },
+  "NORTH": {
+   "cc": -0.6,
+   "lf": 0.0,
+   "cos": -0.039,
+   "cc_before": 0.3
+  },
+  "SCHOOL": {
+   "cc": -0.4,
+   "lf": 0.0,
+   "cos": 0.011,
+   "cc_before": 0.7
+  },
+  "DOVE": {
+   "cc": -0.4,
+   "lf": 0.0,
+   "cos": -0.109,
+   "cc_before": 2.3
+  },
+  "HURRICANE": {
+   "cc": -0.4,
+   "lf": -0.0,
+   "cos": -0.008,
+   "cc_before": 0.4
+  },
+  "MCCAIN 4": {
+   "cc": -0.2,
+   "lf": -0.4,
+   "cos": -0.026,
+   "cc_before": 0.8
+  },
+  "EL PASO": {
+   "cc": -0.1,
+   "lf": 0.0,
+   "cos": -0.013,
+   "cc_before": 0.5
+  },
+  "RECORD": {
+   "cc": -0.1,
+   "lf": 0.0,
+   "cos": -0.057,
+   "cc_before": 0.7
+  },
+  "SHERWOOD": {
+   "cc": -0.1,
+   "lf": -0.1,
+   "cos": 0.016,
+   "cc_before": 0.1
+  },
+  "LISA": {
+   "cc": 0.0,
+   "lf": -0.0,
+   "cos": -0.034,
+   "cc_before": 0.7
+  },
+  "STODDARD 3": {
+   "cc": 0.1,
+   "lf": 0.0,
+   "cos": -0.028,
+   "cc_before": 0.0
+  },
+  "ROAD": {
+   "cc": 0.1,
+   "lf": 0.0,
+   "cos": -0.001,
+   "cc_before": 0.8
+  },
+  "NIXON": {
+   "cc": 0.1,
+   "lf": -1.1,
+   "cos": -0.165,
+   "cc_before": 2.5
+  },
+  "POLE": {
+   "cc": 0.2,
+   "lf": -0.0,
+   "cos": 0.002,
+   "cc_before": 1.1
+  },
+  "OLIVE": {
+   "cc": 0.3,
+   "lf": 0.1,
+   "cos": -0.014,
+   "cc_before": 0.6
+  },
+  "CLEAR": {
+   "cc": 0.4,
+   "lf": 0.0,
+   "cos": -0.025,
+   "cc_before": 0.9
+  },
+  "BOREL": {
+   "cc": 0.5,
+   "lf": -11.4,
+   "cos": -0.148,
+   "cc_before": 23.9
+  },
+  "TULEDAD": {
+   "cc": 0.8,
+   "lf": -0.4,
+   "cos": -0.065,
+   "cc_before": 0.6
+  },
+  "EAGLE": {
+   "cc": 0.9,
+   "lf": -0.6,
+   "cos": 0.002,
+   "cc_before": 0.2
+  },
+  "POST": {
+   "cc": 0.9,
+   "lf": 0.2,
+   "cos": -0.005,
+   "cc_before": 0.7
+  },
+  "SHEERING": {
+   "cc": 1.0,
+   "lf": -2.2,
+   "cos": -0.008,
+   "cc_before": 47.0
+  },
+  "LUCERNE": {
+   "cc": 2.0,
+   "lf": 0.0,
+   "cos": 0.027,
+   "cc_before": 0.2
+  },
+  "MIDDLE": {
+   "cc": 3.4,
+   "lf": -16.5,
+   "cos": -0.103,
+   "cc_before": 46.0
+  }
+ }
+}

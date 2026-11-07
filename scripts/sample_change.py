@@ -6,7 +6,8 @@
 
 The first head learned one label edition (LF2024) and never saw a pixel's label change. Here each pixel carries
 its AlphaEarth embedding for every year 2017 to 2025 and LANDFIRE's canopy cover (CC, %), canopy height (CH,
-m x 10) and fuel model (FBFM40) from the 2016, 2022, 2024 and 2025 editions. An edition is paired with the
+m x 10), fuel model (FBFM40) and existing vegetation cover and height (EVC, EVH: tree, shrub or herb
+lifeform with its cover % or height) from the 2016, 2022, 2024 and 2025 editions. An edition is paired with the
 embedding of its own year (LF2016 with 2017, the first embedding year).
 
 Windows (mosaic chunks, 256 x 256 at 10 m):
@@ -17,8 +18,8 @@ Windows (mosaic chunks, 256 x 256 at 10 m):
 Train windows (random, burn) within 10 km of a test fire are dropped, so the test fires are never seen.
 
 Per window --px random pixels with an embedding in every year. Writes data/change/<kind>_<cy>_<cx>.npz
-(q: int8 [n, 9, 64]; rows, cols; cc_<ed>, ch_<ed>, fb_<ed>: int16 [n]) and data/change/windows.parquet.
-Resumable. RAM: about 60 MB per window in flight, under 1.5 GB at the defaults; stops past --max-gb.
+(q: int8 [n, 9, 64]; rows, cols; cc_, ch_, fb_, evc_, evh_<ed>: int16 [n]) and data/change/windows.parquet.
+Resumable; layers added to LAYERS later are fetched into existing files. RAM: about 60 MB per window in flight, under 1.5 GB at the defaults; stops past --max-gb.
 
     uv run scripts/sample_change.py [--burn 200] [--px 1500] [--workers 6] [--max-gb 4]
 """
@@ -44,7 +45,7 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "change"
 YEARS = list(range(2017, 2026))
 EDITIONS = [2016, 2022, 2024, 2025]
-LAYERS = {"cc": "CC", "ch": "CH", "fb": "FBFM40"}
+LAYERS = {"cc": "CC", "ch": "CH", "fb": "FBFM40", "evc": "EVC", "evh": "EVH"}
 LF_URL = "https://lfps.usgs.gov/arcgis/rest/services/Landfire_LF{v}/LF{v}_{lyr}_CONUS/ImageServer/exportImage"
 
 
@@ -84,10 +85,27 @@ def burn_windows(per, test_ids, n, rng):
     return out[:n]
 
 
+def add_layers(w):
+    """Fetch any LAYERS missing from an existing window file and write it back."""
+    path = OUT / f"{w.kind}_{w.cy}_{w.cx}.npz"
+    z = dict(np.load(path))
+    if len(z["q"]) == 0:
+        return 0
+    jobs = [(ed, k, lyr) for ed in EDITIONS for k, lyr in LAYERS.items() if f"{k}_{ed}" not in z]
+    if not jobs:
+        return 0
+    pick = z["rows"].astype(int) * CHUNK + z["cols"].astype(int)
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        for (ed, k, _), g in zip(jobs, ex.map(lambda j: landfire(w.cy, w.cx, j[0], j[2]), jobs)):
+            z[f"{k}_{ed}"] = g.ravel()[pick]
+    np.savez_compressed(path, **z)
+    return len(jobs)
+
+
 def one(arr, w, px, rng_seed):
     path = OUT / f"{w.kind}_{w.cy}_{w.cx}.npz"
     if path.exists():
-        return 0
+        return add_layers(w)
     q = np.stack([arr[y - YEAR0, :, w.cy * CHUNK:(w.cy + 1) * CHUNK, w.cx * CHUNK:(w.cx + 1) * CHUNK] for y in YEARS])
     q = q.reshape(len(YEARS), 64, -1)
     ok = np.flatnonzero(~(q == -128).all(axis=1).any(axis=0))

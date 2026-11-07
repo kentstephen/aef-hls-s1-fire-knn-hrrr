@@ -122,6 +122,46 @@ shrub leads on 0 % of pixels before the fire and 22 % in 2025.
 
 `results/fit_change.json`.
 
+**Every 2024 fire** (`scripts/change_test.py`): 65 fires of 100 acres and up, 134 mosaic chunks their outlines
+cross, none within 3 km of a training window. Per fire, predicted CC change 2023 -> 2025 inside the burn minus the
+change on the unburned ground beside it (150 m back from the line on both sides):
+
+| Canopy before | Fires | Predicted | LANDFIRE (LF2023 -> LF2025) | Fires with canopy down |
+| --- | --- | --- | --- | --- |
+| 25 % and up | 14 | -9.2 points | -11.5 | 86 % |
+| 10 to 25 % | 19 | -3.7 | -8.9 | 95 % |
+| under 10 % | 32 | -0.4 | 0.0 | 66 % |
+
+Fire by fire the predicted drop follows LANDFIRE's (correlation 0.79; Crozier -30 vs -28, Mill -25 vs -34). Grass
+and brush fires barely move canopy cover, which counts trees only: the reason for the volume head below.
+`results/change_test.json`.
+
+### Vegetation volume (`scripts/fit_volume.py`, `export_volume_head.py`)
+
+The map's value for "how much is here to burn". LANDFIRE's existing vegetation cover and height (EVC, EVH) give each
+pixel's leading lifeform (tree, shrub or herb) with its cover % and height; their product, cover x height in meters,
+is the vegetation volume: about 10 m in closed forest, 0.5 m in chaparral, 0.2 m in grass, 0 on roads and water.
+A proxy for fuel amount, not a load in tons. One network on the year's embedding alone (64 -> 64 -> volume, cover,
+height, CC, CH, 11 kinds, 4 lifeforms), the same rows and folds as the change head.
+
+- Out of block: log volume R^2 0.79 (median error a factor of 1.6), lifeform right on 80 % of pixels.
+- Pixels whose LANDFIRE volume fell by a factor of e or more from LF2016 to LF2022 (on average by a factor of 18):
+  predicted fall a factor of 4. Steady pixels: predicted change 6 %.
+
+The five held-out fires, mean volume inside (outside):
+
+| Fire | Year before | Fire year | Year after | 2025 | LANDFIRE 2016 -> 2025 |
+| --- | --- | --- | --- | --- | --- |
+| Caldor 2021 | 5.8 m (2.4) | 2.0 (2.4) | 1.4 (2.4) | 0.6 (2.1) | 6.1 -> 0.7 |
+| Dixie 2021 | 4.9 (0.9) | 2.5 (1.0) | 1.6 (1.0) | 0.9 (1.0) | 5.8 -> 0.9 |
+| Creek 2020 | 4.7 (2.1) | 2.9 (2.3) | 1.0 (2.9) | 0.6 (2.3) | 5.0 -> 0.5 |
+| Park 2024 | 1.3 (1.3) | 0.5 (1.3) | 0.3 (1.3) | 0.3 (1.3) | 1.8 -> 1.4 |
+| Bobcat 2020 | 1.7 (0.2) | 0.6 (0.2) | 0.5 (0.2) | 0.6 (0.3) | 2.2 -> 0.6 |
+
+Unlike the fuel kinds, the lifeforms change after a fire, in the order the ground recovers: burned Creek forest is
+91 % tree before, 51 % herb in 2022, 56 % shrub in 2025; Bobcat's chaparral goes to 36 % herb in 2022 and back to
+66 % shrub from 2023. `results/fit_volume.json`; weights `models/fuel_volume.json`.
+
 ### The risk backtest (`scripts/risk_backtest.py`)
 
 The fire risk map's value (below) recomputed in Python, from what was known the year before each fire: fuel from
@@ -215,18 +255,22 @@ whole week is tens of GB; the bottom rows may never fill.
 
 **The fuel map** (`?app=fuel`):
 
-- **The ground**: P(fuel) from the 10 m AlphaEarth Zarr mosaic, from zoom 11 in. The panel shows the embeddings
-  year large (2019 to 2025); `[` and `]` step it. The fuel model reads that year and the two before it.
+- **The ground**: vegetation volume (the volume head, `web/src/fuel/volume.ts`, `volume-gpu.ts`) from the 10 m
+  AlphaEarth Zarr mosaic, from zoom 11 in, on a log scale 0 to 50 m and not stretched, so years compare as drawn.
+  `V` switches to P(fuel) (the first fuel head, stretched to the view). The panel shows the embeddings year large
+  (2019 to 2025); `[` and `]` step it. The volume head reads that year alone; the fuel head that year and the two
+  before. Hovering reads the volume, the leading lifeform and its height, canopy cover, the fuel kind and the volume
+  two years before.
 - **Burned areas** (`web/src/perimeters.ts`): every California wildfire of 100 acres and up since 2020 (about 590),
   read live from NIFC's WFIGS perimeter service, outlines simplified to about 30 m (about 4 MB). Bright cyan, which
   none of the fuel ramps holds; outlines only. `B` shows and hides them. Hovering lists every fire that burned the
   spot (name, year, acres), newest first.
 - **A fire's fuel by year** (`web/src/fuel/burnHist.ts`, `web/src/ui/FireHist.tsx`): clicking inside an outline
   selects that fire (the newest where they overlap; Esc clears). The panel shows one bar per embeddings year, 2019 to
-  2025: the average P(fuel) over the outline's pixels in the mosaic chunks in view. The year on screen is read first,
-  then the others chunk by chunk, bars growing faint until complete. Park Fire near Cohasset, zoom 14: 94, 94, 95, 96,
-  94, 95 (fire year), 91 % (2025), read in about 9 s. P(fuel) asks whether ground can burn, not how much fuel is on
-  it, and burned wildland is still fuel to LANDFIRE, so a fire moves it little.
+  2025: the average volume (or P(fuel)) over the outline's pixels in the mosaic chunks in view. The year on screen is
+  read first, then the others chunk by chunk, bars growing faint until complete. Caldor near Grizzly Flats, zoom 13,
+  volume: 11, 13 m (2019, 2020), 4.0 (fire year), 4.2, 3.1, 2.8, 2.5 m (2025). The same in P(fuel), Park Fire near
+  Cohasset: 94, 94, 95, 96, 94, 95 (fire year), 91 %: P(fuel) asks whether ground can burn, not how much is on it.
 - **Sentinel-2** (`web/src/s2.ts`): Earth Genome's yearly mosaics, 2022 to 2025, found with Earth Genome's STAC
   search and read from each footprint's TCI COG on Source Cooperative, decoded in workers. Hold Space to see the
   year matching the embeddings (2022 for earlier ones) in place of the fuel, drawn bare.

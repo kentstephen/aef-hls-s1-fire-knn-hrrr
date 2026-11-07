@@ -57,11 +57,16 @@ export type AefTile = {
   pixelAt: (lon: number, lat: number) => number;
   /** 10 m mosaic tiles: the newest embedding year the fuel head read (its spread over that year and the two before). */
   fuelYear?: number;
+  /** 10 m mosaic tiles: what the fuel plane holds, P(fuel) or the volume head's volume. */
+  fuelValue?: FuelValue;
   /** The season view's mask (r8, tile size) and the key it was drawn for. */
   seasonTex?: Texture;
   seasonKey?: string;
   gone?: boolean;
 };
+
+/** The value the fuel plane holds: the fuel head's P(fuel), or the volume head's vegetation volume (fuel/volume.ts). */
+export type FuelValue = "pfuel" | "volume";
 
 export type AefLayerOpts = {
   mode: FuelMode;
@@ -167,6 +172,8 @@ export class AefLayers {
   private weatherKey = "ignition|run";
   /** The newest embedding year the 10 m tiles score the fuel head on. */
   private fuelYear = AEF_YEAR;
+  /** What the 10 m tiles' fuel plane holds. */
+  private fuelValue: FuelValue = "volume";
   /** A 1 x 1 empty season mask for tiles that have none yet. */
   private noMask: Texture | null = null;
   /** The view's stretch: each fuel byte's place on the ramp (256 x 1), from fuelStretch. */
@@ -198,9 +205,21 @@ export class AefLayers {
     this.redraw();
   }
 
-  /** The 10 m tiles of the current fuel year on hand. */
+  /** What the fuel plane holds: a new value reads every 10 m tile again (the workers keep the chunks, so it is quick). */
+  get value() {
+    return this.fuelValue;
+  }
+  setFuelValue(v: FuelValue) {
+    if (v === this.fuelValue) return;
+    this.fuelValue = v;
+    for (const t of [...this.live.values()]) if (t.kind === "zarr") this.drop(t);
+    this.version++;
+    this.redraw();
+  }
+
+  /** The 10 m tiles of the current fuel year and value on hand. */
   fineTiles(): AefTile[] {
-    return [...this.live.values()].filter((t) => t.kind === "zarr" && !t.gone && t.fuelYear === this.fuelYear);
+    return [...this.live.values()].filter((t) => t.kind === "zarr" && !t.gone && t.fuelYear === this.fuelYear && t.fuelValue === this.fuelValue);
   }
 
   /** Set a tile's season mask (tile-size bytes, 0..255) drawn for key; false when it already has that key. */
@@ -258,9 +277,11 @@ export class AefLayers {
     const zLo = Math.log(0.002 / 0.998);
     const zHi = Math.log(0.996 / 0.004);
     let acc = 0;
+    // the volume byte is already on a log scale: its own place stands in for P(fuel)'s log-odds
+    const vol = this.fuelValue === "volume";
     for (let v = 1; v < 256; v++) {
       const p = Math.min(0.996, Math.max(0.002, (v - 1) / 254));
-      const odds = (Math.log(p / (1 - p)) - zLo) / (zHi - zLo);
+      const odds = vol ? (v - 1) / 254 : (Math.log(p / (1 - p)) - zLo) / (zHi - zLo);
       lut[v] = Math.round(255 * (EQ * ((acc + hist[v]! / 2) / total) + (1 - EQ) * odds));
       acc += hist[v]!;
     }
@@ -281,7 +302,7 @@ export class AefLayers {
     this.redraw();
   }
 
-  /** The P(fuel) at a place on the stretched ramp (0 to 1), for the legend; null without a stretch. */
+  /** The fuel byte's value (P(fuel), or the scaled volume) at a place on the stretched ramp (0 to 1), for the legend; null without a stretch. */
   stretchAt(t: number): number | null {
     const lut = this.stretchLut;
     if (!lut) return null;
@@ -491,15 +512,17 @@ export class AefLayers {
       const { width, height } = o;
       // the class heads and the fuel head on the same newest year; the fuel head's spread over it and the two before
       const fy = this.fuelYear;
-      const classes = await this.pool.zarr(YEARS.indexOf(fy), py0, px0, height, width, o.signal, [fy - 2, fy - 1, fy].map((y) => YEARS.indexOf(y)));
+      const fv = this.fuelValue;
+      const classes = await this.pool.zarr(YEARS.indexOf(fy), py0, px0, height, width, o.signal, [fy - 2, fy - 1, fy].map((y) => YEARS.indexOf(y)), fv);
       const toLonLat = (u: number, v: number): [number, number] => [X0 + (px0 + u * width) * RES, Y0 - (py0 + v * height) * RES];
       const pixelAt = (lon: number, lat: number) => {
         const ci = Math.floor((lon - X0) / RES) - px0;
         const ri = Math.floor((Y0 - lat) / RES) - py0;
         return ci < 0 || ri < 0 || ci >= width || ri >= height ? -1 : ri * width + ci;
       };
-      const t = this.finish(o.device, `zarr:${fy}:${py0},${px0}`, "zarr", width, height, classes, toLonLat, width * 10, pixelAt);
+      const t = this.finish(o.device, `zarr:${fy}:${fv}:${py0},${px0}`, "zarr", width, height, classes, toLonLat, width * 10, pixelAt);
       t.fuelYear = fy;
+      t.fuelValue = fv;
       return t;
     });
   };
@@ -588,7 +611,7 @@ export class AefLayers {
     //   visible: opts.visible && opts.zoom < MOSAIC_MIN_ZOOM,
     // } as never);
     const fine = new ZarrLayer<zarr.Readable, "int8", AefTile>({
-      id: `aef-zarr-${this.fuelYear}`,
+      id: this.fineId(),
       node: this.mosaic.arr,
       metadata: this.mosaic.attrs,
       selection: { time: YEAR_IDX, band: null },
@@ -603,9 +626,9 @@ export class AefLayers {
     return [fine];
   }
 
-  /** The 10 m layer's id (the imagery's mask, by id): it changes with the fuel's year. */
+  /** The 10 m layer's id (the imagery's mask, by id): it changes with the fuel's year and value. */
   fineId(): string {
-    return `aef-zarr-${this.fuelYear}`;
+    return `aef-zarr-${this.fuelYear}-${this.fuelValue}`;
   }
 
   /**
@@ -655,7 +678,7 @@ export class AefLayers {
   }
 
   /** The classes under a lon/lat from the tiles on hand (the finer reader first), or null. */
-  at(lon: number, lat: number): { tile: AefTile; nlcd: number; esri: number; cover: number; ign: number; fuel: number } | null {
+  at(lon: number, lat: number): { tile: AefTile; nlcd: number; esri: number; cover: number; ign: number; fuel: number; vx?: number; v0?: number } | null {
     let best: { tile: AefTile; i: number } | null = null;
     for (const t of this.live.values()) {
       const [w, s, e, n] = t.bbox;
@@ -666,6 +689,6 @@ export class AefLayers {
     }
     if (!best) return null;
     const { tile, i } = best;
-    return { tile, nlcd: tile.classes.nlcd[i]!, esri: tile.classes.esri[i]!, cover: tile.classes.cover[i]! / 255, ign: ignLogit(tile.classes.ign[i]!), fuel: tile.classes.fuel[i]! > 0 ? (tile.classes.fuel[i]! - 1) / 254 : NaN };
+    return { tile, nlcd: tile.classes.nlcd[i]!, esri: tile.classes.esri[i]!, cover: tile.classes.cover[i]! / 255, ign: ignLogit(tile.classes.ign[i]!), fuel: tile.classes.fuel[i]! > 0 ? (tile.classes.fuel[i]! - 1) / 254 : NaN, vx: tile.classes.vx?.[i], v0: tile.classes.v0?.[i] };
   }
 }

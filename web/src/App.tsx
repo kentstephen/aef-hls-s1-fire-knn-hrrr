@@ -24,7 +24,9 @@ import { type BurnArea, burnAreaLayer, burnAreasAt, loadCaBurnAreas, selectedBur
 import { BurnHist, type YearHist } from "./fuel/burnHist.js";
 import { FireHist } from "./ui/FireHist.js";
 import { HEADS, NO_CLASS, type Teacher } from "./aef/head.js";
-import { AefLayers } from "./aef/layers.js";
+import { AefLayers, type FuelValue } from "./aef/layers.js";
+import volumeJson from "../../models/fuel_volume.json";
+import { unpack, volByteMeters, type VolumeHead } from "./fuel/volume.js";
 import { AEF_YEAR, type AefArray, MOSAIC_MIN_ZOOM, openAefMosaic, YEARS } from "./aef/mosaic.js";
 import {
   daysIn, type FirePick, fireRecord, fuelNear, goesMask, loadSeasonPerimeters, loadSeasonStarts, SEASON_YEAR, seasonLayers, seasonMask,
@@ -90,7 +92,7 @@ const TINT = 1;
  * multiplied by it, so bright ground keeps the Colors pane's colors and the darkest ground takes them down to lo.
  */
 const TINT_SHADE = { lo: 0.45, gain: 1.2 };
-const PAINTS: FuelPaint[] = ["colors", "imagery", "tint"];
+const PAINTS: FuelPaint[] = ["colors", "imagery"];
 /** How long the window's dates hold still before its weather starts loading. */
 const WINDOW_SETTLE_MS = 700;
 /** 100 ms a frame: a week in 17 s. */
@@ -180,6 +182,10 @@ function boxLine(ev: GoesEvent): string {
   return `${f(ev.t0)} to ${f(ev.t1)} ${pt} · ${ev.scans} scan${ev.scans === 1 ? "" : "s"} · ${ev.pixels} GOES pixel${ev.pixels === 1 ? "" : "s"}`;
 }
 
+const VOLUME = volumeJson as VolumeHead;
+/** Meters of cover x height, or of height, to two figures. */
+const fmtM = (m: number) => (m >= 10 ? `${Math.round(m)} m` : m >= 1 ? `${m.toFixed(1)} m` : `${m.toFixed(2)} m`);
+
 export default function App() {
   const mapRef = useRef<MapRef>(null);
   /** The pair's left map (P): the imagery beside the fuel, moving together. */
@@ -191,6 +197,8 @@ export default function App() {
   const [paint, setPaint] = useState<FuelPaint>("colors");
   /** The fuel's colors stretched to the view's own values (histogram equalization), or P(fuel) as it is. */
   const [stretchOn, setStretchOn] = useState(true);
+  /** V: what the fuel's colors stand for, the volume head's vegetation volume or the first head's P(fuel). */
+  const [fuelValue, setFuelValue] = useState<FuelValue>("volume");
   /** The P(fuel) at the stretched ramp's bottom, middle and top, for the legend. */
   const [stretchMarks, setStretchMarks] = useState<[number, number, number] | null>(null);
   /** C: the painted imagery's colors (true color or a band stack); the pair's left and Space stay true color. */
@@ -378,9 +386,10 @@ export default function App() {
       const pick = e.key === "q" || e.key === "Q";
       const ground = e.key === "g" || e.key === "G";
       const burn = e.key === "b" || e.key === "B";
+      const valueKey = e.key === "v" || e.key === "V";
       if (e.key === "Escape" && burnPickRef.current) { setBurnPick(null); return; }
       if (e.key === "Escape" && boxPickRef.current !== null) { backOutRef.current(); return; }
-      if (!space && !pairKey && !paintKey && !compKey && !yearKey && !seasonKey && !full && !labels && !pick && !ground && !burn) return;
+      if (!space && !pairKey && !paintKey && !compKey && !yearKey && !seasonKey && !full && !labels && !pick && !ground && !burn && !valueKey) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement | null;
       const tag = el?.tagName;
@@ -397,7 +406,7 @@ export default function App() {
       // Space is for the single map; the pair already shows the whole picture on its left
       if (space) { if (!e.repeat && !pairRef.current) setHolding(true); }
       else if (pairKey) { if (!e.repeat) setPair((v) => !v); }
-      // I: the fuel in the ramp's colors, the imagery through the fuel, the imagery through the non-fuel
+      // I: the fuel in the ramp's colors, or the imagery through the fuel
       else if (paintKey) { if (!e.repeat) setPaint((v) => PAINTS[(PAINTS.indexOf(v) + 1) % PAINTS.length]!); }
       // C: the painted imagery's colors
       else if (compKey) { if (!e.repeat) setComp((v) => S2_COMPS[(S2_COMPS.findIndex((c) => c.id === v) + 1) % S2_COMPS.length]!.id); }
@@ -405,6 +414,8 @@ export default function App() {
       else if (yearKey) stepEmbYearRef.current(yearKey);
       // B: the burned areas on or off
       else if (burn) { if (!e.repeat) setBurnOn((v) => !v); }
+      // V: vegetation volume or P(fuel)
+      else if (valueKey) { if (!e.repeat) setFuelValue((v) => (v === "volume" ? "pfuel" : "volume")); }
       // S: the 2025 season on or off
       else if (seasonKey) { if (!e.repeat) setSeasonOnRef.current((v) => !v); }
       // G switched the old ignition head between pixels and counties: both off for now
@@ -1060,10 +1071,10 @@ export default function App() {
     setBurnHists(null);
     if (!burnPick || !burnHist || !view || zoom < MOSAIC_MIN_ZOOM) return;
     const ac = new AbortController();
-    void burnHist.run(burnPick.f, burnPick.key, view, embYear, setBurnHists, ac.signal);
+    void burnHist.run(burnPick.f, burnPick.key, view, embYear, setBurnHists, ac.signal, fuelValue);
     return () => ac.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [burnPick, burnHist, view, embYear]);
+  }, [burnPick, burnHist, view, embYear, fuelValue]);
   stepEmbYearRef.current = (d: number) =>
     setEmbYear((y) => EMB_YEARS[Math.max(0, Math.min(EMB_YEARS.length - 1, EMB_YEARS.indexOf(y) + d))]!);
   useEffect(() => {
@@ -1072,6 +1083,14 @@ export default function App() {
   useEffect(() => {
     aefLayers?.setFuelYear(embYear);
   }, [aefLayers, embYear]);
+  useEffect(() => {
+    aefLayers?.setFuelValue(fuelValue);
+  }, [aefLayers, fuelValue]);
+  // volume is already on a log scale in meters, the same for every year, so years compare as drawn: no stretch
+  // (the panel turns it back on); P(fuel) crowds 90 to 99 %, so it opens stretched
+  useEffect(() => {
+    setStretchOn(fuelValue === "pfuel");
+  }, [fuelValue]);
   const [imgYear, setImgYear] = useState(Math.min(Math.max(AEF_YEAR, S2_YEARS[0]!), S2_YEARS[S2_YEARS.length - 1]!));
   // [ ] and the wheel while holding: a year back or forward, stopping at the ends
   stepImgYearRef.current = (d: number) =>
@@ -1094,7 +1113,7 @@ export default function App() {
       const at = [0, 0.5, 1].map((t) => aefLayers.stretchAt(t));
       setStretchMarks(at.every((v) => v !== null) ? (at as [number, number, number]) : null);
     }, 400);
-  }, [aefLayers, view, aefVersion, stretchOn, embYear]);
+  }, [aefLayers, view, aefVersion, stretchOn, embYear, fuelValue]);
   /** The fuel painted with the imagery: the fuel alone (no weather), in either of the imagery paints. */
   const paintOn = paint === "imagery" && fuel === "lit" && !(WEATHER_ON && useWeather);
   /** The fuel as a tint on the imagery: the imagery under, the fuel's ramp shifting its color. */
@@ -1722,6 +1741,8 @@ export default function App() {
         stretch={stretchOn}
         onStretchChange={setStretchOn}
         stretchMarks={stretchOn && !paintOn ? stretchMarks : null}
+        fuelValue={fuelValue}
+        onFuelValueChange={setFuelValue}
         years={{
           emb: embYear,
           embOptions: EMB_YEARS,
@@ -1757,6 +1778,7 @@ export default function App() {
             embYear={embYear}
             zoomOk={zoom >= MOSAIC_MIN_ZOOM}
             minZoom={MOSAIC_MIN_ZOOM}
+            volume={fuelValue === "volume"}
           />
         ) : null}
         season={{
@@ -1841,7 +1863,29 @@ export default function App() {
       ) : fuel === "lit" && !WEATHER_ON && hover && hoverInfo ? (
         // the weather off: the fuel head's reading alone
         <div style={tooltipStyle(hover.x, hover.y)}>
-          <div style={{ fontWeight: 600 }}>
+          {(() => {
+            // the volume head: how much stands here, what it reads as, and what stood two years before
+            const g = hoverInfo.ground;
+            const v = g?.vx !== undefined ? unpack(VOLUME, g.vx) : null;
+            if (!v) return null;
+            const before = g?.v0 !== undefined ? volByteMeters(VOLUME, g.v0) : NaN;
+            const ch = Number.isFinite(before) && before > 0 ? v.vol / before - 1 : NaN;
+            return (
+              <>
+                <div style={{ fontWeight: 600 }}>vegetation volume {fmtM(v.vol)}</div>
+                <div>
+                  {v.life === "none" ? "no vegetation to speak of" : `${v.life}, about ${fmtM(v.height)} tall`} · canopy {Math.round(v.cc * 100)}% · fuel kind {v.kind}
+                </div>
+                {Number.isFinite(before) ? (
+                  <div style={{ color: Math.abs(ch) >= 0.4 ? "#ffd166" : "#aaa" }}>
+                    {embYear - 2}: {fmtM(before)}
+                    {Number.isFinite(ch) && Math.abs(ch) >= 0.1 ? ` (${ch > 0 ? "+" : ""}${Math.round(ch * 100)}% since)` : " (about the same)"}
+                  </div>
+                ) : null}
+              </>
+            );
+          })()}
+          <div style={{ fontWeight: 600, display: hoverInfo.ground?.vx !== undefined ? "none" : undefined }}>
             {hoverInfo.ground && Number.isFinite(hoverInfo.ground.fuel)
               ? `chance of fuel ${Math.round(hoverInfo.ground.fuel * 100)}%`
               : zoom < MOSAIC_MIN_ZOOM

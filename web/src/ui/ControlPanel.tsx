@@ -6,6 +6,9 @@ import { useState } from "react";
 // import { HEADS } from "../aef/head.js";
 // import { HOLD } from "../aef/fuel.js";
 import { type Teacher } from "../aef/head.js";
+import type { FuelValue } from "../aef/layers.js";
+import volumeJson from "../../../models/fuel_volume.json";
+import { volMeters, type VolumeHead } from "../fuel/volume.js";
 import { MOSAIC_MIN_ZOOM } from "../aef/mosaic.js";
 import { GROUND_RAMPS, rampGradient, rampStops, type GroundRamp } from "../aef/ramp.js";
 import { type S2Comp, S2_COMPS } from "../s2.js";
@@ -210,6 +213,9 @@ export type ControlPanelProps = {
   stretch: boolean;
   onStretchChange: (on: boolean) => void;
   stretchMarks: [number, number, number] | null;
+  /** What the fuel's colors stand for (V): the volume head's vegetation volume, or the fuel head's P(fuel). */
+  fuelValue: FuelValue;
+  onFuelValueChange: (v: FuelValue) => void;
   season: SeasonPanel;
   goes: GoesPanel;
   years: YearsPanel;
@@ -350,6 +356,13 @@ const dayLabel = (year: number, day: number) => {
 //   ...Object.values(RASTER_VARIABLES).map((v) => ({ id: v.id as string, label: v.id === "ffwi" ? "FFWI" : v.label.toLowerCase() })),
 // ];
 
+const VOLUME = volumeJson as VolumeHead;
+/** A place on the volume byte's scale (0..1) as meters of cover x height. */
+const meters = (s: number) => {
+  const m = volMeters(VOLUME, s);
+  return m >= 10 ? `${Math.round(m)} m` : m >= 1 ? `${m.toFixed(1)} m` : `${m.toFixed(2)} m`;
+};
+
 export function ControlPanel(p: ControlPanelProps) {
   const hours = HRRR_LEAD_TIME_HOURS[p.leadTimeIdx] ?? 0;
   const validUTC = dateFromInitTimeIdx(p.initTimeIdx);
@@ -372,7 +385,11 @@ export function ControlPanel(p: ControlPanelProps) {
   const onLatestDay = latestDay !== null && weekEnd.getTime() === latestDay.getTime();
   /** The ramp's two ends and what they are, for the collapsed card's legend. */
   const legendEnds: [string, string, string] =
-    p.fuel === "lit" && !p.weatherOn && p.stretchMarks
+    p.fuel === "lit" && !p.weatherOn && p.fuelValue === "volume"
+      ? p.stretchMarks
+        ? [meters(p.stretchMarks[0]), meters(p.stretchMarks[2]), `vegetation volume, stretched, middle ${meters(p.stretchMarks[1])}`]
+        : ["0 m", "50 m", "vegetation volume (cover x height)"]
+      : p.fuel === "lit" && !p.weatherOn && p.stretchMarks
       ? [`${Math.round(p.stretchMarks[0] * 100)}%`, `${Math.round(p.stretchMarks[2] * 100)}%`, `stretched, middle ${Math.round(p.stretchMarks[1] * 100)}%`]
       : p.fuel === "lit" && !p.weatherOn
       ? [`${Math.round(p.pHide * 100)}%`, `${Math.round(p.pMax * 100)}%`, p.ignScale === "logit" ? "chance of fuel (log-odds)" : "chance of fuel"]
@@ -432,8 +449,10 @@ export function ControlPanel(p: ControlPanelProps) {
       </p>
       */}
       <p>
-        Each 10 m pixel's <b>AlphaEarth embeddings</b> go through a small model fit on fuel and non-fuel ground across
-        California, giving the chance the ground is burnable fuel.
+        Each 10 m pixel's <b>AlphaEarth embeddings</b> go through a small model fit on LANDFIRE across California,
+        {p.fuelValue === "volume"
+          ? " giving how much vegetation stands there each year (cover x height): it drops where a fire burned and comes back as the ground regrows."
+          : " giving the chance the ground is burnable fuel."}
         {p.fuelOnly ? null : " Fires are NIFC's records: where each one started and the outline it burned."}
         {/* the imagery is off for now: <b>Sentinel-2</b> shows what the ground looked like. */}
       </p>
@@ -446,7 +465,7 @@ export function ControlPanel(p: ControlPanelProps) {
               {p.years.embOptions.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
           </label>
-          <span className="muted small">the fuel model reads {p.years.emb - 2} to {p.years.emb} · <kbd>[</kbd> <kbd>]</kbd> step · hold <kbd>Space</kbd> for Sentinel-2 · <kbd>P</kbd> side by side · <kbd>I</kbd> colors, imagery, tint · <kbd>C</kbd> imagery colors · <kbd>B</kbd> burned areas</span>
+          <span className="muted small">{p.fuelValue === "volume" ? <>the volume model reads {p.years.emb} alone · <kbd>V</kbd> volume or P(fuel) · </> : <>the fuel model reads {p.years.emb - 2} to {p.years.emb} · <kbd>V</kbd> volume or P(fuel) · </>}<kbd>[</kbd> <kbd>]</kbd> step · hold <kbd>Space</kbd> for Sentinel-2 · <kbd>P</kbd> side by side · <kbd>I</kbd> colors or imagery · <kbd>C</kbd> imagery colors · <kbd>B</kbd> burned areas</span>
         </div>
         {/* the imagery is off for now
         <div className="row">
@@ -519,7 +538,7 @@ export function ControlPanel(p: ControlPanelProps) {
         </Fold>
       ) : null}
 
-      <Fold k="fuel" label="The ground" defaultOpen tag={p.fuel === "ignition" ? "ignition risk" : p.fuel === "counties" ? "counties" : p.fuel === "lit" ? (p.weatherOn ? "lit by FFWI" : "P(fuel)") : p.fuel === "cover" ? "land cover" : "off"}>
+      <Fold k="fuel" label="The ground" defaultOpen tag={p.fuel === "ignition" ? "ignition risk" : p.fuel === "counties" ? "counties" : p.fuel === "lit" ? (p.weatherOn ? "lit by FFWI" : p.fuelValue === "volume" ? "volume" : "P(fuel)") : p.fuel === "cover" ? "land cover" : "off"}>
         <div className="row">
           <Seg
             value={p.fuel}
@@ -545,16 +564,29 @@ export function ControlPanel(p: ControlPanelProps) {
           <>
             <div className="row">
               <Seg
+                value={p.fuelValue}
+                options={[{ id: "volume", label: "Volume" }, { id: "pfuel", label: "P(fuel)" }]}
+                onChange={(v) => p.onFuelValueChange(v as FuelValue)}
+              />
+              <Help label="Volume">
+                Volume: how much vegetation stands on each 10 m pixel that year, its leading lifeform's cover times its
+                height (LANDFIRE EVC and EVH), learned from the year's embedding alone. About 10 m in closed forest, 0.5 m
+                in chaparral, 0.2 m in grass. It drops where a fire burned and climbs back as the ground regrows. Hover
+                for the lifeform, canopy and the volume two years before. P(fuel): the first fuel head's chance the
+                ground is burnable at all, which barely moves after a fire. <kbd>V</kbd> switches.
+              </Help>
+            </div>
+            <div className="row">
+              <Seg
                 value={p.paint}
-                options={[{ id: "colors", label: "Colors" }, { id: "imagery", label: "Imagery" }, { id: "tint", label: "Tint" }]}
+                options={[{ id: "colors", label: "Colors" }, { id: "imagery", label: "Imagery" }]}
                 onChange={(v) => p.onPaintChange(v as FuelPaint)}
               />
               <Help label="Imagery">
                 Imagery: the Sentinel-2 yearly mosaic (Earth Genome) drawn with the fuel head's chance of fuel as its
                 opacity: faint below the hide line, in full from the ramp top up. Hold Space for the whole picture in
-                true color, or P to see it beside this one. Tint: the imagery whole, its colors shifted by the fuel's
-                ramp, so the ground keeps its detail. <kbd>I</kbd> steps colors, imagery and tint, <kbd>C</kbd> steps
-                the imagery's colors.
+                true color, or P to see it beside this one. <kbd>I</kbd> switches colors and imagery, <kbd>C</kbd>
+                steps the imagery's colors.
               </Help>
             </div>
             {p.paint !== "colors" ? (
@@ -596,7 +628,11 @@ export function ControlPanel(p: ControlPanelProps) {
               <>
                 <div className="ramp" role="img" aria-label={`${p.groundRamp} ramp`} style={{ backgroundImage: rampGradient(rampStops(p.groundRamp)) }} />
                 <p className="muted small">
-                  {p.stretch && p.stretchMarks
+                  {p.fuelValue === "volume"
+                    ? p.stretch && p.stretchMarks
+                      ? `Vegetation volume (cover x height), stretched to the view: ${meters(p.stretchMarks[0])} at the dark end, ${meters(p.stretchMarks[1])} in the middle, ${meters(p.stretchMarks[2])} at the top. No weather.`
+                      : "Vegetation volume (cover x height) on a log scale, 0 to 50 m. No weather."
+                    : p.stretch && p.stretchMarks
                     ? `The fuel head's chance the ground is burnable fuel, stretched to the view: ${Math.round(p.stretchMarks[0] * 100)}% at the dark end, ${Math.round(p.stretchMarks[1] * 100)}% in the middle, ${Math.round(p.stretchMarks[2] * 100)}% at the top. No weather.`
                     : `The fuel head's chance the ground is burnable fuel, ${Math.round(p.pHide * 100)}% (invisible) to ${Math.round(p.pMax * 100)}% (ramp top). No weather.`}
                 </p>

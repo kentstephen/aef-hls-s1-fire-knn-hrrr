@@ -2,6 +2,11 @@ import type { AefPool } from "../aef/pool.js";
 import { CHUNK, RES, X0, Y0, YEARS } from "../aef/mosaic.js";
 import type { BurnArea } from "../perimeters.js";
 import { pFuel } from "./head.js";
+import type { FuelValue } from "../aef/layers.js";
+import volumeJson from "../../../models/fuel_volume.json";
+import { volByteMeters, type VolumeHead } from "./volume.js";
+
+const VOLUME = volumeJson as VolumeHead;
 
 /**
  * The fuel inside one fire's outline, as the mean P(fuel) per embedding year: only the mosaic chunks in view
@@ -18,7 +23,7 @@ export const HIST_YEARS = YEARS.filter((y) => y - 2 >= YEARS[0]!);
 /** Chunk-years read at the same time. */
 const AT_ONCE = 6;
 
-/** mean: the average P(fuel) over the pixels counted so far (null before any). */
+/** mean: the average P(fuel), or vegetation volume in meters, over the pixels counted so far (null before any). */
 export type YearHist = { year: number; mean: number | null; n: number; done: number; total: number };
 
 type Edge = [x0: number, y0: number, x1: number, y1: number];
@@ -77,6 +82,7 @@ export function yearOrder(center: number): number[] {
 
 export class BurnHist {
   private fireKey = "";
+  private value: FuelValue = "pfuel";
   private polys: Poly[] = [];
   private masks = new Map<string, Uint8Array | null>();
   /** Per `${year}:${cy}:${cx}`: [pixels counted, sum of their P(fuel)]. */
@@ -89,9 +95,10 @@ export class BurnHist {
    * per-year totals after every chunk-year. Stops quietly when the signal aborts.
    */
   async run(fire: BurnArea, fireKey: string, view: [number, number, number, number], center: number,
-    onUpdate: (h: YearHist[]) => void, signal: AbortSignal) {
-    if (fireKey !== this.fireKey) {
+    onUpdate: (h: YearHist[]) => void, signal: AbortSignal, value: FuelValue = "pfuel") {
+    if (fireKey !== this.fireKey || value !== this.value) {
       this.fireKey = fireKey;
+      this.value = value;
       this.polys = polysOf(fire);
       this.masks.clear();
       this.counts.clear();
@@ -131,14 +138,14 @@ export class BurnHist {
       while (next < todo.length && !signal.aborted) {
         const [y, cy, cx] = todo[next++]!;
         try {
-          const c = await this.pool.zarr(YEARS.indexOf(y), cy * CHUNK, cx * CHUNK, CHUNK, CHUNK, signal, [y - 2, y - 1, y].map((v) => YEARS.indexOf(v)));
+          const c = await this.pool.zarr(YEARS.indexOf(y), cy * CHUNK, cx * CHUNK, CHUNK, CHUNK, signal, [y - 2, y - 1, y].map((v) => YEARS.indexOf(v)), value);
           if (c.ms) { work.read += c.ms.read; work.score += c.ms.score; work.calls++; }
           const mask = this.masks.get(`${cy}:${cx}`)!;
           const h = new Float64Array(2);
           for (let i = 0; i < mask.length; i++) {
             if (!mask[i]) continue;
-            const p = pFuel(c.fuel[i]!);
-            if (p === null) continue;
+            const p = value === "volume" ? volByteMeters(VOLUME, c.fuel[i]!) : pFuel(c.fuel[i]!);
+            if (p === null || Number.isNaN(p)) continue;
             h[0]!++;
             h[1]! += p;
           }

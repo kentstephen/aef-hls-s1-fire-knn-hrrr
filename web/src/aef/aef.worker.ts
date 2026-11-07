@@ -2,6 +2,9 @@ import * as zarr from "zarrita";
 import fuelJson from "../../../models/fuel_head.json";
 import { type FuelHead, packWeights, scoreCpu } from "../fuel/head.js";
 import { type GpuScorer, makeGpuScorer } from "../fuel/head-gpu.js";
+import volumeJson from "../../../models/fuel_volume.json";
+import { packVolume, probeGap, volumeCpu, type VolumeHead } from "../fuel/volume.js";
+import { makeVolumeScorer, type VolumeScorer } from "../fuel/volume-gpu.js";
 import { classify, type Classified, NUM_BANDS } from "./head.js";
 import { openAefMosaic, type AefArray, YEARS } from "./mosaic.js";
 
@@ -16,6 +19,24 @@ const fuelScorer = () =>
     return null;
   }));
 
+// the fuel volume head (scripts/fit_volume.py): one year's embedding -> how much stands on the pixel
+const VOLUME = volumeJson as VolumeHead;
+const VOLUME_W = packVolume(VOLUME);
+let volScorer: Promise<VolumeScorer | null> | null = null;
+const volumeScorer = () =>
+  (volScorer ??= (async () => {
+    const gap = probeGap(VOLUME, VOLUME_W);
+    if (gap > 1e-3) console.warn(`fuel volume head: the browser's forward pass is ${gap} off the export's probes`);
+    return makeVolumeScorer(VOLUME, VOLUME_W, 256 * 256);
+  })().catch((e) => {
+    console.warn("WebGPU fuel volume head unavailable, scoring on the CPU:", e);
+    return null;
+  }));
+const scoreVolume = async (e: Int8Array, n: number) => {
+  const g = await volumeScorer();
+  return g ? g(e, n) : volumeCpu(VOLUME, VOLUME_W, e, n);
+};
+
 /**
  * The head off the page's thread: a COG block handed over as band-major int8, or a mosaic chunk read
  * here (zarrita's zstd decode of a 4 MB chunk would otherwise hold the map). Each job answers with
@@ -23,7 +44,7 @@ const fuelScorer = () =>
  */
 type Job =
   | { type: "classify"; id: number; data: Int8Array; n: number }
-  | { type: "zarr"; id: number; timeIdx: number; py0: number; px0: number; h: number; w: number; fuelYearIdx?: number[] }
+  | { type: "zarr"; id: number; timeIdx: number; py0: number; px0: number; h: number; w: number; fuelYearIdx?: number[]; value?: "pfuel" | "volume" }
   | { type: "abort"; id: number };
 
 let mosaic: Promise<AefArray> | null = null;
@@ -87,7 +108,8 @@ async function chunkYear(arr: AefArray, t: number, py0: number, px0: number, h: 
 }
 
 function reply(id: number, c: Classified) {
-  postMessage({ id, ...c }, { transfer: [c.nlcd.buffer, c.esri.buffer, c.cover.buffer, c.ign.buffer, c.fuel.buffer] });
+  const extra = [c.vx?.buffer, c.v0?.buffer].filter((b): b is ArrayBuffer => !!b);
+  postMessage({ id, ...c }, { transfer: [c.nlcd.buffer, c.esri.buffer, c.cover.buffer, c.ign.buffer, c.fuel.buffer, ...extra] });
 }
 function fail(id: number, e: unknown) {
   const err = e as { name?: string; message?: string };
@@ -124,9 +146,23 @@ self.onmessage = async (ev: MessageEvent<Job>) => {
     const data = (t: number) => got[idx.indexOf(t)]!;
     const n = m.w * m.h;
     const years = fy.map(data);
+    const c = classify(data(m.timeIdx), n);
+    if (m.value === "volume") {
+      // the volume of the newest year as the drawn plane, its packed outputs for the tooltip, and the volume
+      // two years before (the oldest of the years read) for what a fire took
+      const vx = await scoreVolume(years[years.length - 1]!, n);
+      const before = await scoreVolume(years[0]!, n);
+      const fuel = new Uint8Array(n);
+      const v0 = new Uint8Array(n);
+      for (let i = 0; i < n; i++) {
+        fuel[i] = vx[i]! & 255;
+        v0[i] = before[i]! & 255;
+      }
+      reply(m.id, { ...c, fuel, vx, v0, ms: { read: t1 - t0, score: performance.now() - t1 } });
+      return;
+    }
     const gpu = await fuelScorer();
     const fuel = gpu ? await gpu(years, n) : scoreCpu(FUEL, FUEL_W, years, n);
-    const c = classify(data(m.timeIdx), n);
     reply(m.id, { ...c, fuel, ms: { read: t1 - t0, score: performance.now() - t1 } });
   } catch (e) {
     fail(m.id, e);

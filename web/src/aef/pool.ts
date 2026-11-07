@@ -13,14 +13,14 @@ export class AefPool {
     this.ws = Array.from({ length: size }, () => {
       const w = new Worker(new URL("./aef.worker.ts", import.meta.url), { type: "module" });
       const ent: W = { w, busy: 0, waiting: new Map() };
-      w.onmessage = (ev: MessageEvent<{ id: number; error?: { name: string; message: string }; nlcd?: Uint8Array; esri?: Uint8Array; cover?: Uint8Array; ign?: Uint8Array; fuel?: Uint8Array; ms?: Classified["ms"] }>) => {
-        const { id, error, nlcd, esri, cover, ign, fuel, ms } = ev.data;
+      w.onmessage = (ev: MessageEvent<{ id: number; error?: { name: string; message: string }; nlcd?: Uint8Array; esri?: Uint8Array; cover?: Uint8Array; ign?: Uint8Array; fuel?: Uint8Array; vx?: Uint32Array; v0?: Uint8Array; ms?: Classified["ms"] }>) => {
+        const { id, error, nlcd, esri, cover, ign, fuel, vx, v0, ms } = ev.data;
         const p = ent.waiting.get(id);
         if (!p) return;
         ent.waiting.delete(id);
         ent.busy--;
         if (error) p.no(Object.assign(new Error(error.message), { name: error.name }));
-        else p.ok({ nlcd: nlcd!, esri: esri!, cover: cover!, ign: ign!, fuel: fuel ?? new Uint8Array(nlcd!.length), ms });
+        else p.ok({ nlcd: nlcd!, esri: esri!, cover: cover!, ign: ign!, fuel: fuel ?? new Uint8Array(nlcd!.length), vx, v0, ms });
       };
       return ent;
     });
@@ -55,9 +55,9 @@ export class AefPool {
   }
 
   /** A mosaic chunk read and classified in the worker; fuelYearIdx: the fuel head's years (oldest first), else its own. */
-  zarr(timeIdx: number, py0: number, px0: number, h: number, w: number, signal?: AbortSignal, fuelYearIdx?: number[]): Promise<Classified> {
+  zarr(timeIdx: number, py0: number, px0: number, h: number, w: number, signal?: AbortSignal, fuelYearIdx?: number[], value?: "pfuel" | "volume"): Promise<Classified> {
     // a small hash of the chunk's place, so neighbors spread over the workers
     const slot = Math.abs(Math.imul(py0 >> 8, 73856093) ^ Math.imul(px0 >> 8, 19349663));
-    return this.ask({ type: "zarr", timeIdx, py0, px0, h, w, fuelYearIdx }, [], signal, slot);
+    return this.ask({ type: "zarr", timeIdx, py0, px0, h, w, fuelYearIdx, value }, [], signal, slot);
   }
 }

@@ -132,6 +132,12 @@ export function ignLogit(byte: number): number {
  */
 export type Classified = {
   nlcd: Uint8Array; esri: Uint8Array; cover: Uint8Array; ign: Uint8Array; fuel: Uint8Array;
+  /**
+   * With the fuel volume head (fuel/volume.ts): the fuel plane holds the volume byte, vx the packed outputs per
+   * pixel (volume, canopy, kind and lifeform, height), v0 the volume byte two years before.
+   */
+  vx?: Uint32Array;
+  v0?: Uint8Array;
   /** Worker time spent reading (disk or network, and decoding) and scoring, in ms. */
   ms?: { read: number; score: number };
 };

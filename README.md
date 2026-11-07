@@ -62,9 +62,30 @@ What this means:
 - On timber, it hides most of what matters: less load and a different kind of fuel for decades.
 - The map's strength is drawing the line between wildland and everything else at 10 m, each year. Its edge over
   LANDFIRE in the fire test comes from that line, not from knowing which wildland is more dangerous.
-- Not checked: whether the head's kinds (rather than P(fuel)) shift after timber fires such as Caldor or Dixie
-  (2021). If they do, the model holds the fuel change and only the map's single number hides it. A fuel load from
-  the kinds (Scott and Burgan loads per kind) is another way in; not built.
+- The head's kinds do not shift after timber fires either (next section), so the change is not hiding in the kinds.
+
+### The embeddings see the burn; the head does not (`scripts/fire_change.py`)
+
+Five fires, eight mosaic chunks mostly inside each perimeter and eight 1 to 6 km outside (pixels inside any other
+perimeter on file left out of both). Per year, the cosine of each pixel's embedding with its own embedding the year
+before the fire (1 = unchanged; ordinary ground drifts to about 0.95 from year to year):
+
+| Fire | Fuel | Year after | 2025 | Outside |
+| --- | --- | --- | --- | --- |
+| Caldor 2021 | timber | 0.71 | 0.69 | ~0.96 |
+| Dixie 2021 | timber | 0.78 | 0.74 | ~0.94 |
+| Creek 2020 | timber | 0.71 | 0.72 | ~0.93 |
+| Bobcat 2020 | chaparral | 0.75 | 0.88 | ~0.92 |
+| Park 2024 | grass and oak | 0.83 | 0.83 | ~0.92 |
+
+- Burned timber stays far from its old embedding. Bobcat's chaparral climbs back every year (0.75, 0.79, 0.82,
+  0.85, 0.88): regrowth shows in the embeddings alone.
+- The head keeps calling burned timber timber (Caldor: 83 to 85 % of pixels led by a timber kind before, 76 to
+  91 % after) and P(fuel) stays flat. It calls burned Bobcat chaparral timber-litter, which is wrong. The head's
+  spread input (the pixel's spread over three years) jumps after a fire, a likely cause.
+- Fires before 2020 are not on file, so older scars inside the samples are not removed.
+
+`results/fire_change.json`.
 
 ### The risk backtest (`scripts/risk_backtest.py`)
 

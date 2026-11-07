@@ -263,7 +263,9 @@ whole week is tens of GB; the bottom rows may never fill.
   two years before.
 - **Burned areas** (`web/src/perimeters.ts`): every California wildfire of 100 acres and up since 2020 (about 590),
   read live from NIFC's WFIGS perimeter service, outlines simplified to about 30 m (about 4 MB). Bright cyan, which
-  none of the fuel ramps holds; outlines only. `B` shows and hides them. Hovering lists every fire that burned the
+  none of the fuel ramps holds; outlines only. `B` shows and hides them. `M` (or "Only inside burned areas") draws
+  the fuel only inside them: the outlines filled as a deck.gl MaskExtension mask on the GPU, the rest left to the
+  basemap. Hovering lists every fire that burned the
   spot (name, year, acres), newest first.
 - **A fire's fuel by year** (`web/src/fuel/burnHist.ts`, `web/src/ui/FireHist.tsx`): clicking inside an outline
   selects that fire (the newest where they overlap; Esc clears). The panel shows one bar per embeddings year, 2019 to

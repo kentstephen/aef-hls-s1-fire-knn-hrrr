@@ -20,7 +20,7 @@ import { ignitionRate, rateLabel } from "./aef/calibration.js";
 // the burn perimeters (perimeters.ts): not drawn for now; TODO draw them from GeoArrow (deck.gl-geoarrow) rather
 // than a 7 MB GeoJSON parsed on the main thread, and only while each fire burned
 // import { loadPerimeters, type Perimeter, perimeterLayer, perimetersInRun } from "./perimeters.js";
-import { type BurnArea, burnAreaLayer, burnAreasAt, loadCaBurnAreas, selectedBurnLayer } from "./perimeters.js";
+import { BURN_MASK_ID, type BurnArea, burnAreaLayer, burnAreasAt, burnMaskLayer, loadCaBurnAreas, selectedBurnLayer } from "./perimeters.js";
 import { BurnHist, type YearHist } from "./fuel/burnHist.js";
 import { FireHist } from "./ui/FireHist.js";
 import { HEADS, NO_CLASS, type Teacher } from "./aef/head.js";
@@ -199,6 +199,8 @@ export default function App() {
   const [stretchOn, setStretchOn] = useState(true);
   /** V: what the fuel's colors stand for, the volume head's vegetation volume or the first head's P(fuel). */
   const [fuelValue, setFuelValue] = useState<FuelValue>("volume");
+  /** M: the fuel only inside the burned areas (a GPU mask from their outlines). */
+  const [burnMask, setBurnMask] = useState(false);
   /** The P(fuel) at the stretched ramp's bottom, middle and top, for the legend. */
   const [stretchMarks, setStretchMarks] = useState<[number, number, number] | null>(null);
   /** C: the painted imagery's colors (true color or a band stack); the pair's left and Space stay true color. */
@@ -387,9 +389,10 @@ export default function App() {
       const ground = e.key === "g" || e.key === "G";
       const burn = e.key === "b" || e.key === "B";
       const valueKey = e.key === "v" || e.key === "V";
+      const maskKey = e.key === "m" || e.key === "M";
       if (e.key === "Escape" && burnPickRef.current) { setBurnPick(null); return; }
       if (e.key === "Escape" && boxPickRef.current !== null) { backOutRef.current(); return; }
-      if (!space && !pairKey && !paintKey && !compKey && !yearKey && !seasonKey && !full && !labels && !pick && !ground && !burn && !valueKey) return;
+      if (!space && !pairKey && !paintKey && !compKey && !yearKey && !seasonKey && !full && !labels && !pick && !ground && !burn && !valueKey && !maskKey) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement | null;
       const tag = el?.tagName;
@@ -416,6 +419,8 @@ export default function App() {
       else if (burn) { if (!e.repeat) setBurnOn((v) => !v); }
       // V: vegetation volume or P(fuel)
       else if (valueKey) { if (!e.repeat) setFuelValue((v) => (v === "volume" ? "pfuel" : "volume")); }
+      // M: the fuel only inside the burned areas
+      else if (maskKey) { if (!e.repeat) setBurnMask((v) => !v); }
       // S: the 2025 season on or off
       else if (seasonKey) { if (!e.repeat) setSeasonOnRef.current((v) => !v); }
       // G switched the old ignition head between pixels and counties: both off for now
@@ -1300,6 +1305,7 @@ export default function App() {
           stretch: stretchOn && !paintOn,
           tint: tintOn ? TINT : 0,
           operation: paintOn ? "mask+draw" : "draw",
+          maskBy: burnMask && burnAreas ? { extensions: [maskExt], maskId: BURN_MASK_ID } : undefined,
           // a picked fire: its whole area read, so it can be seen whole from zoom 10 (nothing outside it is read)
           only: boxesOn && boxPicked && reach ? { bbox: reach.bbox(), minZoom: MOSAIC_MIN_ZOOM - 1 } : undefined,
           // the fuel alone over every basemap feature but the labels
@@ -1307,7 +1313,8 @@ export default function App() {
         }),
       );
     }
-    // the burned areas over the fuel; the imagery stays bare
+    // the burned areas as the fuel's mask (M), in the fuel's slot; then their outlines over the fuel, the imagery bare
+    if (burnAreas && burnMask) out.push(burnMaskLayer({ areas: burnAreas, beforeId: paintOn || FUEL_ONLY ? LABEL_ID : BEFORE_ID }));
     if (burnAreas) out.push(burnAreaLayer({ areas: burnAreas, visible: burnOn && !showImg, beforeId: paintOn || FUEL_ONLY ? LABEL_ID : BEFORE_ID }));
     if (burnPick) out.push(selectedBurnLayer({ area: burnPick.f, visible: burnOn && !showImg, beforeId: paintOn || FUEL_ONLY ? LABEL_ID : BEFORE_ID }));
     if (seasonOn && seasonData && seasonJoin && !showImg) {
@@ -1416,7 +1423,7 @@ export default function App() {
     glowHours, grain, light, contourLines, pHide, pMax, ignScale, zLo, zHi, rankRamp, useWeather, standingAlpha, wxGate, fieldAlpha,
     timeIdx, weatherSrc, weatherKey, timeMode, countyTable, counties, countyVersion, cacheVersion, weekVersion, timeDepth, zHideCounty, wxGate,
     seasonOn, seasonData, seasonJoin, seasonPerims, seasonDay, seasonReach,
-    s2, s2Version, imgYear, showImg, view, burnAreas, burnOn, burnPick, paintOn, paint, comp, maskExt, stretchOn, tintOn,
+    s2, s2Version, imgYear, showImg, view, burnAreas, burnOn, burnPick, paintOn, paint, comp, maskExt, stretchOn, tintOn, burnMask,
     goesOn, goesDoc, goesNow, goesSeen, goesPerim, goesHour, goesRead,
     boxesOn, boxEvents, boxPick, flyToBox, boxPicked, reachLines, boxNowEdges, boxNow, reach,
   ]);
@@ -1743,6 +1750,8 @@ export default function App() {
         stretchMarks={stretchOn && !paintOn ? stretchMarks : null}
         fuelValue={fuelValue}
         onFuelValueChange={setFuelValue}
+        burnMask={burnMask}
+        onBurnMaskChange={setBurnMask}
         years={{
           emb: embYear,
           embOptions: EMB_YEARS,

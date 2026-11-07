@@ -191,6 +191,21 @@ export function burnAreasAt(areas: BurnArea[], lon: number, lat: number): BurnHi
   return out.sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
 }
 
+export const BURN_MASK_ID = "ca-burn-mask";
+
+/** The burned areas filled, as a mask (never drawn): the fuel shown only inside them. */
+export function burnMaskLayer(o: { areas: BurnArea[]; beforeId?: string }) {
+  return new GeoJsonLayer({
+    id: BURN_MASK_ID,
+    data: o.areas as never,
+    filled: true,
+    stroked: false,
+    getFillColor: [255, 255, 255, 255],
+    operation: "mask",
+    beforeId: o.beforeId,
+  } as never);
+}
+
 /** The selected fire: the same cyan, a heavier stroke. */
 export function selectedBurnLayer(o: { area: BurnArea; visible: boolean; beforeId?: string }) {
   return new GeoJsonLayer({

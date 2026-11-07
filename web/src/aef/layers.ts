@@ -115,6 +115,8 @@ export type AefLayerOpts = {
   tint?: number;
   /** "mask+draw": the layer is also the imagery's mask (its loaded tiles), as well as drawn. */
   operation?: "draw" | "mask+draw";
+  /** Draw the 10 m fuel only where this mask layer covers (deck MaskExtension, on the GPU): the burned areas. */
+  maskBy?: { extensions: unknown[]; maskId: string };
   opacity: number;
   beforeId?: string;
   visible: boolean;
@@ -622,6 +624,7 @@ export class AefLayers {
       maxCacheSize: 400,
       ...common,
       operation: opts.operation ?? "draw",
+      ...(opts.maskBy ? { extensions: opts.maskBy.extensions, maskId: opts.maskBy.maskId, maskByInstance: false } : {}),
     } as never);
     return [fine];
   }

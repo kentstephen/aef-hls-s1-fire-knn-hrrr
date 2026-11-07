@@ -216,6 +216,9 @@ export type ControlPanelProps = {
   /** What the fuel's colors stand for (V): the volume head's vegetation volume, or the fuel head's P(fuel). */
   fuelValue: FuelValue;
   onFuelValueChange: (v: FuelValue) => void;
+  /** The fuel only inside the burned areas (M). */
+  burnMask: boolean;
+  onBurnMaskChange: (on: boolean) => void;
   season: SeasonPanel;
   goes: GoesPanel;
   years: YearsPanel;
@@ -465,7 +468,7 @@ export function ControlPanel(p: ControlPanelProps) {
               {p.years.embOptions.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
           </label>
-          <span className="muted small">{p.fuelValue === "volume" ? <>the volume model reads {p.years.emb} alone · <kbd>V</kbd> volume or P(fuel) · </> : <>the fuel model reads {p.years.emb - 2} to {p.years.emb} · <kbd>V</kbd> volume or P(fuel) · </>}<kbd>[</kbd> <kbd>]</kbd> step · hold <kbd>Space</kbd> for Sentinel-2 · <kbd>P</kbd> side by side · <kbd>I</kbd> colors or imagery · <kbd>C</kbd> imagery colors · <kbd>B</kbd> burned areas</span>
+          <span className="muted small">{p.fuelValue === "volume" ? <>the volume model reads {p.years.emb} alone · <kbd>V</kbd> volume or P(fuel) · <kbd>M</kbd> burned areas only · </> : <>the fuel model reads {p.years.emb - 2} to {p.years.emb} · <kbd>V</kbd> volume or P(fuel) · <kbd>M</kbd> burned areas only · </>}<kbd>[</kbd> <kbd>]</kbd> step · hold <kbd>Space</kbd> for Sentinel-2 · <kbd>P</kbd> side by side · <kbd>I</kbd> colors or imagery · <kbd>C</kbd> imagery colors · <kbd>B</kbd> burned areas</span>
         </div>
         {/* the imagery is off for now
         <div className="row">
@@ -611,6 +614,14 @@ export function ControlPanel(p: ControlPanelProps) {
                 </Help>
               </div>
             ) : null}
+            <div className="row">
+              <Check checked={p.burnMask} onChange={p.onBurnMaskChange} label="Only inside burned areas" />
+              <Help label="Burned areas only">
+                The fuel drawn only inside the outlines of California's fires of 100 acres and up since 2020 (NIFC
+                WFIGS), the rest left to the basemap: every burn's volume year by year, with nothing around it.
+                <kbd>M</kbd> switches.
+              </Help>
+            </div>
             {p.paint !== "imagery" && p.stretch ? null : (
             <div className="row">
               <Seg

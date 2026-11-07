@@ -24,7 +24,7 @@ import {
 import { type RasterVariable } from "../hrrr/variables.js";
 // import { RASTER_VARIABLES, windLabel } from "../hrrr/variables.js";
 import { HOURS_PER_DAY, RUN_HOUR_UTC, type DayState } from "../hrrr/week.js";
-import { A, Check, Field, Fold, Help, Seg, Slider } from "./controls.js";
+import { A, Check, Field, Fold, Help, Key, Seg, Slider } from "./controls.js";
 // import { Ramp } from "./controls.js";
 import "./panel.css";
 
@@ -219,6 +219,9 @@ export type ControlPanelProps = {
   /** The fuel only inside the burned areas (M). */
   burnMask: boolean;
   onBurnMaskChange: (on: boolean) => void;
+  /** The burned areas' outlines shown (B). */
+  burnOn: boolean;
+  onBurnOnChange: (on: boolean) => void;
   season: SeasonPanel;
   goes: GoesPanel;
   years: YearsPanel;
@@ -468,7 +471,8 @@ export function ControlPanel(p: ControlPanelProps) {
               {p.years.embOptions.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
           </label>
-          <span className="muted small">{p.fuelValue === "volume" ? <>the volume model reads {p.years.emb} alone · <kbd>V</kbd> volume or P(fuel) · <kbd>M</kbd> burned areas only · </> : <>the fuel model reads {p.years.emb - 2} to {p.years.emb} · <kbd>V</kbd> volume or P(fuel) · <kbd>M</kbd> burned areas only · </>}<kbd>[</kbd> <kbd>]</kbd> step · hold <kbd>Space</kbd> for Sentinel-2 · <kbd>P</kbd> side by side · <kbd>I</kbd> colors or imagery · <kbd>C</kbd> imagery colors · <kbd>B</kbd> burned areas</span>
+          <span className="with-key"><Key k="[" /><Key k="]" /></span>
+          <span className="muted small">{p.fuelValue === "volume" ? <>the volume model reads {p.years.emb} alone</> : <>the fuel model reads {p.years.emb - 2} to {p.years.emb}</>}</span>
         </div>
         {/* the imagery is off for now
         <div className="row">
@@ -502,8 +506,8 @@ export function ControlPanel(p: ControlPanelProps) {
         <A href="https://github.com/kentstephen/aef-hls-s1-fire-knn-hrrr">code on GitHub</A>
       </p>
       <p className="muted small" style={{ marginTop: 4 }}>
-        Keys: {p.fuelOnly ? null : <><b>S</b> the season · </>}<b>F</b> full screen ·{" "}
-        <b>L</b> map labels off and on · <b>Q</b> tooltip off and on.
+        Keys: {p.fuelOnly ? null : <><b>S</b> the season · </>}hold <b>Space</b> for Sentinel-2 · <b>P</b> side by side ·{" "}
+        <b>F</b> full screen · <b>L</b> map labels off and on · <b>Q</b> tooltip off and on · <b>Esc</b> clears a fire.
       </p>
 
       {loading ? (
@@ -570,6 +574,7 @@ export function ControlPanel(p: ControlPanelProps) {
                 value={p.fuelValue}
                 options={[{ id: "volume", label: "Volume" }, { id: "pfuel", label: "P(fuel)" }]}
                 onChange={(v) => p.onFuelValueChange(v as FuelValue)}
+                k="V"
               />
               <Help label="Volume">
                 Volume: how much vegetation stands on each 10 m pixel that year, its leading lifeform's cover times its
@@ -584,6 +589,7 @@ export function ControlPanel(p: ControlPanelProps) {
                 value={p.paint}
                 options={[{ id: "colors", label: "Colors" }, { id: "imagery", label: "Imagery" }]}
                 onChange={(v) => p.onPaintChange(v as FuelPaint)}
+                k="I"
               />
               <Help label="Imagery">
                 Imagery: the Sentinel-2 yearly mosaic (Earth Genome) drawn with the fuel head's chance of fuel as its
@@ -594,7 +600,7 @@ export function ControlPanel(p: ControlPanelProps) {
             </div>
             {p.paint !== "colors" ? (
               <div className="row">
-                <Seg value={p.comp} options={S2_COMPS.map((c) => ({ id: c.id, label: c.label }))} onChange={(v) => p.onCompChange(v as S2Comp)} />
+                <Seg value={p.comp} options={S2_COMPS.map((c) => ({ id: c.id, label: c.label }))} onChange={(v) => p.onCompChange(v as S2Comp)} k="C" />
               </div>
             ) : null}
             {p.paint !== "imagery" ? (
@@ -615,7 +621,10 @@ export function ControlPanel(p: ControlPanelProps) {
               </div>
             ) : null}
             <div className="row">
-              <Check checked={p.burnMask} onChange={p.onBurnMaskChange} label="Only inside burned areas" />
+              <Check checked={p.burnOn} onChange={p.onBurnOnChange} label="Burned-area outlines" k="B" />
+            </div>
+            <div className="row">
+              <Check checked={p.burnMask} onChange={p.onBurnMaskChange} label="Only inside burned areas" k="M" />
               <Help label="Burned areas only">
                 The fuel drawn only inside the outlines of California's fires of 100 acres and up since 2020 (NIFC
                 WFIGS), the rest left to the basemap: every burn's volume year by year, with nothing around it.

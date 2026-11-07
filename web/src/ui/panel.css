@@ -111,6 +111,9 @@
 .pn input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%; background: var(--text); margin-top: -5px; border: 0; }
 .pn input[type="range"]::-moz-range-thumb { width: 13px; height: 13px; border-radius: 50%; background: var(--text); border: 0; }
 .pn input[type="range"]:disabled { opacity: 0.4; cursor: default; }
+/* a control's key, beside it */
+.key-hint { display: inline-block; min-width: 1.5em; padding: 0 4px; border: 1px solid var(--line); border-radius: 4px; font: 11px/16px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); text-align: center; }
+.with-key { display: inline-flex; align-items: center; gap: 6px; }
 .check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; }
 .check input { accent-color: var(--cool); width: 14px; height: 14px; margin: 0; }
 

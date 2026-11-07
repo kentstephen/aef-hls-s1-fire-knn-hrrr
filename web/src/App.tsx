@@ -1752,6 +1752,8 @@ export default function App() {
         onFuelValueChange={setFuelValue}
         burnMask={burnMask}
         onBurnMaskChange={setBurnMask}
+        burnOn={burnOn}
+        onBurnOnChange={setBurnOn}
         years={{
           emb: embYear,
           embOptions: EMB_YEARS,

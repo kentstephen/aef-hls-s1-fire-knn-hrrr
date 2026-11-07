@@ -86,18 +86,24 @@ export function Slider(props: {
   );
 }
 
-export function Check(props: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+/** The key that does what a control does, shown beside it. */
+export function Key(props: { k: string }) {
+  return <kbd className="key-hint" title={`Key: ${props.k}`}>{props.k}</kbd>;
+}
+
+export function Check(props: { checked: boolean; onChange: (v: boolean) => void; label: string; k?: string }) {
   return (
     <label className="check">
       {/* a click hands the keyboard back to the map: Space would otherwise tick the box again */}
       <input type="checkbox" checked={props.checked} onChange={(e) => { props.onChange(e.target.checked); e.currentTarget.blur(); }} />
       {props.label}
+      {props.k ? <Key k={props.k} /> : null}
     </label>
   );
 }
 
-export function Seg<T extends string>(props: { value: T | null; options: { id: T; label: string }[]; onChange: (id: T) => void }) {
-  return (
+export function Seg<T extends string>(props: { value: T | null; options: { id: T; label: string }[]; onChange: (id: T) => void; k?: string }) {
+  const seg = (
     <div className="seg" role="group">
       {props.options.map((o) => (
         <button key={o.id} type="button" className={props.value === o.id ? "on" : ""} onClick={() => props.onChange(o.id)}>
@@ -106,6 +112,7 @@ export function Seg<T extends string>(props: { value: T | null; options: { id: T
       ))}
     </div>
   );
+  return props.k ? <span className="with-key">{seg}<Key k={props.k} /></span> : seg;
 }
 
 export function A(props: { href: string; children: ReactNode }) {
